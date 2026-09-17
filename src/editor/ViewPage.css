@@ -69,9 +69,11 @@
   font-size: var(--font-size-sm);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--text-secondary);
-  background: transparent;
+  color: var(--text-body);
+  background: rgba(1, 10, 19, 0.6);
+  backdrop-filter: blur(6px);
   border: none;
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
   transition: color var(--transition-fast);
   z-index: 2;
@@ -92,8 +94,9 @@
   text-transform: uppercase;
   padding: 7px var(--space-5);
   border: 1px solid var(--border-default);
-  background: transparent;
-  color: var(--text-secondary);
+  background: rgba(1, 10, 19, 0.6);
+  backdrop-filter: blur(6px);
+  color: var(--text-body);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -182,10 +185,11 @@
 .view-section { display: flex; flex-direction: column; gap: var(--space-3); }
 
 .view-section-title {
-  font-size: var(--font-size-xs);
-  letter-spacing: var(--tracking-widest);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -198,54 +202,70 @@
 
 /* ── Abilities ── */
 
-.view-abilities { display: flex; flex-direction: column; gap: var(--space-2); }
+.view-abilities-showcase { display: flex; flex-direction: column; gap: var(--space-6); }
 
-.view-ability {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 14px;
+.ability-icon-row { display: flex; gap: var(--space-3); }
+
+.ability-icon-btn {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-default);
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  transition: border-color var(--transition-fast);
-}
-.view-ability:hover { border-color: var(--border-default); }
-
-.view-ability-slot {
-  width: 28px; height: 28px;
-  background: var(--bg-base);
-  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  color: var(--text-accent-gold);
-  flex-shrink: 0;
-  margin-top: 2px;
+  transition: all var(--transition-fast);
+}
+.ability-icon-btn:hover { border-color: var(--slot-color); color: var(--slot-color); }
+.ability-icon-btn.active {
+  border-color: var(--slot-color);
+  background: var(--slot-color);
+  color: var(--bg-base);
 }
 
-.view-ability-body { flex: 1; }
+.ability-spotlight {
+  position: relative;
+  padding-left: var(--space-5);
+  min-height: 80px;
+}
+.ability-spotlight::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 3px; bottom: 3px;
+  width: 3px;
+  background: var(--slot-color);
+}
 
-.view-ability-name {
-  font-size: var(--font-size-base);
+.ability-spotlight-name {
+  font-size: var(--font-size-lg);
   font-weight: 500;
   letter-spacing: var(--tracking-tight);
   color: var(--text-primary);
-  margin-bottom: 5px;
+  margin-bottom: var(--space-2);
 }
 
-.view-ability-desc {
+.ability-spotlight-desc {
   font-size: var(--font-size-base);
   line-height: 1.8;
   color: var(--text-body);
 }
 
-.view-ability-effects {
+.ability-spotlight-effects {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.ability-spotlight-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: var(--font-size-base);
 }
 
 .view-effect-tag {
@@ -269,10 +289,11 @@
 }
 
 .view-completion-title {
-  font-size: var(--font-size-xs);
-  letter-spacing: var(--tracking-widest);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .view-circles { display: flex; justify-content: space-around; }

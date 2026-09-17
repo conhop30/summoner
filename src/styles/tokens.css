@@ -70,11 +70,12 @@
   --border-accent:        var(--primitive-hex-400);
   --border-danger:        var(--primitive-red-500);
 
-  /* Text */
-  --text-placeholder:     #7b8092;
-  --text-muted:           var(--primitive-navy-600);
-  --text-secondary:       #9c9cac;
-  --text-body:            #b4b4c2;
+  /* Text — every tier below is tuned to clear ~7:1 (WCAG AAA) against
+     both bg-base and bg-surface, not just the 4.5:1 AA floor. */
+  --text-placeholder:     #a0a0b4;
+  --text-muted:           #a0a0b4;
+  --text-secondary:       #b8b8ca;
+  --text-body:            #cdd0dc;
   --text-primary:         var(--primitive-gold-400);
   --text-bright:          var(--primitive-gold-200);
   --text-inverse:         var(--primitive-grey-700);
@@ -176,10 +177,11 @@
   --border-accent:        var(--primitive-hex-500);
   --border-danger:        var(--primitive-red-500);
 
-  /* Text */
-  --text-placeholder:     var(--primitive-grey-400);
-  --text-muted:           var(--primitive-grey-500);
-  --text-secondary:       var(--primitive-grey-500);
+  /* Text — darkened so muted/secondary clear ~7:1 against bg-base
+     instead of sitting on the 4.5:1 AA floor. */
+  --text-placeholder:     var(--primitive-grey-500);
+  --text-muted:           #524638;
+  --text-secondary:       #423628;
   --text-body:            var(--primitive-grey-600);
   --text-primary:         var(--primitive-gold-700);
   --text-bright:          var(--primitive-grey-700);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Champion, AbilitySlot } from '../champion/types'
 import './ViewPage.css'
@@ -55,10 +56,67 @@ function StatRow({ label, icon, base, growth }: StatRowProps) {
   )
 }
 
+const SLOT_COLORS: Record<AbilitySlot, string> = { passive: '#534AB7', q: '#0F6E56', w: '#993C1D', e: '#185FA5', r: '#c89b3c' }
+
+// Mirrors the current --text-body/--text-secondary/--text-muted tokens (tokens.css).
+// Hardcoded rather than read live so the poster stays dark-themed even when the app is in light mode.
+const POSTER_TEXT_BODY = '#cdd0dc'
+const POSTER_TEXT_SECONDARY = '#b8b8ca'
+const POSTER_TEXT_MUTED = '#a0a0b4'
+
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const words = text.split(' ')
+  const lines: string[] = []
+  let line = ''
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line)
+      line = word
+      if (lines.length === maxLines) { lines[maxLines - 1] += '…'; return lines }
+    } else {
+      line = test
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
+function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const scale = Math.max(w / img.width, h / img.height)
+  const sw = w / scale, sh = h / scale
+  const sx = (img.width - sw) / 2
+  const sy = (img.height - sh) / 2
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h)
+}
+
+// Builds a full-kit poster: splash art up top, lore + every filled ability below (no truncation to fit a fixed height).
 function drawChampionCard(champion: Champion): Promise<Blob> {
   return new Promise(resolve => {
     const W = 1200
-    const H = 675
+    const SPLASH_H = 820
+    const PAD = 64
+    const contentW = W - PAD * 2
+
+    const measure = document.createElement('canvas').getContext('2d')!
+
+    measure.font = '400 17px sans-serif'
+    const loreLines = champion.identity.lore ? wrapLines(measure, champion.identity.lore, contentW, 4) : []
+
+    measure.font = '400 15px sans-serif'
+    const filledSlots = SLOTS.filter(s => champion.abilities[s]?.name)
+    const abilityBlocks = filledSlots.map(slot => {
+      const ability = champion.abilities[slot]!
+      const lines = ability.description ? wrapLines(measure, ability.description, contentW - 60, 3) : []
+      return { slot, ability, lines }
+    })
+
+    const headerH = 150 + (loreLines.length ? loreLines.length * 26 + 20 : 0)
+    const abilitiesLabelH = abilityBlocks.length ? 60 : 0
+    const abilitiesH = abilityBlocks.reduce((sum, b) => sum + 40 + b.lines.length * 22 + 26, 0)
+    const footerH = 56
+    const H = SPLASH_H + headerH + abilitiesLabelH + abilitiesH + footerH
+
     const canvas = document.createElement('canvas')
     canvas.width = W
     canvas.height = H
@@ -67,79 +125,75 @@ function drawChampionCard(champion: Champion): Promise<Blob> {
     ctx.fillStyle = '#08080f'
     ctx.fillRect(0, 0, W, H)
 
-    const drawContent = () => {
-      ctx.fillStyle = 'rgba(8,8,15,0.7)'
-      ctx.fillRect(0, 0, W, H)
+    const drawRest = () => {
+      const grad = ctx.createLinearGradient(0, SPLASH_H - 220, 0, SPLASH_H)
+      grad.addColorStop(0, 'transparent')
+      grad.addColorStop(1, '#08080f')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, SPLASH_H - 220, W, 220)
 
-      ctx.fillStyle = 'rgba(200,155,60,0.15)'
-      ctx.fillRect(0, 0, 4, H)
+      ctx.fillStyle = 'rgba(200,155,60,0.2)'
+      ctx.fillRect(0, SPLASH_H, W, 3)
 
       ctx.fillStyle = '#c8aa6e'
-      ctx.font = '500 52px sans-serif'
-      ctx.fillText(champion.identity.name.toUpperCase(), 48, 96)
+      ctx.font = '500 46px sans-serif'
+      ctx.fillText(champion.identity.name.toUpperCase(), PAD, SPLASH_H - 40)
 
       if (champion.identity.title) {
-        ctx.fillStyle = '#3a3a50'
-        ctx.font = '400 20px sans-serif'
-        ctx.fillText(champion.identity.title, 50, 130)
+        ctx.fillStyle = POSTER_TEXT_SECONDARY
+        ctx.font = '400 18px sans-serif'
+        ctx.fillText(champion.identity.title, PAD, SPLASH_H - 12)
       }
 
-      if (champion.identity.lore) {
-        ctx.fillStyle = '#4a4a60'
-        ctx.font = '400 16px sans-serif'
-        const words = champion.identity.lore.split(' ')
-        let line = ''
-        let y = 180
-        const maxWidth = 560
-        for (const word of words) {
-          const test = line + word + ' '
-          if (ctx.measureText(test).width > maxWidth && line) {
-            ctx.fillText(line, 50, y)
-            line = word + ' '
-            y += 26
-            if (y > 380) { ctx.fillText(line + '...', 50, y); break }
-          } else {
-            line = test
+      let y = SPLASH_H + 60
+      if (loreLines.length) {
+        ctx.fillStyle = POSTER_TEXT_BODY
+        ctx.font = '400 17px sans-serif'
+        for (const line of loreLines) {
+          ctx.fillText(line, PAD, y)
+          y += 26
+        }
+        y += 20
+      }
+
+      if (abilityBlocks.length) {
+        ctx.fillStyle = POSTER_TEXT_MUTED
+        ctx.font = '400 11px sans-serif'
+        ctx.fillText('FULL KIT', PAD, y)
+        y += 40
+
+        for (const { slot, ability, lines } of abilityBlocks) {
+          const color = SLOT_COLORS[slot]
+          ctx.strokeStyle = color
+          ctx.lineWidth = 3
+          ctx.beginPath()
+          ctx.moveTo(PAD, y - 18)
+          ctx.lineTo(PAD, y + 6 + lines.length * 22)
+          ctx.stroke()
+
+          ctx.fillStyle = color
+          ctx.font = '600 13px sans-serif'
+          ctx.fillText(SLOT_LABELS[slot], PAD + 16, y - 18)
+
+          ctx.fillStyle = '#c8aa6e'
+          ctx.font = '500 17px sans-serif'
+          ctx.fillText(ability.name!.toUpperCase(), PAD + 16, y)
+
+          ctx.fillStyle = POSTER_TEXT_BODY
+          ctx.font = '400 14px sans-serif'
+          let ly = y + 24
+          for (const line of lines) {
+            ctx.fillText(line, PAD + 16, ly)
+            ly += 22
           }
+
+          y += 40 + lines.length * 22 + 26
         }
-        if (y <= 380) ctx.fillText(line, 50, y)
       }
 
-      ctx.strokeStyle = '#141420'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(50, 420)
-      ctx.lineTo(630, 420)
-      ctx.stroke()
-
-      ctx.fillStyle = '#2a2a3a'
-      ctx.font = '400 10px sans-serif'
-      ctx.fillText('ABILITIES', 50, 450)
-
-      const slotColors: Record<string, string> = { passive: '#534AB7', q: '#0F6E56', w: '#993C1D', e: '#185FA5', r: '#c89b3c' }
-      let ay = 475
-      for (const slot of SLOTS) {
-        const ability = champion.abilities[slot]
-        if (!ability?.name) continue
-        ctx.fillStyle = slotColors[slot] ?? '#c89b3c'
-        ctx.font = '500 11px sans-serif'
-        ctx.fillText(SLOT_LABELS[slot], 50, ay)
-        ctx.fillStyle = '#c8aa6e'
-        ctx.font = '500 14px sans-serif'
-        ctx.fillText(ability.name.toUpperCase(), 72, ay)
-        if (ability.description) {
-          ctx.fillStyle = '#3a3a50'
-          ctx.font = '400 12px sans-serif'
-          const desc = ability.description.length > 90 ? ability.description.slice(0, 90) + '…' : ability.description
-          ctx.fillText(desc, 72, ay + 18)
-        }
-        ay += 48
-        if (ay > H - 40) break
-      }
-
-      ctx.fillStyle = '#1a1a28'
-      ctx.font = '400 11px sans-serif'
-      ctx.fillText('Created with Summoner', W - 200, H - 20)
+      ctx.fillStyle = POSTER_TEXT_MUTED
+      ctx.font = '400 12px sans-serif'
+      ctx.fillText('Created with Summoner', PAD, H - 24)
 
       canvas.toBlob(blob => resolve(blob!), 'image/png')
     }
@@ -147,31 +201,19 @@ function drawChampionCard(champion: Champion): Promise<Blob> {
     if (champion.identity.image_path) {
       const img = new Image()
       img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        const aspect = img.width / img.height
-        const drawH = H
-        const drawW = drawH * aspect
-        const x = W - drawW
-        ctx.drawImage(img, x, 0, drawW, drawH)
-        const grad = ctx.createLinearGradient(W / 2, 0, W - 200, 0)
-        grad.addColorStop(0, '#08080f')
-        grad.addColorStop(1, 'transparent')
-        ctx.fillStyle = grad
-        ctx.fillRect(0, 0, W, H)
-        drawContent()
-      }
-      img.onerror = drawContent
+      img.onload = () => { drawCover(ctx, img, 0, 0, W, SPLASH_H); drawRest() }
+      img.onerror = drawRest
       img.src = champion.identity.image_path
     } else {
       const initials = champion.identity.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
       ctx.fillStyle = '#0d0a1e'
-      ctx.fillRect(W / 2, 0, W / 2, H)
-      ctx.fillStyle = 'rgba(83,74,183,0.12)'
-      ctx.font = '500 200px sans-serif'
+      ctx.fillRect(0, 0, W, SPLASH_H)
+      ctx.fillStyle = 'rgba(83,74,183,0.14)'
+      ctx.font = '500 220px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText(initials, W * 0.75, H / 2 + 70)
+      ctx.fillText(initials, W / 2, SPLASH_H / 2 + 70)
       ctx.textAlign = 'left'
-      drawContent()
+      drawRest()
     }
   })
 }
@@ -181,12 +223,16 @@ export default function ViewPage() {
   const navigate = useNavigate()
   const [champion, setChampion] = useState<Champion | null>(null)
   const [downloading, setDownloading] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState<AbilitySlot | null>(null)
+  const [hoveredSlot, setHoveredSlot] = useState<AbilitySlot | null>(null)
 
   useEffect(() => {
     if (!id) return
     window.summoner.champion.get(id).then(c => {
-      if (c) setChampion(c)
-      else navigate('/')
+      if (c) {
+        setChampion(c)
+        setSelectedSlot(SLOTS.find(s => c.abilities[s]?.name) ?? null)
+      } else navigate('/')
     })
   }, [id])
 
@@ -209,13 +255,15 @@ export default function ViewPage() {
   if (!champion) return <div className="view-loading" />
 
   const { identity, base_stats, abilities, metadata } = champion
-  //const roleLabel = [...(identity.class ?? []), ...(identity.role ?? [])].join(' · ')
   const playstyle = (identity as any).playstyle
 
   const storyPct = (identity.name ? 25 : 0) + (identity.lore ? 50 : 0) + ((identity.role ?? []).length > 0 ? 25 : 0)
   const statsPct = STAT_FIELDS.filter(f => base_stats[f.key as keyof typeof base_stats]).length / STAT_FIELDS.length * 100
   const abilitiesPct = SLOTS.filter(s => abilities[s]?.name).length / SLOTS.length * 100
-  //const totalPct = Math.round((storyPct + statsPct + abilitiesPct) / 3)
+
+  const filledSlots = SLOTS.filter(s => abilities[s]?.name)
+  const displaySlot = hoveredSlot ?? selectedSlot
+  const displayAbility = displaySlot ? abilities[displaySlot] : undefined
 
   const r = 22
   const circ = 2 * Math.PI * r
@@ -244,7 +292,7 @@ export default function ViewPage() {
         <div className="view-hero-actions">
           <button className="view-action-btn" onClick={() => navigate(`/edit/${id}`)}>Edit champion</button>
           <button className="view-action-btn primary" onClick={handleDownload} disabled={downloading}>
-            {downloading ? 'Generating...' : 'Download card'}
+            {downloading ? 'Generating...' : 'Download poster'}
           </button>
         </div>
 
@@ -273,30 +321,41 @@ export default function ViewPage() {
 
           <div className="view-section">
             <div className="view-section-title">Abilities</div>
-            <div className="view-abilities">
-              {SLOTS.map(slot => {
-                const ability = abilities[slot]
-                if (!ability?.name) return null
-                return (
-                  <div key={slot} className="view-ability">
-                    <div className="view-ability-slot">{SLOT_LABELS[slot]}</div>
-                    <div className="view-ability-body">
-                      <div className="view-ability-name">{ability.name}</div>
-                      {ability.description && (
-                        <div className="view-ability-desc">{ability.description}</div>
-                      )}
-                      {(ability.effects ?? []).length > 0 && (
-                        <div className="view-ability-effects">
-                          {ability.effects!.map((e, i) => (
-                            <span key={i} className="view-effect-tag">{e.type}{e.damage_type ? ` · ${e.damage_type}` : ''}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+            {filledSlots.length > 0 ? (
+              <div className="view-abilities-showcase">
+                <div className="ability-icon-row">
+                  {filledSlots.map(slot => (
+                    <button
+                      key={slot}
+                      className={`ability-icon-btn${displaySlot === slot ? ' active' : ''}`}
+                      style={{ '--slot-color': SLOT_COLORS[slot] } as CSSProperties}
+                      onMouseEnter={() => setHoveredSlot(slot)}
+                      onMouseLeave={() => setHoveredSlot(null)}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      {SLOT_LABELS[slot]}
+                    </button>
+                  ))}
+                </div>
+                {displayAbility && (
+                  <div className="ability-spotlight" style={{ '--slot-color': SLOT_COLORS[displaySlot!] } as CSSProperties}>
+                    <div className="ability-spotlight-name">{displayAbility.name}</div>
+                    {displayAbility.description && (
+                      <div className="ability-spotlight-desc">{displayAbility.description}</div>
+                    )}
+                    {(displayAbility.effects ?? []).length > 0 && (
+                      <div className="ability-spotlight-effects">
+                        {displayAbility.effects!.map((e, i) => (
+                          <span key={i} className="view-effect-tag">{e.type}{e.damage_type ? ` · ${e.damage_type}` : ''}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )
-              })}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div className="ability-spotlight-empty">No abilities defined yet.</div>
+            )}
           </div>
         </div>
 
