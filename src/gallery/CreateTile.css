@@ -1,0 +1,33 @@
+.create-tile {
+  aspect-ratio: 0.72;
+  background: transparent;
+  border: 1px dashed var(--border-default);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.create-tile:hover {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+}
+
+.create-plus {
+  font-size: 24px;
+  color: var(--text-muted);
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+.create-tile:hover .create-plus { color: var(--accent-gold); }
+
+.create-text {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+.create-tile:hover .create-text { color: var(--accent-gold); }

@@ -1,0 +1,79 @@
+.stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.sp-group { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.sp-group-title {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Condensed: each field is one row (icon+label, then inputs) instead of a
+   stacked two-line block, so the base-stats form takes roughly half the
+   vertical space, leaving more room for the item build section below it. */
+.sp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px var(--space-6);
+}
+
+.sp-field { display: flex; align-items: center; gap: var(--space-2); }
+.sp-field-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 108px;
+  flex-shrink: 0;
+}
+
+.sp-icon {
+  font-size: 11px;
+  color: var(--accent-gold);
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sp-label {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-inputs { display: flex; gap: 5px; flex: 1; min-width: 0; }
+
+.sp-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  padding: 4px var(--space-2);
+  outline: none;
+  width: 0;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+  transition: border-color var(--transition-fast);
+}
+.sp-input:focus { border-color: var(--border-focus); }
+.sp-input::placeholder { color: var(--text-placeholder); }
+
+.sp-growth {
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+.sp-growth:focus {
+  border-color: var(--border-default);
+  color: var(--text-body);
+}

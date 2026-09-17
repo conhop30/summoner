@@ -1,0 +1,285 @@
+.abilities-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+}
+
+.abilities-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Slot Bar ── */
+
+.abilities-slot-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--space-6);
+}
+
+.slot-btn {
+  width: 44px; height: 44px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: var(--radius-none);
+  transition: all var(--transition-fast);
+}
+.slot-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-body);
+}
+.slot-btn.named {
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+}
+.slot-btn.active {
+  border-color: var(--accent-gold);
+  color: var(--text-accent-gold);
+  background: var(--accent-gold-dim);
+}
+
+/* ── Editor ── */
+
+.abilities-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  flex: 1;
+}
+
+.ability-name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight);
+  text-transform: uppercase;
+  outline: none;
+  width: 100%;
+  padding: 4px 0 var(--space-1);
+  font-family: var(--font-sans);
+  transition: border-color var(--transition-fast);
+}
+.ability-name-input::placeholder { color: var(--text-placeholder); }
+.ability-name-input:focus { border-bottom-color: var(--border-focus); }
+
+.ability-desc {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  line-height: 1.7;
+  padding: var(--space-3) 14px;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  border-radius: var(--radius-none);
+  font-family: var(--font-sans);
+  transition: border-color var(--transition-fast);
+}
+.ability-desc::placeholder { color: var(--text-placeholder); }
+.ability-desc:focus { border-color: var(--border-focus); }
+
+/* ── Fields ── */
+
+.ability-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.ability-field-group { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.ability-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ability-field-label {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.rank-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rank-btn {
+  width: 20px; height: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--radius-none);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+.rank-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-accent-gold);
+}
+
+.rank-count {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rank-inputs {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.rank-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  padding: 6px var(--space-2);
+  outline: none;
+  border-radius: var(--radius-none);
+  width: 64px;
+  font-family: var(--font-sans);
+  transition: border-color var(--transition-fast);
+}
+.rank-input:focus { border-color: var(--border-focus); }
+.rank-input::placeholder { color: var(--text-placeholder); }
+
+.cost-type-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--tracking-normal);
+  padding: 4px var(--space-2);
+  outline: none;
+  border-radius: var(--radius-none);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+.cost-type-select:focus { border-color: var(--border-default); }
+
+/* ── Effects ── */
+
+.add-effect-btn {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-none);
+  transition: all var(--transition-fast);
+}
+.add-effect-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-accent-gold);
+}
+
+.effect-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.effect-type-select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--tracking-normal);
+  padding: 4px var(--space-2);
+  outline: none;
+  border-radius: var(--radius-none);
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.remove-effect-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 var(--space-1);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+.remove-effect-btn:hover { color: var(--accent-danger); }
+
+/* ── Advanced ── */
+
+.ability-advanced {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.advanced-hint {
+  font-size: var(--font-size-base);
+  letter-spacing: var(--tracking-normal);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 2;
+}
+
+.advanced-hint-sub {
+  font-size: var(--font-size-sm);
+  color: var(--text-placeholder);
+}
+
+/* ── Mode Bar ── */
+
+.abilities-mode-bar {
+  display: flex;
+  margin-top: auto;
+  padding-top: var(--space-6);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-none);
+  transition: all var(--transition-fast);
+}
+.mode-btn.active {
+  border-color: var(--accent-gold);
+  color: var(--text-accent-gold);
+  background: var(--accent-gold-dim);
+}

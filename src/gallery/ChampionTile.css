@@ -1,0 +1,196 @@
+.tile {
+  position: relative;
+  cursor: pointer;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  transform-origin: center top;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), border-color var(--transition-base), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tile:hover {
+  transform: scale(1.06);
+  z-index: 10;
+  border-color: rgba(200, 155, 60, 0.3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.tile:hover .tile-name { color: var(--accent-gold); }
+
+.tile-image {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 0.72;
+}
+
+.tile-fav-dot {
+  position: absolute;
+  top: 10px; left: 10px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  cursor: pointer;
+  z-index: 3;
+  transition: all var(--transition-base);
+}
+.tile-fav-dot.active {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 5px var(--accent-gold);
+}
+.tile-fav-dot:hover { border-color: var(--accent-gold); }
+
+.tile-completion-ring {
+  position: absolute;
+  top: 7px; right: 7px;
+  width: 28px; height: 28px;
+  z-index: 3;
+}
+
+.tile-portrait {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tile-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tile-initials {
+  font-size: 40px;
+  font-weight: 500;
+  opacity: 0.2;
+  letter-spacing: 0.02em;
+}
+
+.placeholder-purple { background: #0d0a1e; }
+.placeholder-purple .tile-initials { color: #534AB7; }
+.placeholder-teal   { background: #040e0c; }
+.placeholder-teal .tile-initials   { color: #1D9E75; }
+.placeholder-coral  { background: #150704; }
+.placeholder-coral .tile-initials  { color: #D85A30; }
+.placeholder-blue   { background: #020d1a; }
+.placeholder-blue .tile-initials   { color: #378ADD; }
+.placeholder-amber  { background: #140a00; }
+.placeholder-amber .tile-initials  { color: #BA7517; }
+
+.tile-gradient {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 70%;
+  background: linear-gradient(transparent, var(--bg-base) 80%);
+  pointer-events: none;
+}
+
+.tile-bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  z-index: 1;
+}
+
+.tile-name {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+}
+
+.tile-playstyle {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-normal);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-lane-row {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-1);
+}
+
+.tile-lane-tag {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid var(--tag-gold-border);
+  color: var(--tag-gold-text);
+}
+
+.tile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.tile-tag {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-normal);
+  text-transform: uppercase;
+  padding: 1px 5px;
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.tile-footer {
+  display: flex;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.12s ease;
+}
+.tile:hover .tile-footer {
+  max-height: 40px;
+  opacity: 1;
+}
+
+.tile-action-btn {
+  flex: 0 0 50%;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 10px 0;
+  background: var(--bg-elevated);
+  border: none;
+  border-top: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: flex-basis 0.18s cubic-bezier(0.4, 0, 0.2, 1), background var(--transition-fast), color var(--transition-fast);
+}
+.tile-action-btn + .tile-action-btn { border-left: 1px solid var(--border-default); }
+.tile-action-btn:hover {
+  background: var(--accent-gold-dim-hover);
+  color: var(--text-accent-gold);
+}
+
+/* Hovering one action button grows it and compresses its sibling;
+   :has() lets us reach the non-hovered button, which plain sibling
+   selectors can't when it comes before the hovered one in the DOM. */
+.tile-footer:has(.tile-action-btn:first-child:hover) .tile-action-btn:first-child,
+.tile-footer:has(.tile-action-btn:last-child:hover) .tile-action-btn:last-child {
+  flex-basis: 64%;
+}
+.tile-footer:has(.tile-action-btn:first-child:hover) .tile-action-btn:last-child,
+.tile-footer:has(.tile-action-btn:last-child:hover) .tile-action-btn:first-child {
+  flex-basis: 36%;
+}

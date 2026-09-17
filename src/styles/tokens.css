@@ -1,0 +1,215 @@
+/* ============================================================
+   SUMMONER — Design Tokens
+   Single source of truth for all color, typography, and
+   spacing values. Components reference semantic tokens only.
+   Never use raw hex values in component CSS files.
+   ============================================================ */
+
+/* ── Primitive Palette ──────────────────────────────────────
+   Raw values. Referenced only by semantic tokens below.
+   Never used directly in component styles.
+   ──────────────────────────────────────────────────────────── */
+:root {
+  /* Blacks & Navies */
+  --primitive-navy-950: #010a13;
+  --primitive-navy-900: #0a1428;
+  --primitive-navy-850: #0d1a2a;
+  --primitive-navy-800: #1e2328;
+  --primitive-navy-750: #2a3040;
+  --primitive-navy-700: #3c3c41;
+  --primitive-navy-600: #7c7c8a;
+
+  /* Golds */
+  --primitive-gold-200: #f0e6d3;
+  --primitive-gold-300: #e8d5a3;
+  --primitive-gold-400: #c8aa6e;
+  --primitive-gold-500: #c89b3c;
+  --primitive-gold-600: #a07830;
+  --primitive-gold-700: #785a28;
+
+  /* Hextech Blues */
+  --primitive-hex-300: #7ef6ff;
+  --primitive-hex-400: #0bc4e3;
+  --primitive-hex-500: #0a8fa8;
+
+  /* Warm Neutrals (light mode) */
+  --primitive-grey-100: #f0ead8;
+  --primitive-grey-200: #e8e0cc;
+  --primitive-grey-300: #d0c8b4;
+  --primitive-grey-400: #a89880;
+  --primitive-grey-500: #706050;
+  --primitive-grey-600: #403830;
+  --primitive-grey-700: #2a1a08;
+
+  /* Danger */
+  --primitive-red-500: #c04040;
+  --primitive-red-300: #e06060;
+
+  /* Success */
+  --primitive-green-500: #1d9e75;
+}
+
+/* ── Semantic Tokens — Dark Mode (default) ──────────────────
+   Names describe PURPOSE, not appearance.
+   ──────────────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:              var(--primitive-navy-950);
+  --bg-surface:           var(--primitive-navy-900);
+  --bg-elevated:          var(--primitive-navy-850);
+  --bg-input:             var(--primitive-navy-900);
+  --bg-hover:             var(--primitive-navy-800);
+  --bg-overlay:           rgba(1, 10, 19, 0.88);
+  --bg-sidebar:           #0b0b14;
+
+  /* Borders */
+  --border-subtle:        #111118;
+  --border-default:       #1e2840;
+  --border-strong:        var(--primitive-navy-700);
+  --border-focus:         var(--primitive-gold-500);
+  --border-accent:        var(--primitive-hex-400);
+  --border-danger:        var(--primitive-red-500);
+
+  /* Text */
+  --text-placeholder:     #7b8092;
+  --text-muted:           var(--primitive-navy-600);
+  --text-secondary:       #9c9cac;
+  --text-body:            #b4b4c2;
+  --text-primary:         var(--primitive-gold-400);
+  --text-bright:          var(--primitive-gold-200);
+  --text-inverse:         var(--primitive-grey-700);
+  --text-accent-gold:     var(--primitive-gold-500);
+  --text-accent-hex:      var(--primitive-hex-400);
+  --text-danger:          var(--primitive-red-300);
+
+  /* Tag text (used over dark tile/card backgrounds — kept at a
+     tinted-but-legible alpha rather than a raw hex so it still reads
+     as "gold" without failing text contrast) */
+  --tag-gold-text:        rgba(226, 190, 120, 0.92);
+  --tag-gold-border:      rgba(200, 155, 60, 0.4);
+
+  /* Accents */
+  --accent-gold:          var(--primitive-gold-500);
+  --accent-gold-hover:    var(--primitive-gold-600);
+  --accent-gold-active:   var(--primitive-gold-700);
+  --accent-gold-dim:      rgba(200, 155, 60, 0.08);
+  --accent-gold-dim-hover:rgba(200, 155, 60, 0.14);
+  --accent-hex:           var(--primitive-hex-400);
+  --accent-hex-bright:    var(--primitive-hex-300);
+  --accent-hex-deep:      var(--primitive-hex-500);
+  --accent-hex-glow:      rgba(11, 196, 227, 0.3);
+  --accent-hex-dim:       rgba(11, 196, 227, 0.08);
+  --accent-danger:        var(--primitive-red-500);
+  --accent-danger-hover:  var(--primitive-red-300);
+  --accent-success:       var(--primitive-green-500);
+
+  /* Interactive states */
+  --interactive-default:  var(--primitive-navy-700);
+  --interactive-hover:    var(--primitive-navy-750);
+  --interactive-active:   var(--primitive-navy-800);
+  --interactive-disabled: var(--primitive-navy-700);
+
+  /* Typography scale */
+  --font-sans:            'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-xs:         8px;
+  --font-size-sm:         10px;
+  --font-size-base:       12px;
+  --font-size-md:         14px;
+  --font-size-lg:         18px;
+  --font-size-xl:         24px;
+  --font-size-2xl:        32px;
+  --font-size-3xl:        40px;
+
+  /* Letter spacing */
+  --tracking-tight:       0.02em;
+  --tracking-normal:      0.05em;
+  --tracking-wide:        0.1em;
+  --tracking-wider:       0.14em;
+  --tracking-widest:      0.2em;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Layout */
+  --content-max-width: 1440px;
+  --titlebar-height: 0px;
+
+  /* Border radius */
+  --radius-none: 0;
+  --radius-sm:   2px;
+  --radius-md:   4px;
+
+  /* Transitions */
+  --transition-fast:   0.15s ease;
+  --transition-base:   0.2s ease;
+  --transition-slow:   0.35s ease;
+  --transition-spring: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Semantic Tokens — Light Mode ───────────────────────────
+   Same variable names, different values.
+   Applied via [data-theme="light"] on the root element.
+   ──────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:              var(--primitive-grey-100);
+  --bg-surface:           var(--primitive-grey-200);
+  --bg-elevated:          var(--primitive-grey-300);
+  --bg-input:             var(--primitive-grey-200);
+  --bg-hover:             var(--primitive-grey-300);
+  --bg-overlay:           rgba(64, 56, 48, 0.75);
+  --bg-sidebar:           var(--primitive-grey-200);
+
+  /* Borders */
+  --border-subtle:        rgba(112, 96, 80, 0.18);
+  --border-default:       rgba(112, 96, 80, 0.32);
+  --border-strong:        rgba(112, 96, 80, 0.55);
+  --border-focus:         var(--primitive-gold-500);
+  --border-accent:        var(--primitive-hex-500);
+  --border-danger:        var(--primitive-red-500);
+
+  /* Text */
+  --text-placeholder:     var(--primitive-grey-400);
+  --text-muted:           var(--primitive-grey-500);
+  --text-secondary:       var(--primitive-grey-500);
+  --text-body:            var(--primitive-grey-600);
+  --text-primary:         var(--primitive-gold-700);
+  --text-bright:          var(--primitive-grey-700);
+  --text-inverse:         var(--primitive-gold-200);
+  --text-accent-gold:     var(--primitive-gold-600);
+  --text-accent-hex:      var(--primitive-hex-500);
+  --text-danger:          var(--primitive-red-500);
+
+  /* Accents — gold stays, hex deepens for light bg readability */
+  --accent-gold:          var(--primitive-gold-500);
+  --accent-gold-hover:    var(--primitive-gold-600);
+  --accent-gold-active:   var(--primitive-gold-700);
+  --accent-gold-dim:      rgba(200, 155, 60, 0.12);
+  --accent-gold-dim-hover:rgba(200, 155, 60, 0.2);
+  --accent-hex:           var(--primitive-hex-500);
+  --accent-hex-bright:    var(--primitive-hex-400);
+  --accent-hex-deep:      var(--primitive-hex-500);
+  --accent-hex-glow:      rgba(10, 143, 168, 0.2);
+  --accent-hex-dim:       rgba(10, 143, 168, 0.1);
+  --accent-danger:        var(--primitive-red-500);
+  --accent-danger-hover:  var(--primitive-red-300);
+  --accent-success:       var(--primitive-green-500);
+
+  /* Tag text — deepened for light-background legibility */
+  --tag-gold-text:        var(--primitive-gold-700);
+  --tag-gold-border:      rgba(120, 90, 40, 0.35);
+
+  /* Interactive states */
+  --interactive-default:  var(--primitive-grey-300);
+  --interactive-hover:    var(--primitive-grey-400);
+  --interactive-active:   var(--primitive-grey-500);
+  --interactive-disabled: var(--primitive-grey-300);
+}
