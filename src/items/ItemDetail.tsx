@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Item } from '../item/types'
 
 interface Props {
@@ -8,9 +9,13 @@ interface Props {
 }
 
 export default function ItemDetail({ item, emptyMessage, mini }: Props) {
+  const [expanded, setExpanded] = useState(false)
+
   if (!item) {
     return <div className="item-detail-empty">{emptyMessage}</div>
   }
+
+  const collapsible = !mini && !!item.description
 
   return (
     <>
@@ -34,9 +39,14 @@ export default function ItemDetail({ item, emptyMessage, mini }: Props) {
       <div className="item-detail-body">
         {item.description && (
           <div
-            className="item-detail-description"
+            className={`item-detail-description${collapsible && !expanded ? ' collapsed' : ''}`}
             dangerouslySetInnerHTML={{ __html: item.description }}
           />
+        )}
+        {collapsible && (
+          <button className="item-detail-toggle" onClick={() => setExpanded(e => !e)}>
+            {expanded ? 'Show less ▲' : 'Show full details ▼'}
+          </button>
         )}
       </div>
 

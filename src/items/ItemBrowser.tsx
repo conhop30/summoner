@@ -2,7 +2,7 @@ import { useState, useMemo, type ReactNode } from 'react'
 import type { Item, ItemSyncStatus } from '../item/types'
 import {
   SUMMONERS_RIFT_MAP_ID, SORT_OPTIONS, CATEGORIES, categoryOf, dedupeByName,
-  sortValue, timeAgo, type SortKey, type SortDir, type Category,
+  compareItems, hasStatFor, timeAgo, type SortKey, type SortDir, type Category,
 } from '../item/itemFilters'
 import ItemDetail from './ItemDetail'
 import './ItemBrowser.css'
@@ -42,19 +42,35 @@ export default function ItemBrowser({
     if (category !== 'all') list = list.filter(i => categoryOf(i) === category)
     const q = search.trim().toLowerCase()
     if (q) list = list.filter(i => i.name.toLowerCase().includes(q))
+    list = list.filter(i => hasStatFor(i, sortKey))
 
-    return [...list].sort((a, b) => {
-      const av = sortValue(a, sortKey)
-      const bv = sortValue(b, sortKey)
-      const cmp = av < bv ? -1 : av > bv ? 1 : 0
-      return sortDir === 'asc' ? cmp : -cmp
-    })
+    return [...list].sort((a, b) => compareItems(a, b, sortKey, sortDir))
   }, [items, search, purchasableOnly, includeOtherModes, category, sortKey, sortDir])
 
   const detailItem = useMemo(
     () => visible.find(i => i.id === hoveredId) ?? visible[0] ?? null,
     [visible, hoveredId]
   )
+
+  // When browsing "All Items", split the already-sorted list into tier
+  // sections (Basic/Epic/Legendary/...) with headers so a stat sort doesn't
+  // read as "broken" once it runs out of items that actually have the stat —
+  // the boundary is now a section break instead of an unmarked cliff.
+  const sections = useMemo(() => {
+    if (category !== 'all') {
+      const label = CATEGORIES.find(c => c.key === category)?.label ?? ''
+      return [{ key: category, label, items: visible }]
+    }
+    const groups = new Map<Category, Item[]>()
+    for (const item of visible) {
+      const cat = categoryOf(item)
+      if (!groups.has(cat)) groups.set(cat, [])
+      groups.get(cat)!.push(item)
+    }
+    return CATEGORIES
+      .filter(c => c.key !== 'all' && groups.has(c.key))
+      .map(c => ({ key: c.key, label: c.label, items: groups.get(c.key)! }))
+  }, [visible, category])
 
   function selectSort(key: SortKey) {
     if (key === sortKey) {
@@ -148,42 +164,56 @@ export default function ItemBrowser({
             ))}
           </div>
 
-          <div className="items-grid" onMouseLeave={() => setHoveredId(null)}>
-            {visible.map(item => {
-              const count = equipped.get(item.id) ?? 0
-              return (
-                <div
-                  className={`item-tile${detailItem?.id === item.id ? ' active' : ''}${count > 0 ? ' equipped' : ''}`}
-                  key={item.id}
-                  onMouseEnter={() => setHoveredId(item.id)}
-                  onClick={() => onAddItem(item)}
-                  title="Click to add to build"
-                >
-                  <div className="item-tile-image-wrap">
-                    {item.image_url ? (
-                      <img className="item-tile-image" src={item.image_url} alt={item.name} loading="lazy" />
-                    ) : (
-                      <div className="item-tile-image-placeholder" />
-                    )}
-                    {item.gold_total != null && item.gold_total > 0 && (
-                      <span className="item-tile-gold">{item.gold_total}</span>
-                    )}
-                    {count > 0 && (
-                      <span className="item-tile-equipped-badge">{count > 1 ? `×${count}` : '✓'}</span>
-                    )}
+          <div className="items-grid-col" onMouseLeave={() => setHoveredId(null)}>
+            {sections.map(section => (
+              <div className="items-category-group" key={section.key}>
+                {category === 'all' && (
+                  <div className="items-category-header">
+                    <span className="items-category-header-label">{section.label}</span>
+                    <span className="items-category-header-count">{section.items.length}</span>
                   </div>
-                  <div className="item-tile-name">{item.name}</div>
+                )}
+                <div className="items-grid">
+                  {section.items.map(item => {
+                    const count = equipped.get(item.id) ?? 0
+                    return (
+                      <div
+                        className={`item-tile${detailItem?.id === item.id ? ' active' : ''}${count > 0 ? ' equipped' : ''}`}
+                        key={item.id}
+                        onMouseEnter={() => setHoveredId(item.id)}
+                        onClick={() => onAddItem(item)}
+                        title="Click to add to build"
+                      >
+                        <div className="item-tile-image-wrap">
+                          {item.image_url ? (
+                            <img className="item-tile-image" src={item.image_url} alt={item.name} loading="lazy" />
+                          ) : (
+                            <div className="item-tile-image-placeholder" />
+                          )}
+                          {item.gold_total != null && item.gold_total > 0 && (
+                            <span className="item-tile-gold">{item.gold_total}</span>
+                          )}
+                          {count > 0 && (
+                            <span className="item-tile-equipped-badge">{count > 1 ? `×${count}` : '✓'}</span>
+                          )}
+                        </div>
+                        <div className="item-tile-name">{item.name}</div>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
 
           <div className="items-sidebar">
+            <div className="items-sidebar-inventory">
+              {sidebarExtra}
+            </div>
+
             <div className="item-detail-panel">
               <ItemDetail item={detailItem} emptyMessage="Hover an item to see its details" />
             </div>
-
-            {sidebarExtra}
           </div>
         </div>
       )}

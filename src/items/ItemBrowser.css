@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   font-family: var(--font-sans);
+  container-type: inline-size;
 }
 
 .item-browser-sync-row {
@@ -181,12 +182,46 @@
   justify-content: center;
 }
 
+.items-grid-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.items-category-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.items-category-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.items-category-header-label {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.items-category-header-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-placeholder);
+}
+
 .items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   align-content: start;
   gap: var(--space-3);
-  flex: 1;
 }
 
 .item-tile {
@@ -267,29 +302,51 @@
 
 /* ── Detail panel — styled after the in-client item tooltip ── */
 
+/* Inventory (build + stat comparison) sits beside the spotlight panel
+   instead of stacked above it, so items, the inventory and the stat
+   changes it causes are all visible horizontally without scrolling —
+   but only once there's actually room for two ~300px columns. Driven by
+   a container query on .item-browser (not a fixed compact/non-compact
+   split) so the embedded editor view picks up the side-by-side layout
+   too as soon as the Story panel is collapsed and frees up width. */
 .items-sidebar {
-  width: 340px;
+  width: 270px;
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
   top: var(--space-5);
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: var(--space-4);
 }
 
-/* Fixed height so switching which item is hovered never changes this
-   panel's size — a variable-height panel here made the Build/Stat
-   Comparison panels below it visibly jump around while browsing. */
+@container (min-width: 760px) {
+  .items-sidebar {
+    width: 660px;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.items-sidebar-inventory {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 .item-detail-panel {
-  height: 320px;
+  flex: 1;
+  min-width: 0;
+  min-height: 240px;
   background: var(--bg-sidebar);
   border: 1px solid var(--border-strong);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  overflow: hidden;
 }
 
 .item-detail-empty {
@@ -312,9 +369,10 @@
 }
 
 .item-detail-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
 }
 
 .item-detail-image {
@@ -341,10 +399,35 @@
 .item-detail-gold-sell { color: var(--text-muted); }
 
 .item-detail-description {
+  align-self: stretch;
   font-size: var(--font-size-base);
   line-height: 1.7;
   color: var(--text-body);
 }
+
+/* Collapsed by default — lore/passive text can run long, and reserving
+   full height for it pushed the inventory + stat comparison panels far
+   down the page. Fades out under a mask instead of hard-cutting text. */
+.item-detail-description.collapsed {
+  max-height: 100px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+}
+
+.item-detail-toggle {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-accent-hex);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.item-detail-toggle:hover { color: var(--accent-hex-bright); }
 .item-detail-description mainText { display: block; }
 .item-detail-description stats { display: block; margin-bottom: var(--space-2); }
 .item-detail-description attention { color: var(--text-accent-gold); font-weight: 500; }
@@ -630,19 +713,27 @@
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
 }
 
+/* Embedded in the editor, the sidebar isn't inside a page-level scroll
+   container the way the standalone Items page is, so sticky positioning
+   doesn't make sense here — otherwise its width/direction is driven by
+   the same container query as the standalone page (see above), so
+   collapsing the Story panel and freeing up width is enough to get the
+   side-by-side layout here too. */
 .item-browser.compact .items-sidebar {
-  width: 270px;
   position: static;
 }
 
-/* Narrower sidebar in the editor's Stats tab: stack the slot grid above
-   the mini-spotlight instead of squeezing them side by side. */
-.item-browser.compact .build-inventory-row {
-  flex-direction: column;
-}
-.item-browser.compact .build-slots {
-  width: auto;
-}
-.item-browser.compact .build-mini-spotlight {
-  min-height: 72px;
+/* Below the row/column breakpoint, also stack the build slot grid above
+   the mini-spotlight instead of squeezing them side by side — applies
+   equally to the standalone page if its window is ever narrowed this far. */
+@container (max-width: 759.98px) {
+  .build-inventory-row {
+    flex-direction: column;
+  }
+  .build-slots {
+    width: auto;
+  }
+  .build-mini-spotlight {
+    min-height: 72px;
+  }
 }
