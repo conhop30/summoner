@@ -21,6 +21,17 @@ function getCompletionPct(champion: Champion): number {
   return Math.round(((storyPct + statsPct + abilitiesPct) / 3) * 100)
 }
 
+function MistStrands() {
+  return (
+    <span className="mist" aria-hidden="true">
+      <span className="mist-strand mist-strand-1" />
+      <span className="mist-strand mist-strand-2" />
+      <span className="mist-strand mist-strand-3" />
+      <span className="mist-strand mist-strand-4" />
+    </span>
+  )
+}
+
 interface Props {
   champion: Champion
   onView: () => void
@@ -97,11 +108,17 @@ export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggl
             </div>
           )}
         </div>
-      </div>
 
-      <div className="tile-footer">
-        <button className="tile-action-btn" onClick={onView}>View</button>
-        <button className="tile-action-btn" onClick={onEdit}>Edit</button>
+        <div className="tile-footer">
+          <button className="tile-action-btn" onClick={onView}>
+            <MistStrands />
+            <span className="tile-action-label">View</span>
+          </button>
+          <button className="tile-action-btn" onClick={onEdit}>
+            <MistStrands />
+            <span className="tile-action-label">Edit</span>
+          </button>
+        </div>
       </div>
     </div>
   )
