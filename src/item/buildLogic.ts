@@ -1,6 +1,7 @@
 import type { BuildEntry, NamedBuild } from '../champion/types';
 import { generateId } from '../champion/utils';
 import type { Item } from './types';
+import { allStatsFor, type ParsedStat } from './statParsing';
 
 export const MAX_BUILD_SLOTS = 6;
 export const MAX_BUILDS = 4;
@@ -62,8 +63,18 @@ export function buildGoldTotal(resolved: ResolvedBuildEntry[]): number {
   return resolved.reduce((sum, { entry, item }) => sum + (item.gold_total ?? 0) * entry.count, 0);
 }
 
-export function buildStatBonus(resolved: ResolvedBuildEntry[], ddragonKey: string): number {
-  return resolved.reduce((sum, { entry, item }) => sum + (item.stats[ddragonKey] ?? 0) * entry.count, 0);
+/** Every stat granted anywhere in the build, summed by label (see statParsing.ts
+ *  for why this pulls from both Data Dragon's structured stats and item text). */
+export function aggregateBuildStats(resolved: ResolvedBuildEntry[]): Map<string, ParsedStat> {
+  const totals = new Map<string, ParsedStat>();
+  for (const { entry, item } of resolved) {
+    for (const stat of allStatsFor(item)) {
+      const existing = totals.get(stat.label);
+      const value = (existing?.value ?? 0) + stat.value * entry.count;
+      totals.set(stat.label, { label: stat.label, value, isPercent: stat.isPercent });
+    }
+  }
+  return totals;
 }
 
 // ─── Multiple named builds per champion ─────────────────────────────────────

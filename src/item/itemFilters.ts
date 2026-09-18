@@ -1,4 +1,3 @@
-import type { BaseStats } from '../champion/types';
 import type { Item } from './types';
 
 export const SUMMONERS_RIFT_MAP_ID = '11';
@@ -34,6 +33,39 @@ export function sortValue(item: Item, key: SortKey): number | string {
   }
 }
 
+export const STAT_SORT_KEYS = new Set<SortKey>([
+  'health', 'armor', 'magic_resist', 'attack_damage', 'ability_power', 'attack_speed',
+]);
+
+// When sorting by a stat modifier, an item that doesn't have that stat at
+// all isn't a meaningfully "sorted" result — it's noise. Cost/Name sorts
+// aren't stat modifiers, so nothing gets excluded there.
+export function hasStatFor(item: Item, key: SortKey): boolean {
+  if (!STAT_SORT_KEYS.has(key)) return true;
+  return (sortValue(item, key) as number) !== 0;
+}
+
+// Cost is always the dominant ordering — a selected stat modifier only
+// breaks ties between items that cost the same (or close to it). Picking
+// "Magic Resist" doesn't re-rank the whole catalog by MR; it nudges items
+// of equal price so the ones with more of the stat come first among them.
+export function compareItems(a: Item, b: Item, key: SortKey, dir: SortDir): number {
+  if (STAT_SORT_KEYS.has(key)) {
+    const costA = a.gold_total ?? 0;
+    const costB = b.gold_total ?? 0;
+    if (costA !== costB) return costA - costB;
+    const av = sortValue(a, key) as number;
+    const bv = sortValue(b, key) as number;
+    const cmp = av - bv;
+    return dir === 'asc' ? cmp : -cmp;
+  }
+
+  const av = sortValue(a, key);
+  const bv = sortValue(b, key);
+  const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+  return dir === 'asc' ? cmp : -cmp;
+}
+
 export type Category = 'all' | 'basic' | 'epic' | 'legendary' | 'boots' | 'consumables' | 'trinkets';
 
 export const CATEGORIES: { key: Category; label: string }[] = [
@@ -52,6 +84,15 @@ export function categoryOf(item: Item): Category {
   if (item.tags.includes('Boots')) return 'boots';
   if (item.depth === 3) return 'legendary';
   if (item.depth === 2) return 'epic';
+  // Some ids Data Dragon reissues after an item rework (e.g. a rebalanced
+  // Gargoyle Stoneplate) come back with no `depth` at all, which would
+  // otherwise silently dump a 2500g item into "Basic". Cost is a reliable
+  // enough stand-in for tier in that specific gap.
+  if (item.depth == null) {
+    const cost = item.gold_total ?? 0;
+    if (cost >= 2000) return 'legendary';
+    if (cost >= 800) return 'epic';
+  }
   return 'basic';
 }
 
@@ -79,19 +120,3 @@ export function timeAgo(iso: string): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-export interface BuildStatDef {
-  key: string;
-  label: string;
-  ddragonKey: string;
-  champKey?: keyof BaseStats;
-  isPercent?: boolean;
-}
-
-export const BUILD_STATS: BuildStatDef[] = [
-  { key: 'health',         label: 'Health',        ddragonKey: 'FlatHPPoolMod',         champKey: 'health' },
-  { key: 'armor',          label: 'Armor',         ddragonKey: 'FlatArmorMod',          champKey: 'armor' },
-  { key: 'magic_resist',   label: 'Magic Resist',  ddragonKey: 'FlatSpellBlockMod',     champKey: 'magic_resistance' },
-  { key: 'attack_damage',  label: 'Attack Damage', ddragonKey: 'FlatPhysicalDamageMod', champKey: 'attack_damage' },
-  { key: 'ability_power',  label: 'Ability Power',  ddragonKey: 'FlatMagicDamageMod' },
-  { key: 'attack_speed',   label: 'Attack Speed',  ddragonKey: 'PercentAttackSpeedMod', champKey: 'attack_speed', isPercent: true },
-];

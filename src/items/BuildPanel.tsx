@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react'
-import type { NamedBuild, Champion } from '../champion/types'
+import type { NamedBuild, Champion, BaseStats } from '../champion/types'
 import type { Item } from '../item/types'
-import { MAX_BUILD_SLOTS, resolveBuild, buildGoldTotal, buildStatBonus } from '../item/buildLogic'
-import { BUILD_STATS } from '../item/itemFilters'
+import { MAX_BUILD_SLOTS, resolveBuild, buildGoldTotal, aggregateBuildStats } from '../item/buildLogic'
+import { CHAMP_KEY_BY_LABEL, compareStatLabels } from '../item/statParsing'
 import BuildTabs from './BuildTabs'
 import ItemDetail from './ItemDetail'
 
@@ -33,6 +33,7 @@ export default function BuildPanel({
   const resolved = resolveBuild(activeBuild.items, catalog)
   const gold = buildGoldTotal(resolved)
   const spotlightItem = resolved[hoveredIndex ?? -1]?.item ?? resolved[selectedIndex ?? -1]?.item ?? null
+  const statTotals = [...aggregateBuildStats(resolved).values()].sort((a, b) => compareStatLabels(a.label, b.label))
 
   function selectBuild(id: string) {
     onSelectBuild(id)
@@ -101,20 +102,21 @@ export default function BuildPanel({
         <div className="build-panel-title">Stat Comparison</div>
         {!champion ? (
           <div className="stat-compare-empty">Pick a champion to compare</div>
+        ) : statTotals.length === 0 ? (
+          <div className="stat-compare-empty">Add items to see their effect on stats</div>
         ) : (
           <div className="stat-compare-table">
-            {BUILD_STATS.map(s => {
-              const base = s.champKey ? (champion.base_stats[s.champKey] as number | undefined) ?? 0 : 0
-              const bonus = buildStatBonus(resolved, s.ddragonKey)
+            {statTotals.map(s => {
+              const champKey = CHAMP_KEY_BY_LABEL[s.label] as keyof BaseStats | undefined
+              const base = champKey ? (champion.base_stats[champKey] as number | undefined) ?? 0 : undefined
+              const bonusText = s.isPercent
+                ? `+${Math.round(s.value * 100)}%`
+                : base != null ? `→ ${Math.round(base + s.value)}` : `+${Math.round(s.value)}`
               return (
-                <div className="stat-compare-row" key={s.key}>
+                <div className="stat-compare-row" key={s.label}>
                   <span className="stat-compare-label">{s.label}</span>
-                  <span className="stat-compare-base">{Math.round(base)}</span>
-                  <span className={`stat-compare-bonus${bonus ? ' has-bonus' : ''}`}>
-                    {bonus
-                      ? (s.isPercent ? `+${Math.round(bonus * 100)}%` : `→ ${Math.round(base + bonus)}`)
-                      : '—'}
-                  </span>
+                  <span className="stat-compare-base">{base != null ? Math.round(base) : '—'}</span>
+                  <span className="stat-compare-bonus has-bonus">{bonusText}</span>
                 </div>
               )
             })}
