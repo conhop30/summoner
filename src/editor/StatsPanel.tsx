@@ -1,4 +1,5 @@
 import type { Champion, BaseStats } from '../champion/types'
+import { BASE_STATS, HIDDEN_STATS, type StatFieldDef } from './statFields'
 import ItemLoadoutPanel from './ItemLoadoutPanel'
 import './StatsPanel.css'
 
@@ -7,11 +8,7 @@ interface Props {
   onChange: (c: Champion) => void
 }
 
-interface StatFieldProps {
-  label: string
-  icon: string
-  valueKey: keyof BaseStats
-  growthKey?: keyof BaseStats
+interface StatFieldProps extends StatFieldDef {
   champion: Champion
   onChange: (c: Champion) => void
 }
@@ -41,22 +38,6 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
     </div>
   )
 }
-
-const BASE_STATS: Omit<StatFieldProps, 'champion' | 'onChange'>[] = [
-  { label: 'Health',         icon: '♥', valueKey: 'health',           growthKey: 'health_growth' },
-  { label: 'Health Regen',   icon: '✚', valueKey: 'health_regen',      growthKey: 'health_regen_growth' },
-  { label: 'Resource',       icon: '◈', valueKey: 'resource',          growthKey: 'resource_growth' },
-  { label: 'Resource Regen', icon: '◇', valueKey: 'resource_regen',    growthKey: 'resource_regen_growth' },
-  { label: 'Attack Damage',  icon: '⚔', valueKey: 'attack_damage',     growthKey: 'attack_damage_growth' },
-  { label: 'Attack Speed',   icon: '⚡', valueKey: 'attack_speed',      growthKey: 'attack_speed_growth' },
-  { label: 'Armor',          icon: '🛡', valueKey: 'armor',             growthKey: 'armor_growth' },
-  { label: 'Magic Resist',   icon: '✦', valueKey: 'magic_resistance',  growthKey: 'magic_resistance_growth' },
-  { label: 'Move Speed',     icon: '➢', valueKey: 'movement_speed',    growthKey: 'movement_speed_growth' },
-]
-
-const HIDDEN_STATS: Omit<StatFieldProps, 'champion' | 'onChange'>[] = [
-  { label: 'Crit Multiplier', icon: '◆', valueKey: 'crit_damage_multiplier' },
-]
 
 export default function StatsPanel({ champion, onChange }: Props) {
   const stats = champion.base_stats

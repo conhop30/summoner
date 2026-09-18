@@ -1,13 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { Champion, AbilitySlot } from '../champion/types'
 import { defaultAbilities, defaultBaseStats } from '../champion/utils'
 import { defaultBuilds } from '../item/buildLogic'
 import { SCHEMA_VERSION } from '../db/schema'
 import StoryPanel from './StoryPanel'
 import StatsPanel from './StatsPanel'
+import StatBlock from './StatBlock'
 import AbilitiesSection from './AbilitiesSection'
 import './EditorPage.css'
+
+const LAYOUT_TRANSITION = { duration: 0.45, ease: [0.4, 0, 0.2, 1] as const }
+const CONTENT_TRANSITION = { duration: 0.28, ease: [0.4, 0, 0.2, 1] as const }
 
 export type EditorMode = 'create' | 'edit'
 type RightTab = 'stats' | 'abilities'
@@ -98,6 +103,7 @@ export default function EditorPage({ mode }: Props) {
   const navigate = useNavigate()
   const [champion, setChampion] = useState<Champion | null>(null)
   const [rightTab, setRightTab] = useState<RightTab>('stats')
+  const [storyOpen, setStoryOpen] = useState(true)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const isNew = useRef(mode === 'create')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -197,8 +203,18 @@ export default function EditorPage({ mode }: Props) {
       </div>
 
       <div className="editor-body">
-        <div className="editor-left">
-          <StoryPanel champion={champion} onChange={handleChange} />
+        <div className={`editor-left${storyOpen ? '' : ' collapsed'}`}>
+          <button
+            className="editor-left-toggle"
+            onClick={() => setStoryOpen(o => !o)}
+            title={storyOpen ? 'Collapse story panel' : 'Expand story panel'}
+          >
+            {storyOpen ? '‹' : '›'}
+          </button>
+          {!storyOpen && <div className="editor-left-collapsed-label">Story</div>}
+          <div className="editor-left-inner">
+            <StoryPanel champion={champion} onChange={handleChange} />
+          </div>
         </div>
 
         <div className="editor-right">
@@ -208,21 +224,64 @@ export default function EditorPage({ mode }: Props) {
               onClick={() => setRightTab('stats')}
             >
               Stats
+              {rightTab === 'stats' && (
+                <motion.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
+              )}
             </button>
             <button
               className={`editor-right-tab${rightTab === 'abilities' ? ' active' : ''}`}
               onClick={() => setRightTab('abilities')}
             >
               Abilities
+              {rightTab === 'abilities' && (
+                <motion.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
+              )}
             </button>
           </div>
           <div className="editor-right-content">
-            {rightTab === 'stats' && (
-              <StatsPanel champion={champion} onChange={handleChange} />
-            )}
-            {rightTab === 'abilities' && (
-              <AbilitiesSection champion={champion} onChange={handleChange} />
-            )}
+            <div className={`stat-block-stage${rightTab === 'stats' ? ' full' : ' compact'}`}>
+              <AnimatePresence initial={false} mode="popLayout">
+                {rightTab === 'stats' ? (
+                  <motion.div
+                    key="stats-full"
+                    className="stat-block-shell"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={CONTENT_TRANSITION}
+                  >
+                    <StatsPanel champion={champion} onChange={handleChange} />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="stats-compact"
+                    className="stat-block-shell"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={CONTENT_TRANSITION}
+                    onClick={() => setRightTab('stats')}
+                  >
+                    <StatBlock champion={champion} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <AnimatePresence mode="wait" initial={false}>
+              {rightTab === 'abilities' && (
+                <motion.div
+                  key="abilities"
+                  className="abilities-wrap"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={CONTENT_TRANSITION}
+                >
+                  <AbilitiesSection champion={champion} onChange={handleChange} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
