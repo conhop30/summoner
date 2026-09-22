@@ -10,11 +10,20 @@
 }
 
 .custom-title-bar-drag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding-left: var(--space-3);
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.custom-title-bar-logo {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }
 
 .custom-title-bar-controls {

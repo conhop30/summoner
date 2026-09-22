@@ -51,7 +51,7 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: path.join(process.env.VITE_PUBLIC, 'summoner-logo.png'),
     frame: !settings.window_frameless,
     fullscreen: settings.window_fullscreen,
     webPreferences: {

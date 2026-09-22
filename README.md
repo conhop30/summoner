@@ -40,6 +40,7 @@ A few problems came up during development that were non-obvious enough to be wor
 - **Item slots were keyed by item identity instead of position.** The build-slot grid used each item's id as its React list key. Since the same item can legitimately occupy more than one slot (stacking), this broke React's reconciliation — slots would visually swap or fail to update on removal. The fix was keying by slot *position* instead, which is the correct rule for any positional inventory-style UI (grid slots, hotbars, etc.), regardless of what currently occupies a given slot.
 - **Canvas-drawn text can't follow the app's live theme.** The downloadable poster is deliberately always rendered dark, independent of whichever theme (dark/light/system) the app is currently in, because canvas 2D drawing can't reactively read CSS custom properties. Its text colors are therefore separate, explicitly-mirrored constants rather than a live read of the design tokens — a deliberate tradeoff that trades a small amount of duplication for a poster that always looks the same regardless of user settings.
 - **Accessibility pass on text contrast.** An early pass at the dark/light color tokens left several text tiers (muted labels, secondary text) sitting right at the WCAG AA floor (~4.5:1), which read as legible in isolated review but felt strained during real use. Retuned every text-color tier in both themes to clear ~7:1 (AAA) against both the base and elevated-surface backgrounds, fixing it once at the design-token layer rather than patching individual components.
+- **The window icon and title were never actually wired up.** Both looked fine in the source but were dead code: `BrowserWindow`'s `icon` option pointed at an `.svg`, which Electron's native icon loader silently can't render, and `index.html`'s `<title>` was still the literal Vite template default — so the real OS taskbar icon and window title never matched the custom in-app title bar that *said* "Summoner". Fixed by pointing both at a real `.png`. Also had to add `base: './'` to the Vite config, for the same reason the router had to become hash-based: the packaged app loads over `file://` with no server, so root-absolute asset URLs 404 once bundled, even though they resolve fine in dev.
 
 ## Project layout
 
@@ -62,11 +63,18 @@ src/router/       createHashRouter route table
 - Multi-build theorycrafting (tabbed builds, stat comparison) on both the champion editor and the standalone item browser.
 - Redesigned showcase/"View" page: icon-row + spotlight ability display, splash-art-forward layout, downloadable full-kit poster.
 - App-wide text contrast and section-header sizing pass.
+- Editor UX: Framer Motion tab transitions, a collapsible Story panel, item-sort/categorization overhaul, full item stat parsing (structured + description text), a redesigned item browser (collapsible descriptions, responsive side-by-side layout), and a Hextech-mist hover effect on gallery tiles.
+- Real window/taskbar icon, app icon, and title — previously silently broken (see Engineering challenges).
 
 **Known issues**
 - A couple of stray test build tabs from development were left on a sample champion record and should be cleaned up via the UI.
 
 **Not yet started / open ideas**
+- Ability kit: a generic "+"-appended block system on any key (Q/W/E/R/passive) — one mechanism covering appended passives, full alternate abilities under the same key (Jayce/Elise/Rell-style stance or form swaps), and condition-unlocked recasts (Lee Sin-style), additive to the existing single-ability-per-slot data.
+- Ability kit: effects should accept per-rank scaling values (traditionally 5 ranks, adjustable), with a suggested-value auto-fill once the first two ranks are entered. AP/AD ratios (e.g. "1% per 100 AP") get their own per-rank values too, not a single flat number.
+- Item shop: smaller item icons so 8–10 fit horizontally while the editor's Story panel is open (5–6 is the floor if smaller hurts readability).
+- Suggested base/growth stats by class or lane tag: requires a new live Data Dragon champion sync (mirroring the existing item sync) to compute per-class averages and offer real champions as one-click presets. Surfaced as a hover pop-up with an accept action, not a permanent panel.
+- View page: styling pass for visual consistency with the League of Legends look (reference: the official champion page layout) — ability preview colors and geometry are currently misaligned.
 - Ability icon uploads (kit currently displays slot letters rather than custom icons).
 - Roadmap items get added here as new feature work is planned — keep this section current rather than letting it drift from what's actually built.
 

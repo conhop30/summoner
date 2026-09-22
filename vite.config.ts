@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Packaged build is loaded via `win.loadFile()` over `file://` with no web
+  // server behind it, so root-absolute asset URLs (the Vite default) 404 —
+  // same root cause as the hash-router fix. Keep all built asset references
+  // relative to index.html's own location.
+  base: './',
   plugins: [
     react(),
     electron({

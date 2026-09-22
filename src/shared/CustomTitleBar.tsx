@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import summonerLogo from '../assets/summoner-logo.png'
 import './CustomTitleBar.css'
 
 // Electron's `frame` option can only be set at window-creation time, so this
@@ -20,7 +21,10 @@ export default function CustomTitleBar() {
 
   return (
     <div className="custom-title-bar">
-      <div className="custom-title-bar-drag">Summoner</div>
+      <div className="custom-title-bar-drag">
+        <img className="custom-title-bar-logo" src={summonerLogo} alt="" />
+        Summoner
+      </div>
       <div className="custom-title-bar-controls">
         <button onClick={() => window.summoner.windowControls.minimize()} title="Minimize">─</button>
         <button onClick={() => window.summoner.windowControls.toggleMaximize()} title="Maximize / restore">☐</button>
