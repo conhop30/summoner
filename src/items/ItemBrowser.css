@@ -710,7 +710,7 @@
 }
 
 .item-browser.compact .items-grid {
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
 }
 
 /* Embedded in the editor, the sidebar isn't inside a page-level scroll
