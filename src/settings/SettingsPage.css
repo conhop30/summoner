@@ -196,3 +196,5 @@
   cursor: pointer;
 }
 .music-track-remove:hover { color: var(--text-accent-gold); }
+
+.music-master-toggle { font-weight: 500; margin-bottom: var(--space-1); }

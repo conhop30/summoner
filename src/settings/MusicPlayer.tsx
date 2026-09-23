@@ -23,7 +23,8 @@ export default function MusicPlayer() {
     }
   }, [settings.music_enabled, settings.music_volume, loaded, playable, current?.src])
 
-  if (!current) return null
+  // Off means off: no element at all, so nothing is loaded or decoded in the background.
+  if (!settings.music_enabled || !current) return null
 
   // Keyed by src so choosing another song swaps the element cleanly.
   return (

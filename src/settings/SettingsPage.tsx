@@ -73,63 +73,70 @@ export default function SettingsPage() {
 
         <section className="settings-section">
           <div className="settings-section-title">Music</div>
-          <div className="settings-section-desc">
-            Background music while you work. Pick a song to loop, or add your own — added files are
-            copied into Summoner, so they keep working if you move the originals.
-          </div>
-          <div className="music-track-list" role="radiogroup" aria-label="Background music track">
-            {tracks.length === 0 && <div className="music-track-empty">No songs yet. Add one below.</div>}
-            {tracks.map(t => {
-              const isBuiltIn = builtInIds.has(t.id)
-              const selected = current?.id === t.id
-              return (
-                <div key={t.id} className={`music-track${selected ? ' selected' : ''}`}>
-                  <button
-                    className="music-track-pick"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => update({ music_track: t.id })}
-                  >
-                    <span className="music-track-name">{t.name}</span>
-                    <span className="music-track-tag">{isBuiltIn ? 'Built-in' : 'Yours'}</span>
-                  </button>
-                  {!isBuiltIn && (
-                    <button
-                      className="music-track-remove"
-                      title="Remove this song"
-                      onClick={async () => apply(await window.summoner.music.removeCustom(t.id))}
-                    >×</button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          <button
-            className="settings-secondary-btn"
-            onClick={async () => apply(await window.summoner.music.addCustom())}
-          >
-            Add music…
-          </button>
-          <label className="settings-toggle-row">
+          <label className="settings-toggle-row music-master-toggle">
             <input
               type="checkbox"
               checked={settings.music_enabled}
               onChange={e => update({ music_enabled: e.target.checked })}
             />
-            Enable music
+            Play background music
           </label>
-          <label className="settings-slider-row">
-            <span>Volume</span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={settings.music_volume}
-              onChange={e => update({ music_volume: parseFloat(e.target.value) })}
-            />
-            <span className="settings-slider-value">{Math.round(settings.music_volume * 100)}%</span>
-          </label>
+          {!settings.music_enabled && (
+            <div className="settings-section-desc">Music is off. Turn it on to pick a song or add your own.</div>
+          )}
+          {settings.music_enabled && (
+            <>
+              <div className="settings-section-desc">
+                Pick a song to loop, or add your own — added files are copied into Summoner, so they keep
+                working if you move the originals.
+              </div>
+              <div className="music-track-list" role="radiogroup" aria-label="Background music track">
+                {tracks.length === 0 && <div className="music-track-empty">No songs yet. Add one below.</div>}
+                {tracks.map(t => {
+                  const isBuiltIn = builtInIds.has(t.id)
+                  const selected = current?.id === t.id
+                  return (
+                    <div key={t.id} className={`music-track${selected ? ' selected' : ''}`}>
+                      <button
+                        className="music-track-pick"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => update({ music_track: t.id })}
+                      >
+                        <span className="music-track-name">{t.name}</span>
+                        <span className="music-track-tag">{isBuiltIn ? 'Built-in' : 'Yours'}</span>
+                      </button>
+                      {!isBuiltIn && (
+                        <button
+                          className="music-track-remove"
+                          title="Remove this song"
+                          onClick={async () => apply(await window.summoner.music.removeCustom(t.id))}
+                        >×</button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <button
+                className="settings-secondary-btn"
+                onClick={async () => apply(await window.summoner.music.addCustom())}
+              >
+                Add music…
+              </button>
+              <label className="settings-slider-row">
+                <span>Volume</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={settings.music_volume}
+                  onChange={e => update({ music_volume: parseFloat(e.target.value) })}
+                />
+                <span className="settings-slider-value">{Math.round(settings.music_volume * 100)}%</span>
+              </label>
+            </>
+          )}
         </section>
 
         <section className="settings-section">

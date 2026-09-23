@@ -4,7 +4,7 @@ A desktop application for designing original League of Legends-style champion co
 
 ## Download
 
-Windows 10/11 installer: [Summoner-Windows-0.1.0-Setup.exe](https://github.com/conhop30/summoner/releases/latest) (see the [project page](https://conhop30.github.io/projects/summoner/) for screenshots). The installer isn't code-signed, so SmartScreen may ask you to choose "More info", then "Run anyway".
+Windows 10/11 installer: [Summoner-Windows-0.2.0-Setup.exe](https://github.com/conhop30/summoner/releases/latest) (see the [project page](https://conhop30.github.io/projects/summoner/) for screenshots). The installer isn't code-signed, so SmartScreen may ask you to choose "More info", then "Run anyway".
 
 ## Overview
 
@@ -77,7 +77,7 @@ src/router/       createHashRouter route table
 - Item shop: smaller icons in the compact item browser (embedded in the editor) so 8 fit horizontally while the Story panel is open, up from 5.
 - Ability icon uploads: each key (P/Q/W/E/R) can take a custom icon, stored the same way as splash art (copied into the user-data folder, referenced by an `app-asset://` URL on the record). It replaces the slot letter in the editor's key bar and the View page's icon row, and is drawn into the downloadable poster next to each ability.
 - In-app updates: on launch the installed app checks GitHub Releases for a newer version (via electron-updater) and shows a non-blocking banner with Update now / Later. Nothing downloads or restarts until the user clicks; the download is checksum-verified, and a Settings section shows the version and a manual Check for updates. Silent failures (offline, no manifest) never nag.
-- Background music: a selectable track list in Settings — the League client songs `LoL Classic Login` and `Client In Queue` ship as built-ins (any mp3 dropped in `public/audio/` is picked up automatically), and users can add their own audio files, which are copied into the app data folder and can be removed again. The original single-file player pointed at a path that could never resolve in the installed app, so music had never worked outside dev. The bundled songs are Riot's music, included as fan-project content.
+- Background music: a selectable track list in Settings — the League client songs `LoL Classic Login` and `Client In Queue` ship as built-ins (any mp3 dropped in `public/audio/` is picked up automatically), and users can add their own audio files, which are copied into the app data folder and can be removed again. A master toggle (off by default) turns music off entirely — no audio is even loaded while it is off. The original single-file player pointed at a path that could never resolve in the installed app, so music had never worked outside dev. The bundled songs are Riot's music, included as fan-project content.
 
 **Known issues**
 - A couple of stray test build tabs from development were left on a sample champion record and should be cleaned up via the UI.
