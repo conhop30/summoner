@@ -23,6 +23,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, 'public')
   : RENDERER_DIST
 
+import { initUpdater } from './updater'
 import { getDb } from '../src/db/connection'
 import {
   createChampion,
@@ -243,5 +244,6 @@ app.whenReady().then(() => {
     return net.fetch('file://' + decodeURIComponent(url))
   })
   registerIpcHandlers()
+  initUpdater()
   createWindow()
 })

@@ -3,8 +3,22 @@ import type { Champion, Identity, BaseStats, Abilities, NamedBuild } from '../sr
 import type { Item, ItemSyncResult, ItemSyncStatus } from '../src/item/types'
 import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../src/championCatalog/types'
 import type { AppSettings } from '../src/settings/types'
+import type { UpdateState } from '../src/updater/types'
 
 contextBridge.exposeInMainWorld('summoner', {
+  updater: {
+    getVersion: (): Promise<string> => ipcRenderer.invoke('updater:getVersion'),
+    getState: (): Promise<UpdateState> => ipcRenderer.invoke('updater:getState'),
+    check: (): Promise<void> => ipcRenderer.invoke('updater:check'),
+    download: (): Promise<void> => ipcRenderer.invoke('updater:download'),
+    install: (): Promise<void> => ipcRenderer.invoke('updater:install'),
+    onState: (cb: (state: UpdateState) => void): (() => void) => {
+      const handler = (_e: unknown, state: UpdateState) => cb(state)
+      ipcRenderer.on('updater:state', handler)
+      return () => ipcRenderer.removeListener('updater:state', handler)
+    },
+  },
+
   champion: {
     create: (
       name: string,

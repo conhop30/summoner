@@ -2,10 +2,20 @@ import type { Champion, Identity, BaseStats, Abilities, NamedBuild } from '../ch
 import type { Item, ItemSyncResult, ItemSyncStatus } from '../item/types'
 import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../championCatalog/types'
 import type { AppSettings } from '../settings/types'
+import type { UpdateState } from '../updater/types'
 
 declare global {
   interface Window {
     summoner: {
+      updater: {
+        getVersion: () => Promise<string>
+        getState: () => Promise<UpdateState>
+        check: () => Promise<void>
+        download: () => Promise<void>
+        install: () => Promise<void>
+        onState: (cb: (state: UpdateState) => void) => () => void
+      }
+
       champion: {
         create: (
           name: string,

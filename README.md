@@ -75,6 +75,7 @@ src/router/       createHashRouter route table
 - Suggested base/growth stats: a new live Data Dragon champion sync (mirroring the item sync) populates a reference roster, and a hover pop-up off the Base Stats panel offers per-class-tag averages and one-click real-champion presets (e.g. Fighter → Darius), each with an Accept action. Lane-based suggestions are intentionally not included — Data Dragon has no real per-champion lane field to derive them from.
 - Item shop: smaller icons in the compact item browser (embedded in the editor) so 8 fit horizontally while the Story panel is open, up from 5.
 - Ability icon uploads: each key (P/Q/W/E/R) can take a custom icon, stored the same way as splash art (copied into the user-data folder, referenced by an `app-asset://` URL on the record). It replaces the slot letter in the editor's key bar and the View page's icon row, and is drawn into the downloadable poster next to each ability.
+- In-app updates: on launch the installed app checks GitHub Releases for a newer version (via electron-updater) and shows a non-blocking banner with Update now / Later. Nothing downloads or restarts until the user clicks; the download is checksum-verified, and a Settings section shows the version and a manual Check for updates. Silent failures (offline, no manifest) never nag.
 
 **Known issues**
 - A couple of stray test build tabs from development were left on a sample champion record and should be cleaned up via the UI.
@@ -95,3 +96,13 @@ This starts the Vite dev server and launches the Electron window with hot reload
 npm run build   # typecheck, build, and package with electron-builder
 npm run lint
 ```
+
+### Releasing a new version
+
+Bump `version` in `package.json`, then publish with a GitHub token (the release tag is created as `v<version>`):
+
+```bash
+GH_TOKEN=$(gh auth token) npm run release
+```
+
+This uploads the installer, its blockmap, and `latest.yml` to the release. `latest.yml` is what installed copies read to discover the update, so a release without it is invisible to the updater. Builds before the first updater-enabled version can't self-update and need one manual install.

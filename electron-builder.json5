@@ -4,6 +4,11 @@
   "appId": "com.summoner.championcreator",
   "asar": true,
   "productName": "Summoner",
+  // Where the installed app looks for updates (electron-updater reads latest.yml from
+  // the newest release), and where `npm run release` uploads to.
+  "publish": [
+    { "provider": "github", "owner": "conhop30", "repo": "summoner", "releaseType": "release" }
+  ],
   "directories": {
     "output": "release/${version}"
   },

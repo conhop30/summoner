@@ -1,0 +1,58 @@
+.update-banner {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  z-index: 1000;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent-gold);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.update-banner-title {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.update-banner-sub {
+  margin-top: 2px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.update-banner-actions { display: flex; gap: var(--space-2); }
+
+.update-btn {
+  padding: 5px var(--space-3);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.update-btn:hover { border-color: var(--border-strong); color: var(--text-body); }
+.update-btn.primary { border-color: var(--accent-gold); color: var(--text-accent-gold); }
+.update-btn.primary:hover { background: var(--accent-gold-dim); }
+
+.update-progress {
+  height: 4px;
+  margin-top: var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+}
+.update-progress-fill {
+  height: 100%;
+  background: var(--accent-gold);
+  transition: width var(--transition-fast);
+}

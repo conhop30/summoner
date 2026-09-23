@@ -139,3 +139,5 @@
   font-size: var(--font-size-base);
   color: var(--text-danger);
 }
+
+.settings-secondary-btn:disabled { opacity: 0.5; cursor: default; }

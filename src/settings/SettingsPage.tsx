@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettings } from './useSettings'
+import { useUpdater } from '../updater/useUpdater'
 import type { ThemeMode } from './types'
 import './SettingsPage.css'
 
@@ -15,6 +16,18 @@ export default function SettingsPage() {
   const { settings, update } = useSettings()
   const [dataStatus, setDataStatus] = useState<string | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
+  const { state: updateState, currentVersion } = useUpdater()
+  const updateBusy = ['checking', 'downloading', 'downloaded'].includes(updateState.status)
+  const updateMessage = {
+    disabled: 'Updates are only available in the installed app, not when running from source.',
+    'not-available': "You're on the latest version.",
+    available: `Version ${updateState.version} is available.`,
+    downloading: `Downloading ${updateState.version}… ${updateState.percent ?? 0}%`,
+    downloaded: `Version ${updateState.version} is downloaded and ready to install.`,
+    error: updateState.message,
+    idle: '',
+    checking: '',
+  }[updateState.status]
 
   async function handleExport() {
     setDataStatus(null)
@@ -122,6 +135,33 @@ export default function SettingsPage() {
           </div>
           {dataStatus && <div className="settings-data-status">{dataStatus}</div>}
           {dataError && <div className="settings-data-error">{dataError}</div>}
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section-title">Updates</div>
+          <div className="settings-section-desc">
+            Summoner checks for a newer version each time it launches. Version {currentVersion || '…'}.
+          </div>
+          <div className="settings-btn-row">
+            <button
+              className="settings-secondary-btn"
+              onClick={() => window.summoner.updater.check()}
+              disabled={updateBusy || updateState.status === 'disabled'}
+            >
+              {updateState.status === 'checking' ? 'Checking…' : 'Check for updates'}
+            </button>
+            {updateState.status === 'available' && (
+              <button className="settings-secondary-btn" onClick={() => window.summoner.updater.download()}>
+                Download {updateState.version}
+              </button>
+            )}
+            {updateState.status === 'downloaded' && (
+              <button className="settings-secondary-btn" onClick={() => window.summoner.updater.install()}>
+                Restart to install {updateState.version}
+              </button>
+            )}
+          </div>
+          {updateMessage && <div className={updateState.status === 'error' ? 'settings-data-error' : 'settings-data-status'}>{updateMessage}</div>}
         </section>
       </div>
     </div>
