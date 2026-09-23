@@ -65,17 +65,17 @@ src/router/       createHashRouter route table
 - App-wide text contrast and section-header sizing pass.
 - Editor UX: Framer Motion tab transitions, a collapsible Story panel, item-sort/categorization overhaul, full item stat parsing (structured + description text), a redesigned item browser (collapsible descriptions, responsive side-by-side layout), and a Hextech-mist hover effect on gallery tiles.
 - Real window/taskbar icon, app icon, and title — previously silently broken (see Engineering challenges).
+- View page: ability icons and colors now follow the app's standardized gold/blue Hextech tokens (selected = gold, filled = blue) instead of a per-key rainbow, with square icon geometry and name captions matching the official champion-page reference.
+- Ability kit: effects now support per-rank base values and per-rank AP/AD ratios in the editor, with a suggested-scaling-step auto-fill once the first two ranks are entered.
+- Ability kit: a generic "+"-appended block system on any key (Q/W/E/R/passive) — one mechanism covering appended passives, full alternate ability bodies under the same key (Jayce/Elise/Rell-style stance or form swaps), and condition-unlocked recasts (Lee Sin-style), additive to the existing single-ability-per-slot data.
+- Suggested base/growth stats: a new live Data Dragon champion sync (mirroring the item sync) populates a reference roster, and a hover pop-up off the Base Stats panel offers per-class-tag averages and one-click real-champion presets (e.g. Fighter → Darius), each with an Accept action. Lane-based suggestions are intentionally not included — Data Dragon has no real per-champion lane field to derive them from.
+- Item shop: smaller icons in the compact item browser (embedded in the editor) so 8 fit horizontally while the Story panel is open, up from 5.
+- Ability icon uploads: each key (P/Q/W/E/R) can take a custom icon, stored the same way as splash art (copied into the user-data folder, referenced by an `app-asset://` URL on the record). It replaces the slot letter in the editor's key bar and the View page's icon row, and is drawn into the downloadable poster next to each ability.
 
 **Known issues**
 - A couple of stray test build tabs from development were left on a sample champion record and should be cleaned up via the UI.
 
 **Not yet started / open ideas**
-- Ability kit: a generic "+"-appended block system on any key (Q/W/E/R/passive) — one mechanism covering appended passives, full alternate abilities under the same key (Jayce/Elise/Rell-style stance or form swaps), and condition-unlocked recasts (Lee Sin-style), additive to the existing single-ability-per-slot data.
-- Ability kit: effects should accept per-rank scaling values (traditionally 5 ranks, adjustable), with a suggested-value auto-fill once the first two ranks are entered. AP/AD ratios (e.g. "1% per 100 AP") get their own per-rank values too, not a single flat number.
-- Item shop: smaller item icons so 8–10 fit horizontally while the editor's Story panel is open (5–6 is the floor if smaller hurts readability).
-- Suggested base/growth stats by class or lane tag: requires a new live Data Dragon champion sync (mirroring the existing item sync) to compute per-class averages and offer real champions as one-click presets. Surfaced as a hover pop-up with an accept action, not a permanent panel.
-- View page: styling pass for visual consistency with the League of Legends look (reference: the official champion page layout) — ability preview colors and geometry are currently misaligned.
-- Ability icon uploads (kit currently displays slot letters rather than custom icons).
 - Roadmap items get added here as new feature work is planned — keep this section current rather than letting it drift from what's actually built.
 
 ## Development
