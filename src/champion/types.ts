@@ -51,16 +51,38 @@ export interface AbilityExtra {
 
 export type AbilitySlot = 'passive' | 'q' | 'w' | 'e' | 'r';
 
-export interface Ability {
+// Shared by the primary ability and every appended block — a "block" is, structurally,
+// just another one of these under the same key. See AbilityBlock below.
+export interface AbilityBody {
   name?: string;
   description?: string;
   cooldown?: number[];
   cost?: number[];
   cost_type?: string;
-  max_rank: number;
   effects?: Effect[];
+}
+
+export interface Ability extends AbilityBody {
+  max_rank: number;
   extra?: AbilityExtra;
   journal?: AbilityJournal;
+  // Custom icon for this key (app-asset:// URL, same storage as splash art). Lives on
+  // the slot rather than AbilityBody — blocks under a key share the key's icon.
+  icon_path?: string;
+  // "+"-appended modular blocks under this same key: extra passives, full alternate
+  // ability bodies (stance/form swaps), or condition-unlocked recasts. Additive —
+  // the fields above remain the slot's primary ability definition.
+  blocks?: AbilityBlock[];
+}
+
+export type AbilityBlockKind = 'passive' | 'alternate_form' | 'recast';
+
+export interface AbilityBlock extends AbilityBody {
+  kind: AbilityBlockKind;
+  // Trigger/window for this block, when kind === 'recast'. Reuses the same struct as
+  // AbilityExtra.recast (a lighter-weight "this ability recasts itself" flag) since
+  // both describe the same recast-condition shape.
+  recast?: RecastStruct;
 }
 
 export type Abilities = Record<AbilitySlot, Ability>;

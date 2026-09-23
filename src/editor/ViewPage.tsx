@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Champion, AbilitySlot } from '../champion/types'
 import './ViewPage.css'
@@ -56,7 +55,11 @@ function StatRow({ label, icon, base, growth }: StatRowProps) {
   )
 }
 
-const SLOT_COLORS: Record<AbilitySlot, string> = { passive: '#534AB7', q: '#0F6E56', w: '#993C1D', e: '#185FA5', r: '#c89b3c' }
+const SLOT_TYPE_LABEL: Record<AbilitySlot, string> = { passive: 'Passive', q: 'Q Ability', w: 'W Ability', e: 'E Ability', r: 'Ultimate' }
+
+// Uniform Hextech gold accent for ability blocks (mirrors --accent-gold / primitive-gold-400).
+// Canvas can't read CSS vars, so this is a hardcoded twin — see the POSTER_TEXT_* note below.
+const POSTER_ACCENT_GOLD = '#c8aa6e'
 
 // Mirrors the current --text-body/--text-secondary/--text-muted tokens (tokens.css).
 // Hardcoded rather than read live so the poster stays dark-themed even when the app is in light mode.
@@ -90,8 +93,28 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: numb
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h)
 }
 
+const POSTER_ICON_SIZE = 44
+
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
+}
+
 // Builds a full-kit poster: splash art up top, lore + every filled ability below (no truncation to fit a fixed height).
-function drawChampionCard(champion: Champion): Promise<Blob> {
+async function drawChampionCard(champion: Champion): Promise<Blob> {
+  // Load custom ability icons up front so text layout below can reserve room for them.
+  const icons = new Map<AbilitySlot, HTMLImageElement>()
+  await Promise.all(SLOTS.map(async slot => {
+    const src = champion.abilities[slot]?.icon_path
+    const img = src ? await loadImage(src) : null
+    if (img) icons.set(slot, img)
+  }))
+
   return new Promise(resolve => {
     const W = 1200
     const SPLASH_H = 820
@@ -107,8 +130,9 @@ function drawChampionCard(champion: Champion): Promise<Blob> {
     const filledSlots = SLOTS.filter(s => champion.abilities[s]?.name)
     const abilityBlocks = filledSlots.map(slot => {
       const ability = champion.abilities[slot]!
-      const lines = ability.description ? wrapLines(measure, ability.description, contentW - 60, 3) : []
-      return { slot, ability, lines }
+      const textX = PAD + 16 + (icons.has(slot) ? POSTER_ICON_SIZE + 14 : 0)
+      const lines = ability.description ? wrapLines(measure, ability.description, W - PAD - textX - 44, 3) : []
+      return { slot, ability, lines, textX }
     })
 
     const headerH = 150 + (loreLines.length ? loreLines.length * 26 + 20 : 0)
@@ -162,28 +186,45 @@ function drawChampionCard(champion: Champion): Promise<Blob> {
         ctx.fillText('FULL KIT', PAD, y)
         y += 40
 
-        for (const { slot, ability, lines } of abilityBlocks) {
-          const color = SLOT_COLORS[slot]
-          ctx.strokeStyle = color
+        for (const { slot, ability, lines, textX } of abilityBlocks) {
+          const icon = icons.get(slot)
+          const bodyH = Math.max(6 + lines.length * 22, icon ? POSTER_ICON_SIZE - 26 : 0)
+          ctx.strokeStyle = POSTER_ACCENT_GOLD
           ctx.lineWidth = 3
           ctx.beginPath()
           ctx.moveTo(PAD, y - 18)
-          ctx.lineTo(PAD, y + 6 + lines.length * 22)
+          ctx.lineTo(PAD, y + bodyH)
           ctx.stroke()
 
-          ctx.fillStyle = color
+          if (icon) {
+            const iconX = PAD + 16
+            const iconY = y - 22
+            ctx.save()
+            ctx.beginPath()
+            ctx.roundRect(iconX, iconY, POSTER_ICON_SIZE, POSTER_ICON_SIZE, 6)
+            ctx.clip()
+            drawCover(ctx, icon, iconX, iconY, POSTER_ICON_SIZE, POSTER_ICON_SIZE)
+            ctx.restore()
+            ctx.strokeStyle = POSTER_ACCENT_GOLD
+            ctx.lineWidth = 1.5
+            ctx.beginPath()
+            ctx.roundRect(iconX, iconY, POSTER_ICON_SIZE, POSTER_ICON_SIZE, 6)
+            ctx.stroke()
+          }
+
+          ctx.fillStyle = POSTER_ACCENT_GOLD
           ctx.font = '600 13px sans-serif'
-          ctx.fillText(SLOT_LABELS[slot], PAD + 16, y - 18)
+          ctx.fillText(SLOT_LABELS[slot], textX, y - 18)
 
           ctx.fillStyle = '#c8aa6e'
           ctx.font = '500 17px sans-serif'
-          ctx.fillText(ability.name!.toUpperCase(), PAD + 16, y)
+          ctx.fillText(ability.name!.toUpperCase(), textX, y)
 
           ctx.fillStyle = POSTER_TEXT_BODY
           ctx.font = '400 14px sans-serif'
           let ly = y + 24
           for (const line of lines) {
-            ctx.fillText(line, PAD + 16, ly)
+            ctx.fillText(line, textX, ly)
             ly += 22
           }
 
@@ -325,20 +366,26 @@ export default function ViewPage() {
               <div className="view-abilities-showcase">
                 <div className="ability-icon-row">
                   {filledSlots.map(slot => (
-                    <button
-                      key={slot}
-                      className={`ability-icon-btn${displaySlot === slot ? ' active' : ''}`}
-                      style={{ '--slot-color': SLOT_COLORS[slot] } as CSSProperties}
-                      onMouseEnter={() => setHoveredSlot(slot)}
-                      onMouseLeave={() => setHoveredSlot(null)}
-                      onClick={() => setSelectedSlot(slot)}
-                    >
-                      {SLOT_LABELS[slot]}
-                    </button>
+                    <div key={slot} className="ability-icon-item">
+                      <button
+                        className={`ability-icon-btn${displaySlot === slot ? ' active' : ''}`}
+                        onMouseEnter={() => setHoveredSlot(slot)}
+                        onMouseLeave={() => setHoveredSlot(null)}
+                        onClick={() => setSelectedSlot(slot)}
+                      >
+                        {abilities[slot]!.icon_path
+                          ? <img className="ability-icon-img" src={abilities[slot]!.icon_path} alt={SLOT_LABELS[slot]} />
+                          : SLOT_LABELS[slot]}
+                      </button>
+                      <div className={`ability-icon-label${displaySlot === slot ? ' active' : ''}`}>
+                        {abilities[slot]!.name}
+                      </div>
+                    </div>
                   ))}
                 </div>
                 {displayAbility && (
-                  <div className="ability-spotlight" style={{ '--slot-color': SLOT_COLORS[displaySlot!] } as CSSProperties}>
+                  <div className="ability-spotlight">
+                    <div className="ability-spotlight-type">{SLOT_TYPE_LABEL[displaySlot!]}</div>
                     <div className="ability-spotlight-name">{displayAbility.name}</div>
                     {displayAbility.description && (
                       <div className="ability-spotlight-desc">{displayAbility.description}</div>

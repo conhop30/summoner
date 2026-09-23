@@ -45,6 +45,9 @@
   background: var(--accent-gold-dim);
 }
 
+.slot-btn { padding: 0; overflow: hidden; }
+.slot-btn-icon { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 /* ── Editor ── */
 
 .abilities-editor {
@@ -53,6 +56,46 @@
   gap: var(--space-5);
   flex: 1;
 }
+
+.ability-name-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.ability-name-row .ability-name-input { flex: 1; min-width: 0; }
+
+.ability-icon-upload { position: relative; flex-shrink: 0; }
+.ability-icon-upload-btn {
+  width: 56px; height: 56px;
+  padding: 0;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-input);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.ability-icon-upload-btn:hover { border-color: var(--accent-hex-bright); color: var(--text-body); }
+.ability-icon-upload-btn.has-icon { border-style: solid; border-color: var(--accent-hex); }
+.ability-icon-upload-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ability-icon-upload-plus { font-size: 22px; line-height: 1; }
+.ability-icon-clear {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-size: 12px; line-height: 1;
+  cursor: pointer;
+}
+.ability-icon-upload:hover .ability-icon-clear { display: flex; }
+.ability-icon-clear:hover { border-color: var(--accent-gold); color: var(--text-accent-gold); }
 
 .ability-name-input {
   background: transparent;
@@ -99,6 +142,12 @@
 }
 
 .ability-field-group { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.rank-count-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
 .ability-field-header {
   display: flex;
@@ -200,14 +249,130 @@
   color: var(--text-accent-gold);
 }
 
+.effect-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
 .effect-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
 }
+
+.effect-subfield {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.effect-subfield-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.effect-subfield-label {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rank-value-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.rank-suggestion-chip {
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--tracking-normal);
+  padding: 4px var(--space-2);
+  border: 1px solid var(--border-accent);
+  background: var(--accent-hex-dim);
+  color: var(--text-accent-hex);
+  cursor: pointer;
+  border-radius: var(--radius-none);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+.rank-suggestion-chip:hover {
+  background: var(--accent-hex-glow);
+  color: var(--accent-hex-bright);
+}
+
+.ratio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.ratio-stat-input {
+  width: 96px;
+  flex-shrink: 0;
+  text-transform: none;
+}
+
+/* ── Ability Blocks ── */
+
+.ability-blocks-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ability-blocks-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: -4px 0 0;
+}
+
+.ability-block-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-accent);
+}
+
+.ability-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.recast-trigger-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.recast-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recast-field span {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.recast-field .rank-input { width: 100px; }
 
 .effect-type-select {
   background: var(--bg-elevated);
