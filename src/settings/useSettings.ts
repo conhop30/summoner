@@ -6,6 +6,8 @@ interface SettingsStore {
   settings: AppSettings
   loaded: boolean
   update: (partial: Partial<AppSettings>) => Promise<void>
+  // For main-process handlers that persist settings themselves and return the result.
+  apply: (next: AppSettings) => void
 }
 
 function isEffectivelyLight(theme: ThemeMode): boolean {
@@ -40,5 +42,6 @@ export const useSettings = create<SettingsStore>((set, get) => {
       if (partial.theme) applyTheme(next.theme)
       set({ settings: next })
     },
+    apply: (next) => set({ settings: next }),
   }
 })

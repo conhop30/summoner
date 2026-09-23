@@ -1,7 +1,7 @@
 import type { Champion, Identity, BaseStats, Abilities, NamedBuild } from '../champion/types'
 import type { Item, ItemSyncResult, ItemSyncStatus } from '../item/types'
 import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../championCatalog/types'
-import type { AppSettings } from '../settings/types'
+import type { AppSettings, MusicTrack } from '../settings/types'
 import type { UpdateState } from '../updater/types'
 
 declare global {
@@ -14,6 +14,12 @@ declare global {
         download: () => Promise<void>
         install: () => Promise<void>
         onState: (cb: (state: UpdateState) => void) => () => void
+      }
+
+      music: {
+        listBuiltIn: () => Promise<MusicTrack[]>
+        addCustom: () => Promise<AppSettings>
+        removeCustom: (id: string) => Promise<AppSettings>
       }
 
       champion: {

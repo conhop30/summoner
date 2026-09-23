@@ -143,6 +143,65 @@ function registerIpcHandlers() {
     return updateSettings(db, partial)
   })
 
+  // ── Background music ──
+  // Built-in songs are whatever audio files ship in public/audio (dev) / dist/audio (packaged).
+  const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.m4a', '.flac']
+  const musicDir = () => path.join(app.getPath('userData'), 'music')
+
+  ipcMain.handle('music:listBuiltIn', () => {
+    const dir = path.join(process.env.VITE_PUBLIC, 'audio')
+    if (!fs.existsSync(dir)) return []
+    return fs.readdirSync(dir)
+      .filter((f: string) => AUDIO_EXTS.includes(path.extname(f).toLowerCase()))
+      .sort()
+      .map((f: string) => ({
+        id: `builtin:${f}`,
+        name: path.basename(f, path.extname(f)),
+        src: `audio/${encodeURIComponent(f)}`,
+      }))
+  })
+
+  // Copies the picked files into the app's data folder (same approach as splash art), so
+  // they keep playing if the originals move. Returns the updated settings.
+  ipcMain.handle('music:addCustom', async () => {
+    if (!win) return getSettings(db)
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Add music',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Audio', extensions: AUDIO_EXTS.map(e => e.slice(1)) }],
+    })
+    if (canceled || filePaths.length === 0) return getSettings(db)
+
+    fs.mkdirSync(musicDir(), { recursive: true })
+    const added = filePaths.map((p: string) => {
+      const ext = path.extname(p)
+      const stamp = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const dest = path.join(musicDir(), `${stamp}${ext}`)
+      fs.copyFileSync(p, dest)
+      return { id: `custom:${stamp}`, name: path.basename(p, ext), src: `app-asset://${encodeURIComponent(dest)}` }
+    })
+    const current = getSettings(db)
+    return updateSettings(db, {
+      music_custom_tracks: [...current.music_custom_tracks, ...added],
+      music_track: added[0].id,
+    })
+  })
+
+  ipcMain.handle('music:removeCustom', (_event, id: string) => {
+    const current = getSettings(db)
+    const track = current.music_custom_tracks.find(t => t.id === id)
+    if (!track) return current
+    try {
+      fs.unlinkSync(decodeURIComponent(track.src.replace('app-asset://', '')))
+    } catch {
+      // File already gone — still drop the entry.
+    }
+    return updateSettings(db, {
+      music_custom_tracks: current.music_custom_tracks.filter(t => t.id !== id),
+      music_track: current.music_track === id ? '' : current.music_track,
+    })
+  })
+
   ipcMain.handle('window:isFrameless', () => {
     return currentFrameless
   })
@@ -237,6 +296,13 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+// Audio elements only load from a custom scheme if it's declared streamable (they issue
+// range requests); images never needed this. Deliberately not `standard`, so the existing
+// app-asset:// URLs stored on champions keep parsing exactly as they do today.
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app-asset', privileges: { stream: true, supportFetchAPI: true } },
+])
 
 app.whenReady().then(() => {
   protocol.handle('app-asset', (request) => {

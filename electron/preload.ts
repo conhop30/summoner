@@ -2,7 +2,7 @@ import { ipcRenderer, contextBridge } from 'electron'
 import type { Champion, Identity, BaseStats, Abilities, NamedBuild } from '../src/champion/types'
 import type { Item, ItemSyncResult, ItemSyncStatus } from '../src/item/types'
 import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../src/championCatalog/types'
-import type { AppSettings } from '../src/settings/types'
+import type { AppSettings, MusicTrack } from '../src/settings/types'
 import type { UpdateState } from '../src/updater/types'
 
 contextBridge.exposeInMainWorld('summoner', {
@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('summoner', {
       ipcRenderer.on('updater:state', handler)
       return () => ipcRenderer.removeListener('updater:state', handler)
     },
+  },
+
+  music: {
+    listBuiltIn: (): Promise<MusicTrack[]> => ipcRenderer.invoke('music:listBuiltIn'),
+    addCustom: (): Promise<AppSettings> => ipcRenderer.invoke('music:addCustom'),
+    removeCustom: (id: string): Promise<AppSettings> => ipcRenderer.invoke('music:removeCustom', id),
   },
 
   champion: {

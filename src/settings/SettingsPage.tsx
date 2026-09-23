@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettings } from './useSettings'
+import { useMusicTracks } from './useMusicTracks'
 import { useUpdater } from '../updater/useUpdater'
 import type { ThemeMode } from './types'
 import './SettingsPage.css'
@@ -13,7 +14,8 @@ const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const { settings, update } = useSettings()
+  const { settings, update, apply } = useSettings()
+  const { tracks, current, builtInIds } = useMusicTracks()
   const [dataStatus, setDataStatus] = useState<string | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
   const { state: updateState, currentVersion } = useUpdater()
@@ -72,9 +74,42 @@ export default function SettingsPage() {
         <section className="settings-section">
           <div className="settings-section-title">Music</div>
           <div className="settings-section-desc">
-            Background music while you work. Drop an audio file at{' '}
-            <code>public/audio/theme.mp3</code> to enable playback — nothing plays until that file exists.
+            Background music while you work. Pick a song to loop, or add your own — added files are
+            copied into Summoner, so they keep working if you move the originals.
           </div>
+          <div className="music-track-list" role="radiogroup" aria-label="Background music track">
+            {tracks.length === 0 && <div className="music-track-empty">No songs yet. Add one below.</div>}
+            {tracks.map(t => {
+              const isBuiltIn = builtInIds.has(t.id)
+              const selected = current?.id === t.id
+              return (
+                <div key={t.id} className={`music-track${selected ? ' selected' : ''}`}>
+                  <button
+                    className="music-track-pick"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => update({ music_track: t.id })}
+                  >
+                    <span className="music-track-name">{t.name}</span>
+                    <span className="music-track-tag">{isBuiltIn ? 'Built-in' : 'Yours'}</span>
+                  </button>
+                  {!isBuiltIn && (
+                    <button
+                      className="music-track-remove"
+                      title="Remove this song"
+                      onClick={async () => apply(await window.summoner.music.removeCustom(t.id))}
+                    >×</button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <button
+            className="settings-secondary-btn"
+            onClick={async () => apply(await window.summoner.music.addCustom())}
+          >
+            Add music…
+          </button>
           <label className="settings-toggle-row">
             <input
               type="checkbox"
