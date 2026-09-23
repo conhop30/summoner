@@ -2,6 +2,10 @@
 
 A desktop application for designing original League of Legends-style champion concepts — identity, lore, base stats, ability kits, and itemization — with a polished, in-client-style UI and all data persisted locally on disk.
 
+## Download
+
+Windows 10/11 installer: [Summoner-Windows-0.1.0-Setup.exe](https://github.com/conhop30/summoner/releases/latest) (see the [project page](https://conhop30.github.io/projects/summoner/) for screenshots). The installer isn't code-signed, so SmartScreen may ask you to choose "More info", then "Run anyway".
+
 ## Overview
 
 Summoner is a champion design tool for people building original champion concepts (as a hobby, homebrew tabletop-adjacent project, or portfolio piece) who want the *feel* of designing inside Riot's own client rather than filling out a spreadsheet. It provides:
