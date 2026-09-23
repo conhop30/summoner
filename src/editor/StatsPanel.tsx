@@ -1,6 +1,7 @@
 import type { Champion, BaseStats } from '../champion/types'
 import { BASE_STATS, HIDDEN_STATS, type StatFieldDef } from './statFields'
 import ItemLoadoutPanel from './ItemLoadoutPanel'
+import StatSuggestions from './StatSuggestions'
 import './StatsPanel.css'
 
 interface Props {
@@ -47,10 +48,17 @@ export default function StatsPanel({ champion, onChange }: Props) {
     onChange({ ...champion, base_stats: { ...stats, attack_range: [val] } })
   }
 
+  function acceptSuggestion(suggested: Partial<BaseStats>) {
+    onChange({ ...champion, base_stats: { ...stats, ...suggested } })
+  }
+
   return (
     <div className="stats-panel">
       <div className="sp-group">
-        <div className="sp-group-title">Base stats</div>
+        <div className="sp-group-title-row">
+          <div className="sp-group-title">Base stats</div>
+          <StatSuggestions champion={champion} onAccept={acceptSuggestion} />
+        </div>
         <div className="sp-grid">
           {BASE_STATS.map(f => (
             <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />

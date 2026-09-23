@@ -1,5 +1,6 @@
 import type { Champion, Identity, BaseStats, Abilities, NamedBuild } from '../champion/types'
 import type { Item, ItemSyncResult, ItemSyncStatus } from '../item/types'
+import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../championCatalog/types'
 import type { AppSettings } from '../settings/types'
 
 declare global {
@@ -43,6 +44,12 @@ declare global {
         getAll: () => Promise<Item[]>
         get: (id: string) => Promise<Item | null>
         getSyncStatus: () => Promise<ItemSyncStatus>
+      }
+
+      championCatalog: {
+        sync: () => Promise<ChampionCatalogSyncResult>
+        getAll: () => Promise<ChampionCatalogEntry[]>
+        getSyncStatus: () => Promise<ChampionCatalogSyncStatus>
       }
 
       settings: {

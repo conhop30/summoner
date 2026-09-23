@@ -1,6 +1,7 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import type { Champion, Identity, BaseStats, Abilities, NamedBuild } from '../src/champion/types'
 import type { Item, ItemSyncResult, ItemSyncStatus } from '../src/item/types'
+import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../src/championCatalog/types'
 import type { AppSettings } from '../src/settings/types'
 
 contextBridge.exposeInMainWorld('summoner', {
@@ -56,6 +57,17 @@ contextBridge.exposeInMainWorld('summoner', {
 
     getSyncStatus: (): Promise<ItemSyncStatus> =>
       ipcRenderer.invoke('item:getSyncStatus'),
+  },
+
+  championCatalog: {
+    sync: (): Promise<ChampionCatalogSyncResult> =>
+      ipcRenderer.invoke('championCatalog:sync'),
+
+    getAll: (): Promise<ChampionCatalogEntry[]> =>
+      ipcRenderer.invoke('championCatalog:getAll'),
+
+    getSyncStatus: (): Promise<ChampionCatalogSyncStatus> =>
+      ipcRenderer.invoke('championCatalog:getSyncStatus'),
   },
 
   settings: {

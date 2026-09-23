@@ -42,6 +42,19 @@ export function initializeSchema(db: Database): void {
       stacks INTEGER,
       synced_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS ddragon_champions (
+      id TEXT PRIMARY KEY,
+      ddragon_version TEXT NOT NULL,
+      key TEXT NOT NULL,
+      name TEXT NOT NULL,
+      title TEXT,
+      tags TEXT NOT NULL DEFAULT '[]',
+      partype TEXT,
+      stats TEXT NOT NULL DEFAULT '{}',
+      image_full TEXT,
+      synced_at TEXT NOT NULL
+    );
   `);
 
   const itemColumns = new Set(

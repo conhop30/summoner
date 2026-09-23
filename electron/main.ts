@@ -33,6 +33,7 @@ import {
   upsertChampionRecord,
 } from '../src/champion/crud'
 import { syncItems, getAllItems, getItem, getSyncStatus } from '../src/item/crud'
+import { syncChampionCatalog, getAllChampionCatalog, getChampionCatalogSyncStatus } from '../src/championCatalog/crud'
 import { getSettings, updateSettings } from '../src/settings/crud'
 
 const EXPORT_FORMAT = 'summoner-export'
@@ -119,6 +120,18 @@ function registerIpcHandlers() {
 
   ipcMain.handle('item:getSyncStatus', () => {
     return getSyncStatus(db)
+  })
+
+  ipcMain.handle('championCatalog:sync', async () => {
+    return syncChampionCatalog(db)
+  })
+
+  ipcMain.handle('championCatalog:getAll', () => {
+    return getAllChampionCatalog(db)
+  })
+
+  ipcMain.handle('championCatalog:getSyncStatus', () => {
+    return getChampionCatalogSyncStatus(db)
   })
 
   ipcMain.handle('settings:getAll', () => {
