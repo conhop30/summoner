@@ -37,8 +37,18 @@ const AVERAGED_KEYS: (keyof BaseStats)[] = [
   'movement_speed',
 ];
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+// Averages are shown as whole numbers. The exceptions are stats whose real values are all
+// tiny (attack speed ~0.65, per-level regen ~0.6), where rounding to a whole number would
+// change them by 50%+ or more.
+const AVERAGE_DECIMALS: Partial<Record<keyof BaseStats, number>> = {
+  attack_speed: 2,
+  health_regen_growth: 1,
+  resource_regen_growth: 1,
+};
+
+function roundAverage(key: keyof BaseStats, n: number): number {
+  const factor = 10 ** (AVERAGE_DECIMALS[key] ?? 0);
+  return Math.round(n * factor) / factor;
 }
 
 export interface ClassStatSuggestion {
@@ -65,7 +75,7 @@ export function computeClassAverages(catalog: ChampionCatalogEntry[]): ClassStat
     for (const key of AVERAGED_KEYS) {
       const values = samples.map(s => s[key]).filter((v): v is number => typeof v === 'number');
       if (values.length === 0) continue;
-      (stats as any)[key] = round2(values.reduce((a, b) => a + b, 0) / values.length);
+      (stats as any)[key] = roundAverage(key, values.reduce((a, b) => a + b, 0) / values.length);
     }
     results.push({ tag, sampleSize: samples.length, stats });
   }
