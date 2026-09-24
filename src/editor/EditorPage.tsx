@@ -9,6 +9,7 @@ import StoryPanel from './StoryPanel'
 import StatsPanel from './StatsPanel'
 import StatBlock from './StatBlock'
 import AbilitiesSection from './AbilitiesSection'
+import ConfirmDialog from '../shared/ConfirmDialog'
 import './EditorPage.css'
 
 const LAYOUT_TRANSITION = { duration: 0.45, ease: [0.4, 0, 0.2, 1] as const }
@@ -108,6 +109,7 @@ export default function EditorPage({ mode }: Props) {
   const isNew = useRef(mode === 'create')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingSave = useRef<Champion | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   useEffect(() => {
     if (mode === 'edit' && id) {
@@ -172,6 +174,15 @@ export default function EditorPage({ mode }: Props) {
     if (pendingSave.current) save(pendingSave.current)
   }, [save])
 
+  async function handleDelete() {
+    if (!champion?.metadata.id) return
+    // Drop any queued autosave first, or leaving the page would flush it and re-save the champion.
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    pendingSave.current = null
+    await window.summoner.champion.delete(champion.metadata.id)
+    navigate('/')
+  }
+
   if (!champion) return <div className="editor-loading" />
 
   const storyPct = calcStoryPct(champion)
@@ -207,6 +218,20 @@ export default function EditorPage({ mode }: Props) {
             </button>
           ))}
         </nav>
+
+        {/* Not offered until the champion exists — a brand-new, unsaved one has nothing to delete. */}
+        {champion.metadata.id && (
+          <button
+            className="spine-delete"
+            title={`Delete ${champion.identity.name || 'this champion'}`}
+            onClick={() => setConfirmingDelete(true)}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+            </svg>
+            <span>Delete</span>
+          </button>
+        )}
 
         <div className="spine-save-status">
           <span className={`save-dot ${saveStatus}`} />
@@ -297,6 +322,16 @@ export default function EditorPage({ mode }: Props) {
           </div>
         </div>
       </div>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={`Delete ${champion.identity.name || 'this champion'}?`}
+          message="This permanently deletes the champion along with their story, stats, abilities, and item builds. This can't be undone."
+          confirmLabel="Delete champion"
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   )
 }
