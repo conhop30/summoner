@@ -45,4 +45,24 @@ describe('initializeSchema', () => {
     expect(columns(db, 'items')).toEqual(expect.arrayContaining(['maps', 'depth', 'stacks']))
     expect((db.prepare(`SELECT identity FROM champions WHERE id = 'old'`).get() as { identity: string }).identity).toBe('{"name":"Old One"}')
   })
+
+  it('gives champions saved before the concept stamp existed a stamp equal to their updated_at', () => {
+    const db = new Database(':memory:')
+    db.exec(`
+      CREATE TABLE champions (
+        id TEXT PRIMARY KEY, version TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        is_favorite INTEGER NOT NULL DEFAULT 0, tags TEXT NOT NULL DEFAULT '[]',
+        identity TEXT NOT NULL, base_stats TEXT NOT NULL, abilities TEXT NOT NULL
+      );
+      INSERT INTO champions (id, version, created_at, updated_at, identity, base_stats, abilities)
+      VALUES ('old', '1.0', '2026-01-01T00:00:00.000Z', '2026-02-02T00:00:00.000Z', '{"name":"Old One"}', '{"attack_range":[0]}', '{}');
+    `)
+    initializeSchema(db)
+    const row = db.prepare(`SELECT concept_updated_at FROM champions WHERE id = 'old'`).get() as { concept_updated_at: string }
+    expect(row.concept_updated_at).toBe('2026-02-02T00:00:00.000Z')
+    // Running it again must not reset a stamp that has since moved.
+    db.prepare(`UPDATE champions SET concept_updated_at = '2026-03-03T00:00:00.000Z'`).run()
+    initializeSchema(db)
+    expect((db.prepare(`SELECT concept_updated_at FROM champions`).get() as { concept_updated_at: string }).concept_updated_at).toBe('2026-03-03T00:00:00.000Z')
+  })
 })

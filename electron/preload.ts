@@ -4,6 +4,8 @@ import type { Item, ItemSyncResult, ItemSyncStatus } from '../src/item/types'
 import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../src/championCatalog/types'
 import type { AppSettings, MusicTrack } from '../src/settings/types'
 import type { UpdateState } from '../src/updater/types'
+import type { ImportPlanResult, ImportApplyResult } from '../src/champion/importTypes'
+import type { LocalNewerChoice } from '../src/champion/exchange'
 
 contextBridge.exposeInMainWorld('summoner', {
   updater: {
@@ -132,10 +134,14 @@ contextBridge.exposeInMainWorld('summoner', {
   },
 
   data: {
-    exportChampions: (): Promise<{ ok: boolean; path?: string; count?: number; error?: string }> =>
-      ipcRenderer.invoke('data:exportChampions'),
+    exportChampions: (scope: 'full' | 'concept'): Promise<{ ok: boolean; path?: string; count?: number; error?: string }> =>
+      ipcRenderer.invoke('data:exportChampions', scope),
 
-    importChampions: (): Promise<{ ok: boolean; count?: number; error?: string }> =>
-      ipcRenderer.invoke('data:importChampions'),
+    importPick: (): Promise<ImportPlanResult> => ipcRenderer.invoke('data:importPick'),
+
+    importApply: (planId: string, choice: LocalNewerChoice): Promise<ImportApplyResult> =>
+      ipcRenderer.invoke('data:importApply', planId, choice),
+
+    importCancel: (): Promise<void> => ipcRenderer.invoke('data:importCancel'),
   },
 })

@@ -1,0 +1,135 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import Database from 'better-sqlite3'
+import { initializeSchema } from '../db/schema'
+import { createChampion, getChampion, updateChampion, upsertChampionRecord } from './crud'
+import { actionFor, championToRecord, classify, recordToChampion } from './exchange'
+import type { ChampionRecord } from '../interchange/types'
+
+let db: Database.Database
+
+beforeEach(() => {
+  db = new Database(':memory:')
+  initializeSchema(db)
+})
+
+const later = () => new Promise(resolve => setTimeout(resolve, 5))
+
+describe('concept_updated_at', () => {
+  it('starts equal to the creation time', () => {
+    const c = createChampion(db, 'Kai')
+    expect(c.metadata.concept_updated_at).toBe(c.metadata.created_at)
+    expect(getChampion(db, c.metadata.id)!.metadata.concept_updated_at).toBe(c.metadata.created_at)
+  })
+
+  it('moves when identity, abilities or tags change', async () => {
+    const c = createChampion(db, 'Kai')
+    const stamp = c.metadata.concept_updated_at
+
+    await later()
+    const renamed = updateChampion(db, c.metadata.id, { identity: { title: 'The Void' } })!
+    expect(renamed.metadata.concept_updated_at).not.toBe(stamp)
+    expect(renamed.metadata.concept_updated_at).toBe(renamed.metadata.updated_at)
+
+    await later()
+    const edited = updateChampion(db, c.metadata.id, { abilities: { q: { max_rank: 5, name: 'Bolt' } } as never })!
+    expect(edited.metadata.concept_updated_at).not.toBe(renamed.metadata.concept_updated_at)
+
+    await later()
+    const tagged = updateChampion(db, c.metadata.id, { tags: ['void'] })!
+    expect(tagged.metadata.concept_updated_at).not.toBe(edited.metadata.concept_updated_at)
+  })
+
+  it('stays put when only stats, builds, the favorite flag or theme audio change', async () => {
+    const c = createChampion(db, 'Kai')
+    const stamp = c.metadata.concept_updated_at
+
+    await later()
+    const statted = updateChampion(db, c.metadata.id, { base_stats: { health: 700 } })!
+    const starred = updateChampion(db, c.metadata.id, { is_favorite: true })!
+    const scored = updateChampion(db, c.metadata.id, { identity: { theme_audio: { name: 'a.mp3', src: 'app-asset://a' } } })!
+    const untouched = updateChampion(db, c.metadata.id, { identity: { name: 'Kai' } })!
+    for (const result of [statted, starred, scored, untouched]) expect(result.metadata.concept_updated_at).toBe(stamp)
+    // ...while the record itself did save.
+    expect(getChampion(db, c.metadata.id)!.base_stats.health).toBe(700)
+    expect(getChampion(db, c.metadata.id)!.metadata.updated_at).not.toBe(c.metadata.updated_at)
+  })
+})
+
+describe('importing into a real database', () => {
+  // A record as a phone would send it: story and abilities, no stats.
+  function mobileRecord(id: string, over: Partial<ChampionRecord> = {}): ChampionRecord {
+    return {
+      id, created_at: '2026-01-01T00:00:00.000Z', concept_updated_at: '2999-01-01T00:00:00.000Z', tags: ['phone'],
+      identity: { name: 'Phone Champion', lore: 'Made on a train.' },
+      abilities: { passive: { max_rank: 1 }, q: { max_rank: 5, name: 'Tap' }, w: { max_rank: 5 }, e: { max_rank: 5 }, r: { max_rank: 3 } },
+      ...over,
+    }
+  }
+
+  it('adds a champion the desktop has never seen, with default stats', () => {
+    const record = mobileRecord('aaaaaaaa-0000-4000-8000-000000000001')
+    expect(classify(getChampion(db, record.id) ?? undefined, record)).toBe('new')
+    upsertChampionRecord(db, recordToChampion(record, null, { icons: {} }))
+    const saved = getChampion(db, record.id)!
+    expect(saved.identity.name).toBe('Phone Champion')
+    expect(saved.abilities.q.name).toBe('Tap')
+    expect(saved.base_stats.attack_range).toEqual([0])
+    expect(saved.builds).toHaveLength(1)
+    // Importing the same file again is a no-op.
+    expect(classify(saved, record)).toBe('unchanged')
+  })
+
+  it('updates an existing champion without touching its stats, builds, audio or favorite', () => {
+    const c = createChampion(db, 'Kai', { base_stats: { health: 640, attack_speed: 0.7 } })
+    updateChampion(db, c.metadata.id, { is_favorite: true, identity: { theme_audio: { name: 't.mp3', src: 'app-asset://t' } } })
+    const before = getChampion(db, c.metadata.id)!
+
+    const record = mobileRecord(c.metadata.id)
+    expect(classify(before, record)).toBe('update')
+    upsertChampionRecord(db, recordToChampion(record, before, { icons: {} }))
+
+    const after = getChampion(db, c.metadata.id)!
+    expect(after.identity.name).toBe('Phone Champion')
+    expect(after.identity.lore).toBe('Made on a train.')
+    expect(after.base_stats).toEqual(before.base_stats)
+    expect(after.builds).toEqual(before.builds)
+    expect(after.active_build_id).toBe(before.active_build_id)
+    expect(after.identity.theme_audio).toEqual({ name: 't.mp3', src: 'app-asset://t' })
+    expect(after.metadata.is_favorite).toBe(true)
+    expect(after.metadata.concept_updated_at).toBe(record.concept_updated_at)
+    expect(classify(after, record)).toBe('unchanged')
+  })
+
+  it('offers a choice when the desktop copy is newer, and each choice does what it says', () => {
+    const c = createChampion(db, 'Kai')
+    const local = getChampion(db, c.metadata.id)!
+    const old = mobileRecord(c.metadata.id, { concept_updated_at: '2000-01-01T00:00:00.000Z' })
+    expect(classify(local, old)).toBe('local-newer')
+
+    // keep mine: nothing to write
+    expect(actionFor('local-newer', 'keep-mine')).toBe('skip')
+    expect(getChampion(db, c.metadata.id)!.identity.name).toBe('Kai')
+
+    // keep both: a second champion appears, the first is untouched
+    const copy = recordToChampion(old, local, { icons: {} }, { asCopy: true })
+    upsertChampionRecord(db, copy)
+    expect(getChampion(db, c.metadata.id)!.identity.name).toBe('Kai')
+    expect(getChampion(db, copy.metadata.id)!.identity.name).toBe('Phone Champion (imported)')
+
+    // take theirs: the champion becomes the file's version
+    upsertChampionRecord(db, recordToChampion(old, local, { icons: {} }))
+    expect(getChampion(db, c.metadata.id)!.identity.name).toBe('Phone Champion')
+  })
+
+  it('exports and re-imports a champion losslessly, stats included, for a full backup', () => {
+    const c = createChampion(db, 'Kai', { base_stats: { health: 640, health_regen: 8.5, attack_speed: 0.658, attack_range: [175, 550] } })
+    const record = championToRecord(getChampion(db, c.metadata.id)!, 'full', () => undefined)!
+    const fresh = new Database(':memory:')
+    initializeSchema(fresh)
+    upsertChampionRecord(fresh, recordToChampion(JSON.parse(JSON.stringify(record)), null, { icons: {} }))
+    const restored = getChampion(fresh, c.metadata.id)!
+    expect(restored.base_stats).toMatchObject({ health: 640, health_regen: 8.5, attack_speed: 0.658, attack_range: [175, 550] })
+    expect(restored.builds).toEqual(getChampion(db, c.metadata.id)!.builds)
+    expect(restored.identity.name).toBe('Kai')
+  })
+})

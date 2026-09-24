@@ -1,0 +1,54 @@
+{
+  "format": "summoner-export",
+  "version": 2,
+  "scope": "concept",
+  "exported_at": "2026-09-24T12:00:00.000Z",
+  "source": {
+    "app": "contract-fixtures",
+    "app_version": "0"
+  },
+  "champions": [
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "created_at": "2026-09-01T10:00:00.000Z",
+      "concept_updated_at": "2026-09-01T10:00:00.000Z",
+      "tags": [],
+      "identity": {
+        "name": "Bad Pictures",
+        "image_path": "app-asset://C%3A%5CWindows%5Csystem.ini",
+        "splash": {
+          "mime": "image/png",
+          "data": "/9j/4AAQSkZJRgABAQAAAQ=="
+        }
+      },
+      "abilities": {
+        "q": {
+          "max_rank": 5,
+          "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+          "icon_path": "file:///C:/secret.png"
+        },
+        "w": {
+          "max_rank": 5,
+          "icon": {
+            "mime": "image/svg+xml",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+          }
+        },
+        "e": {
+          "max_rank": 5,
+          "icon": {
+            "mime": "image/png",
+            "data": "not base64!!"
+          }
+        },
+        "r": {
+          "max_rank": 3,
+          "icon": {
+            "mime": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+          }
+        }
+      }
+    }
+  ]
+}

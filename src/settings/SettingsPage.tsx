@@ -4,6 +4,8 @@ import { useSettings } from './useSettings'
 import { useMusicTracks } from './useMusicTracks'
 import { useUpdater } from '../updater/useUpdater'
 import type { ThemeMode } from './types'
+import type { ImportPlanSummary } from '../champion/importTypes'
+import ImportPanel from './ImportPanel'
 import './SettingsPage.css'
 
 const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
@@ -19,6 +21,7 @@ export default function SettingsPage() {
   const { tracks, current, builtInIds } = useMusicTracks()
   const [dataStatus, setDataStatus] = useState<string | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
+  const [importPlan, setImportPlan] = useState<ImportPlanSummary | null>(null)
   const { state: updateState, currentVersion } = useUpdater()
 
   // The volume slider moves in 1% steps, so a drag fires a lot of changes. Show and apply each
@@ -45,10 +48,10 @@ export default function SettingsPage() {
     checking: '',
   }[updateState.status]
 
-  async function handleExport() {
+  async function handleExport(scope: 'full' | 'concept') {
     setDataStatus(null)
     setDataError(null)
-    const result = await window.summoner.data.exportChampions()
+    const result = await window.summoner.data.exportChampions(scope)
     if (result.ok) setDataStatus(`Exported ${result.count} champion${result.count === 1 ? '' : 's'} to ${result.path}`)
     else if (result.error !== 'Cancelled') setDataError(result.error ?? 'Export failed')
   }
@@ -56,9 +59,14 @@ export default function SettingsPage() {
   async function handleImport() {
     setDataStatus(null)
     setDataError(null)
-    const result = await window.summoner.data.importChampions()
-    if (result.ok) setDataStatus(`Imported ${result.count} champion${result.count === 1 ? '' : 's'}`)
-    else if (result.error !== 'Cancelled') setDataError(result.error ?? 'Import failed')
+    const result = await window.summoner.data.importPick()
+    if (result.ok) setImportPlan(result)
+    else if (result.error !== 'Cancelled') setDataError(result.error)
+  }
+
+  function cancelImport() {
+    setImportPlan(null)
+    window.summoner.data.importCancel()
   }
 
   return (
@@ -190,12 +198,23 @@ export default function SettingsPage() {
         <section className="settings-section">
           <div className="settings-section-title">Data</div>
           <div className="settings-section-desc">
-            Export your champions to a JSON file, or import one — handy for moving your work to another computer.
+            A backup holds everything, including stats and builds. The mobile export holds only what Summoner Mobile
+            uses: stories, identity and abilities. Importing updates champions it recognises and never
+            replaces your stats or builds.
           </div>
           <div className="settings-btn-row">
-            <button className="settings-secondary-btn" onClick={handleExport}>Export to JSON…</button>
-            <button className="settings-secondary-btn" onClick={handleImport}>Import from JSON…</button>
+            <button className="settings-secondary-btn" onClick={() => handleExport('full')}>Export backup…</button>
+            <button className="settings-secondary-btn" onClick={() => handleExport('concept')}>Export for mobile…</button>
+            <button className="settings-secondary-btn" onClick={handleImport} disabled={importPlan !== null}>Import…</button>
           </div>
+          {importPlan && (
+            <ImportPanel
+              plan={importPlan}
+              onCancel={cancelImport}
+              onDone={message => { setImportPlan(null); setDataStatus(message) }}
+              onError={message => { setImportPlan(null); setDataError(message) }}
+            />
+          )}
           {dataStatus && <div className="settings-data-status">{dataStatus}</div>}
           {dataError && <div className="settings-data-error">{dataError}</div>}
         </section>

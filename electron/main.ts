@@ -31,14 +31,11 @@ import {
   getAllChampions,
   updateChampion,
   deleteChampion,
-  upsertChampionRecord,
 } from '../src/champion/crud'
 import { syncItems, getAllItems, getItem, getSyncStatus } from '../src/item/crud'
 import { syncChampionCatalog, getAllChampionCatalog, getChampionCatalogSyncStatus } from '../src/championCatalog/crud'
 import { getSettings, updateSettings } from '../src/settings/crud'
-
-const EXPORT_FORMAT = 'summoner-export'
-const EXPORT_VERSION = 1
+import { registerDataHandlers } from './dataTransfer'
 
 let win: BrowserWindow | null
 let currentFrameless = false
@@ -285,57 +282,7 @@ function registerIpcHandlers() {
     win.setFullScreen(!win.isFullScreen())
   })
 
-  ipcMain.handle('data:exportChampions', async () => {
-    if (!win) return { ok: false, error: 'No window' }
-    const { canceled, filePath } = await dialog.showSaveDialog(win, {
-      title: 'Export champions',
-      defaultPath: `summoner-champions-${new Date().toISOString().slice(0, 10)}.json`,
-      filters: [{ name: 'JSON', extensions: ['json'] }],
-    })
-    if (canceled || !filePath) return { ok: false, error: 'Cancelled' }
-
-    const champions = getAllChampions(db)
-    const payload = {
-      format: EXPORT_FORMAT,
-      version: EXPORT_VERSION,
-      exported_at: new Date().toISOString(),
-      champions,
-    }
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8')
-    return { ok: true, path: filePath, count: champions.length }
-  })
-
-  ipcMain.handle('data:importChampions', async () => {
-    if (!win) return { ok: false, error: 'No window' }
-    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-      title: 'Import champions',
-      properties: ['openFile'],
-      filters: [{ name: 'JSON', extensions: ['json'] }],
-    })
-    if (canceled || !filePaths[0]) return { ok: false, error: 'Cancelled' }
-
-    let parsed: any
-    try {
-      parsed = JSON.parse(fs.readFileSync(filePaths[0], 'utf-8'))
-    } catch {
-      return { ok: false, error: 'File is not valid JSON' }
-    }
-
-    const champions = Array.isArray(parsed) ? parsed : parsed?.champions
-    if (parsed?.format && parsed.format !== EXPORT_FORMAT) {
-      return { ok: false, error: `Unrecognized export format "${parsed.format}"` }
-    }
-    if (!Array.isArray(champions)) {
-      return { ok: false, error: 'File does not contain a champions array' }
-    }
-
-    for (const champion of champions) {
-      if (!champion?.metadata?.id || !champion?.identity?.name) continue
-      upsertChampionRecord(db, champion)
-    }
-
-    return { ok: true, count: champions.length }
-  })
+  registerDataHandlers(db, () => win)
 }
 
 // Audio needs real byte-range support: an <audio> element only treats a source as seekable if

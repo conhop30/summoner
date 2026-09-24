@@ -1,0 +1,57 @@
+{
+  "format": "summoner-export",
+  "version": 1,
+  "exported_at": "2026-08-01T00:00:00.000Z",
+  "champions": [
+    {
+      "identity": {
+        "name": "Old Timer",
+        "title": "From v1",
+        "image_path": "app-asset://C%3A%5CUsers%5Cx%5Cimages%5Cold.png",
+        "theme_audio": {
+          "name": "theme.mp3",
+          "src": "app-asset://C%3A%5Ctheme.mp3"
+        },
+        "class": [
+          "Fighter"
+        ]
+      },
+      "base_stats": {
+        "health": 600,
+        "attack_range": [
+          125
+        ]
+      },
+      "abilities": {
+        "q": {
+          "max_rank": 5,
+          "name": "Old Q",
+          "icon_path": "app-asset://C%3A%5Cicon.png"
+        }
+      },
+      "builds": [
+        {
+          "id": "build-0002",
+          "name": "Build 1",
+          "items": [
+            {
+              "item_id": "1055",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "active_build_id": "build-0002",
+      "metadata": {
+        "id": "00000000-0000-4000-8000-000000000005",
+        "created_at": "2026-09-01T10:00:00.000Z",
+        "updated_at": "2026-09-10T18:30:00.000Z",
+        "version": "1.0",
+        "is_favorite": true,
+        "tags": [
+          "legacy"
+        ]
+      }
+    }
+  ]
+}

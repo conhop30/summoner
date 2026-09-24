@@ -3,6 +3,8 @@ import type { Item, ItemSyncResult, ItemSyncStatus } from '../item/types'
 import type { ChampionCatalogEntry, ChampionCatalogSyncResult, ChampionCatalogSyncStatus } from '../championCatalog/types'
 import type { AppSettings, MusicTrack } from '../settings/types'
 import type { UpdateState } from '../updater/types'
+import type { ImportPlanResult, ImportApplyResult } from '../champion/importTypes'
+import type { LocalNewerChoice } from '../champion/exchange'
 
 declare global {
   interface Window {
@@ -86,8 +88,10 @@ declare global {
       }
 
       data: {
-        exportChampions: () => Promise<{ ok: boolean; path?: string; count?: number; error?: string }>
-        importChampions: () => Promise<{ ok: boolean; count?: number; error?: string }>
+        exportChampions: (scope: 'full' | 'concept') => Promise<{ ok: boolean; path?: string; count?: number; error?: string }>
+        importPick: () => Promise<ImportPlanResult>
+        importApply: (planId: string, choice: LocalNewerChoice) => Promise<ImportApplyResult>
+        importCancel: () => Promise<void>
       }
     }
   }

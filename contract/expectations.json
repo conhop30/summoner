@@ -1,0 +1,114 @@
+{
+  "_about": "What a conforming parser must do with each file in fixtures/. 'ok' false means the whole file is refused with an error containing 'error'. 'checks' are exact values at dotted paths into the parsed file ('records.0.identity.name'); 'absent' paths must not exist; 'warnings' is the exact number of warnings. Both apps run every entry.",
+  "concept-minimal.json": {
+    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 0,
+    "checks": {
+      "records.0.identity.name": "Ahri",
+      "records.0.abilities.passive.max_rank": 5,
+      "records.0.abilities.q.max_rank": 5,
+      "records.0.abilities.r.max_rank": 3
+    },
+    "absent": ["records.0.desktop", "records.0.identity.splash"]
+  },
+  "concept-rich.json": {
+    "ok": true, "scope": "concept", "version": 2, "records": 2, "warnings": 0,
+    "checks": {
+      "records.0.identity.name": "Nyxara",
+      "records.0.identity.title": "The Hollow Lantern",
+      "records.0.identity.lore": "Line one.\nLine two.",
+      "records.0.identity.class": ["Mage", "Support"],
+      "records.0.identity.playstyle": ["Poke", "Custom idea"],
+      "records.0.identity.image_position": { "x": 62.5, "y": 18 },
+      "records.0.identity.splash.mime": "image/png",
+      "records.0.tags": ["fox", "mage"],
+      "records.0.concept_updated_at": "2026-09-10T18:30:00.000Z",
+      "records.0.abilities.passive.max_rank": 1,
+      "records.0.abilities.q.cooldown": [8, 7.5, 7, 6.5, 6],
+      "records.0.abilities.q.effects.0.type": "damage",
+      "records.0.abilities.q.effects.0.damage_type": "Magic",
+      "records.0.abilities.q.effects.0.ratios.0.values": [0.4, 0.45, 0.5, 0.55, 0.6],
+      "records.0.abilities.q.icon.mime": "image/png",
+      "records.0.abilities.q.journal.tabs.0.name": "Scrapped",
+      "records.0.abilities.q.blocks.0.kind": "alternate_form",
+      "records.0.abilities.q.blocks.1.recast.max_recasts": 2,
+      "records.0.abilities.q.blocks.1.recast.recast_extends_on": "after Q hits",
+      "records.0.abilities.q.extra.recast.recast_window": 3,
+      "records.0.abilities.q.extra.flavour": "note",
+      "records.0.abilities.w.cooldown": [14, 13, 12, 12, 12],
+      "records.0.abilities.w.effects.0.base": [50, 80, 80, 80, 80],
+      "records.0.abilities.r.max_rank": 3,
+      "records.1.identity.name": "Brakk"
+    }
+  },
+  "full-with-stats.json": {
+    "ok": true, "scope": "full", "version": 2, "records": 1, "warnings": 0,
+    "checks": {
+      "records.0.desktop.base_stats.health": 620,
+      "records.0.desktop.base_stats.attack_speed_growth": 2.5,
+      "records.0.desktop.base_stats.attack_range": [175],
+      "records.0.desktop.builds.0.items.1.count": 2,
+      "records.0.desktop.active_build_id": "build-0001"
+    },
+    "mobile": { "absent": ["records.0.desktop"], "checks": { "records.0.identity.name": "Ironwall" } }
+  },
+  "legacy-v1.json": {
+    "ok": true, "scope": "full", "version": 1, "records": 1, "warnings": 1,
+    "warningsContain": ["older export file"],
+    "checks": {
+      "records.0.id": "00000000-0000-4000-8000-000000000005",
+      "records.0.identity.name": "Old Timer",
+      "records.0.concept_updated_at": "2026-09-10T18:30:00.000Z",
+      "records.0.tags": ["legacy"],
+      "records.0.desktop.base_stats.health": 600,
+      "records.0.desktop.builds.0.id": "build-0002"
+    },
+    "absent": ["records.0.identity.image_path", "records.0.identity.theme_audio", "records.0.identity.splash", "records.0.abilities.q.icon", "records.0.abilities.q.icon_path"]
+  },
+  "legacy-bare-array.json": {
+    "ok": true, "scope": "full", "version": 1, "records": 1, "warnings": 0,
+    "checks": { "records.0.identity.name": "Bare Array" }
+  },
+  "bad-not-json.json": { "ok": false, "error": "not valid JSON" },
+  "bad-other-format.json": { "ok": false, "error": "not a Summoner export" },
+  "bad-not-an-export.json": { "ok": false, "error": "not a Summoner export" },
+  "bad-future-version.json": { "ok": false, "error": "newer version" },
+  "bad-no-scope.json": { "ok": false, "error": "does not say what it contains" },
+  "bad-no-champions.json": { "ok": false, "error": "champions list" },
+  "hostile-prototype.json": {
+    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 0,
+    "checks": {
+      "records.0.identity.name": "Proto",
+      "records.0.tags": ["__proto__"],
+      "records.0.abilities.q.extra.kept": "yes"
+    },
+    "absent": ["records.0.identity.constructor", "records.0.abilities.q.extra.constructor", "records.0.abilities.q.extra.prototype"],
+    "noPollution": true
+  },
+  "hostile-images.json": {
+    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 4,
+    "warningsContain": ["Splash art was dropped", "Q icon was dropped", "W icon was dropped", "E icon was dropped"],
+    "checks": { "records.0.identity.name": "Bad Pictures", "records.0.abilities.r.icon.mime": "image/png" },
+    "absent": ["records.0.identity.splash", "records.0.identity.image_path", "records.0.abilities.q.icon", "records.0.abilities.q.icon_path", "records.0.abilities.w.icon", "records.0.abilities.e.icon"]
+  },
+  "hostile-text-and-numbers.json": {
+    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 1,
+    "warningsContain": ["longer than 80 characters"],
+    "checks": {
+      "records.0.identity.name": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+      "records.0.identity.title": "Tab\tandnullbell",
+      "records.0.identity.image_position": { "x": 100, "y": 0 },
+      "records.0.abilities.q.max_rank": 6,
+      "records.0.abilities.q.cooldown": [1000000, 0, 0, 5, 6, 7],
+      "records.0.abilities.q.effects.0.base": [10, 20, 20, 20, 20, 20],
+      "records.0.abilities.w.cooldown": [10, 9],
+      "records.0.abilities.e.max_rank": 5
+    },
+    "absent": ["records.0.abilities.q.cost", "records.0.abilities.q.effects.0.damage_type", "records.0.abilities.q.effects.1"],
+    "counts": { "records.0.tags": 50 }
+  },
+  "hostile-records.json": {
+    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 6,
+    "warningsContain": ["it has no name", "no valid id", "no valid date", "second copy", "not a champion"],
+    "checks": { "records.0.identity.name": "Fine" }
+  }
+}

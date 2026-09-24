@@ -1,0 +1,11 @@
+{
+  "format": "summoner-export",
+  "version": 99,
+  "scope": "concept",
+  "exported_at": "2026-09-24T12:00:00.000Z",
+  "source": {
+    "app": "contract-fixtures",
+    "app_version": "0"
+  },
+  "champions": []
+}

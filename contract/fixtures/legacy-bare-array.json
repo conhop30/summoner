@@ -1,0 +1,23 @@
+[
+  {
+    "identity": {
+      "name": "Bare Array"
+    },
+    "base_stats": {
+      "attack_range": [
+        0
+      ]
+    },
+    "abilities": {},
+    "builds": [],
+    "active_build_id": "",
+    "metadata": {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "created_at": "2026-09-01T10:00:00.000Z",
+      "updated_at": "2026-09-01T10:00:00.000Z",
+      "version": "1.0",
+      "is_favorite": false,
+      "tags": []
+    }
+  }
+]

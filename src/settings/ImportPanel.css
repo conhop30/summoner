@@ -1,0 +1,83 @@
+.import-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  max-width: 640px;
+}
+
+.import-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.import-file { color: var(--text-bright); font-size: var(--font-size-base); word-break: break-all; }
+.import-scope {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.import-note { font-size: var(--font-size-base); color: var(--text-secondary); line-height: 1.5; }
+
+.import-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-subtle);
+}
+.import-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.import-row-name { flex: 1; min-width: 120px; color: var(--text-body); }
+.import-row-dates { flex-basis: 100%; font-size: var(--font-size-xs); color: var(--text-muted); }
+
+.import-chip {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+.import-chip-new { color: var(--text-accent-gold); border-color: var(--tag-gold-border); }
+.import-chip-update { color: var(--text-accent-hex); border-color: var(--accent-hex-deep); }
+.import-chip-local-newer { color: var(--text-bright); border-color: var(--border-strong); }
+
+.import-choice {
+  border: 1px solid var(--border-default);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.import-choice legend { padding: 0 var(--space-2); font-size: var(--font-size-base); color: var(--text-body); }
+.import-choice-option {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: var(--space-2);
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+/* Native radios in the theme's gold, not the browser's default blue. */
+.import-choice-option input { accent-color: var(--accent-gold); }
+.import-choice-option.on .import-choice-label { color: var(--text-accent-gold); }
+.import-choice-label { font-size: var(--font-size-base); }
+.import-choice-hint { font-size: var(--font-size-xs); color: var(--text-muted); }
+
+.import-warnings { font-size: var(--font-size-sm); color: var(--text-muted); }
+.import-warnings summary { cursor: pointer; }
+.import-warnings ul { margin: var(--space-2) 0 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }

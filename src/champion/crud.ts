@@ -3,6 +3,7 @@ import type { Champion, Identity, BaseStats, Abilities, BuildEntry, NamedBuild }
 import { generateId, nowISO, defaultAbilities, defaultBaseStats } from './utils';
 import { defaultBuilds } from '../item/buildLogic';
 import { SCHEMA_VERSION } from '../db/schema';
+import { conceptSnapshot } from './exchange';
 
 // Older saved data stored builds as a flat build_items: BuildEntry[] (or,
 // earlier still, a plain string[] of item ids). Coerce any of those shapes
@@ -44,6 +45,7 @@ function serialize(champion: Champion): Record<string, unknown> {
     version: champion.metadata.version,
     created_at: champion.metadata.created_at,
     updated_at: champion.metadata.updated_at,
+    concept_updated_at: champion.metadata.concept_updated_at ?? champion.metadata.updated_at,
     is_favorite: champion.metadata.is_favorite ? 1 : 0,
     tags: JSON.stringify(champion.metadata.tags),
     identity: JSON.stringify(champion.identity),
@@ -70,6 +72,7 @@ function deserialize(row: Record<string, unknown>): Champion {
       version: row.version as string,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
+      concept_updated_at: (row.concept_updated_at as string | null) ?? (row.updated_at as string),
       is_favorite: row.is_favorite === 1,
       tags: JSON.parse(row.tags as string),
     },
@@ -111,6 +114,7 @@ export function createChampion(
       id: generateId(),
       created_at: now,
       updated_at: now,
+      concept_updated_at: now,
       version: SCHEMA_VERSION,
       is_favorite: false,
       tags: [],
@@ -118,8 +122,8 @@ export function createChampion(
   };
 
   db.prepare(`
-    INSERT INTO champions (id, version, created_at, updated_at, is_favorite, tags, identity, base_stats, abilities, builds, active_build_id)
-    VALUES (@id, @version, @created_at, @updated_at, @is_favorite, @tags, @identity, @base_stats, @abilities, @builds, @active_build_id)
+    INSERT INTO champions (id, version, created_at, updated_at, concept_updated_at, is_favorite, tags, identity, base_stats, abilities, builds, active_build_id)
+    VALUES (@id, @version, @created_at, @updated_at, @concept_updated_at, @is_favorite, @tags, @identity, @base_stats, @abilities, @builds, @active_build_id)
   `).run(serialize(champion));
 
   return champion;
@@ -172,11 +176,16 @@ export function updateChampion(
       updated_at: nowISO(),
     },
   };
+  // Only a change to the concept side (not stats, builds or theme audio) moves the concept stamp.
+  if (conceptSnapshot(updated) !== conceptSnapshot(existing)) {
+    updated.metadata.concept_updated_at = updated.metadata.updated_at;
+  }
 
   db.prepare(`
     UPDATE champions
     SET version = @version,
         updated_at = @updated_at,
+        concept_updated_at = @concept_updated_at,
         is_favorite = @is_favorite,
         tags = @tags,
         identity = @identity,
@@ -196,11 +205,12 @@ export function updateChampion(
 export function upsertChampionRecord(db: Database, champion: Champion): void {
   const builds = coerceBuilds(champion.builds, (champion as any).build_items);
   db.prepare(`
-    INSERT INTO champions (id, version, created_at, updated_at, is_favorite, tags, identity, base_stats, abilities, builds, active_build_id)
-    VALUES (@id, @version, @created_at, @updated_at, @is_favorite, @tags, @identity, @base_stats, @abilities, @builds, @active_build_id)
+    INSERT INTO champions (id, version, created_at, updated_at, concept_updated_at, is_favorite, tags, identity, base_stats, abilities, builds, active_build_id)
+    VALUES (@id, @version, @created_at, @updated_at, @concept_updated_at, @is_favorite, @tags, @identity, @base_stats, @abilities, @builds, @active_build_id)
     ON CONFLICT(id) DO UPDATE SET
       version          = excluded.version,
       updated_at       = excluded.updated_at,
+      concept_updated_at = excluded.concept_updated_at,
       is_favorite      = excluded.is_favorite,
       tags             = excluded.tags,
       identity         = excluded.identity,

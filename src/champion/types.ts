@@ -130,6 +130,7 @@ export interface Identity {
   role?: ChampionRole[];
   attack_type?: AttackType[];
   resource_type?: ResourceType;
+  playstyle?: string[];
   image_path?: string;
   image_position?: { x: number; y: number };
   // Optional "champion theme": an audio file copied into the app's data folder (same storage
@@ -169,6 +170,9 @@ export interface Metadata {
   id: string;
   created_at: string;
   updated_at: string;
+  // When identity, abilities or tags last changed (stats, builds and theme audio don't move it).
+  // Decides which copy is newer when champions are imported. Absent on old records: use updated_at.
+  concept_updated_at?: string;
   version: string;
   is_favorite: boolean;
   tags: string[];

@@ -82,6 +82,10 @@ export function initializeSchema(db: Database): void {
   if (!championColumns.has('active_build_id')) {
     db.exec(`ALTER TABLE champions ADD COLUMN active_build_id TEXT`);
   }
+  if (!championColumns.has('concept_updated_at')) {
+    db.exec(`ALTER TABLE champions ADD COLUMN concept_updated_at TEXT`);
+    db.exec(`UPDATE champions SET concept_updated_at = updated_at`);
+  }
 
   const existing = db
     .prepare(`SELECT value FROM schema_meta WHERE key = 'version'`)

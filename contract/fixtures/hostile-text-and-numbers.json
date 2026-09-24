@@ -1,0 +1,151 @@
+{
+  "format": "summoner-export",
+  "version": 2,
+  "scope": "concept",
+  "exported_at": "2026-09-24T12:00:00.000Z",
+  "source": {
+    "app": "contract-fixtures",
+    "app_version": "0"
+  },
+  "champions": [
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "created_at": "2026-09-01T10:00:00.000Z",
+      "concept_updated_at": "2026-09-01T10:00:00.000Z",
+      "tags": [
+        "tag0",
+        "tag1",
+        "tag2",
+        "tag3",
+        "tag4",
+        "tag5",
+        "tag6",
+        "tag7",
+        "tag8",
+        "tag9",
+        "tag10",
+        "tag11",
+        "tag12",
+        "tag13",
+        "tag14",
+        "tag15",
+        "tag16",
+        "tag17",
+        "tag18",
+        "tag19",
+        "tag20",
+        "tag21",
+        "tag22",
+        "tag23",
+        "tag24",
+        "tag25",
+        "tag26",
+        "tag27",
+        "tag28",
+        "tag29",
+        "tag30",
+        "tag31",
+        "tag32",
+        "tag33",
+        "tag34",
+        "tag35",
+        "tag36",
+        "tag37",
+        "tag38",
+        "tag39",
+        "tag40",
+        "tag41",
+        "tag42",
+        "tag43",
+        "tag44",
+        "tag45",
+        "tag46",
+        "tag47",
+        "tag48",
+        "tag49",
+        "tag50",
+        "tag51",
+        "tag52",
+        "tag53",
+        "tag54",
+        "tag55",
+        "tag56",
+        "tag57",
+        "tag58",
+        "tag59",
+        "tag60",
+        "tag61",
+        "tag62",
+        "tag63",
+        "tag64",
+        "tag65",
+        "tag66",
+        "tag67",
+        "tag68",
+        "tag69",
+        "tag70",
+        "tag71",
+        "tag72",
+        "tag73",
+        "tag74",
+        "tag75",
+        "tag76",
+        "tag77",
+        "tag78",
+        "tag79"
+      ],
+      "identity": {
+        "name": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+        "title": "Tab\tand\u0000null\u0007bell",
+        "lore": "ok",
+        "image_position": {
+          "x": 250,
+          "y": -40
+        }
+      },
+      "abilities": {
+        "q": {
+          "max_rank": 99,
+          "name": "Q",
+          "cooldown": [
+            1e+30,
+            "12",
+            null,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cost": "free",
+          "effects": [
+            {
+              "type": "damage",
+              "damage_type": "Fire",
+              "base": [
+                10,
+                20
+              ]
+            },
+            "nonsense",
+            {
+              "notes": "no type"
+            }
+          ]
+        },
+        "w": {
+          "max_rank": 2,
+          "cooldown": [
+            10,
+            9,
+            8,
+            7
+          ]
+        },
+        "e": {
+          "max_rank": "many"
+        }
+      }
+    }
+  ]
+}
