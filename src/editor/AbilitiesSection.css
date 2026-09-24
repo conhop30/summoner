@@ -1,14 +1,53 @@
-.abilities-root {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  height: 100%;
+/* The size of the pane decides where the journal goes: a permanent column beside the form when
+   there is room, otherwise a compact strip between the keys/stats band and the form. */
+.abilities-root { container-type: inline-size; }
+
+.abilities-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
+  grid-template-areas:
+    "band   journal"
+    "editor journal";
+  grid-template-rows: auto 1fr;
+  gap: var(--space-5) var(--space-6);
+  align-items: start;
 }
 
-.abilities-content {
+.abilities-band {
+  grid-area: band;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+
+.abilities-layout > .journal-panel {
+  grid-area: journal;
+  position: sticky;      /* stays in view while a long ability form scrolls */
+  top: 0;
+  height: calc(100vh - var(--chrome-height, 0px) - 220px);
+  min-height: 320px;
+}
+
+.abilities-layout > .abilities-editor { grid-area: editor; }
+
+@container (max-width: 899px) {
+  .abilities-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "band"
+      "journal"
+      "editor";
+    grid-template-rows: none;
+  }
+  .abilities-layout > .journal-panel { position: static; height: auto; min-height: 0; }
+  .journal-textarea { field-sizing: content; min-height: 4.5em; max-height: 7em; }
+  .journal-panel.expanded .journal-textarea { min-height: 9em; max-height: 45vh; }
+  .journal-empty { min-height: 0; flex-direction: row; justify-content: flex-start; }
+}
+
+@container (min-width: 900px) {
+  .journal-expand-btn { display: none; }
 }
 
 /* ── Slot Bar ── */
@@ -16,7 +55,6 @@
 .abilities-slot-bar {
   display: flex;
   gap: 2px;
-  margin-bottom: var(--space-6);
 }
 
 .slot-btn {

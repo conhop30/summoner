@@ -9,7 +9,6 @@ import NameTitle from './NameTitle'
 import type { WorkbenchView } from './Workbench'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import StatsPanel from './StatsPanel'
-import StatBlock from './StatBlock'
 import AbilitiesSection from './AbilitiesSection'
 import ConfirmDialog from '../shared/ConfirmDialog'
 import './EditorPage.css'
@@ -274,34 +273,19 @@ export default function EditorPage({ mode }: Props) {
             </button>
           </div>
           <div className="editor-right-content">
-            <div className={`stat-block-stage${rightTab === 'stats' ? ' full' : ' compact'}`}>
-              <AnimatePresence initial={false} mode="popLayout">
-                {rightTab === 'stats' ? (
-                  <motion.div
-                    key="stats-full"
-                    className="stat-block-shell"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={CONTENT_TRANSITION}
-                  >
-                    <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="stats-compact"
-                    className="stat-block-shell"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={CONTENT_TRANSITION}
-                    onClick={() => setRightTab('stats')}
-                  >
-                    <StatBlock champion={champion} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* The Abilities tab shows its own compact stat block beside the ability keys. */}
+            {rightTab === 'stats' && (
+              <div className="stat-block-stage full">
+                <motion.div
+                  className="stat-block-shell"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={CONTENT_TRANSITION}
+                >
+                  <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} />
+                </motion.div>
+              </div>
+            )}
 
             <AnimatePresence mode="wait" initial={false}>
               {rightTab === 'abilities' && (
@@ -313,7 +297,7 @@ export default function EditorPage({ mode }: Props) {
                   exit={{ opacity: 0 }}
                   transition={CONTENT_TRANSITION}
                 >
-                  <AbilitiesSection champion={champion} onChange={handleChange} />
+                  <AbilitiesSection champion={champion} onChange={handleChange} onEditStats={() => setRightTab('stats')} />
                 </motion.div>
               )}
             </AnimatePresence>

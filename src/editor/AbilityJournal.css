@@ -1,61 +1,35 @@
-/* ── Toggle Button ── */
-
-.journal-toggle {
-  position: absolute;
-  right: 0; top: 50%;
-  transform: translateY(-50%);
-  width: 24px; height: 64px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-right: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: right var(--transition-slow), border-color var(--transition-base);
-  z-index: 10;
-}
-.journal-toggle.open {
-  right: 320px;
-  border-color: var(--accent-gold);
-}
-.journal-toggle:hover { border-color: var(--accent-gold); }
-
-.journal-toggle-icon {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  writing-mode: vertical-rl;
-  letter-spacing: var(--tracking-wider);
-  text-transform: uppercase;
-  transition: color var(--transition-base);
-  pointer-events: none;
-}
-.journal-toggle:hover .journal-toggle-icon { color: var(--text-accent-gold); }
-.journal-toggle.open .journal-toggle-icon { color: var(--text-accent-gold); }
-
-/* ── Panel ── */
+/* ── Panel ──
+   Placement (side column vs. strip above the form) is decided in AbilitiesSection.css. */
 
 .journal-panel {
-  position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 320px;
-  background: var(--bg-sidebar);
-  border-left: 1px solid var(--border-default);
+  position: relative;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform var(--transition-slow);
-  z-index: 9;
-  overflow: hidden;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
 }
-.journal-panel.open { transform: translateX(0); }
 
 .journal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-4) 0;
+  gap: var(--space-3);
   flex-shrink: 0;
+}
+
+/* Which ability these notes belong to. */
+.journal-for {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-accent-gold);
 }
 
 .journal-title {
@@ -66,7 +40,8 @@
   color: var(--text-secondary);
 }
 
-.journal-new-tab-btn {
+.journal-new-tab-btn,
+.journal-expand-btn {
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
@@ -78,7 +53,8 @@
   border-radius: var(--radius-none);
   transition: all var(--transition-fast);
 }
-.journal-new-tab-btn:hover {
+.journal-new-tab-btn:hover,
+.journal-expand-btn:hover {
   border-color: var(--accent-gold);
   color: var(--text-accent-gold);
 }
@@ -89,7 +65,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
-  padding: 10px var(--space-4) 0;
   flex-shrink: 0;
 }
 
@@ -157,11 +132,10 @@
 
 .journal-body {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--space-3) var(--space-4) var(--space-4);
   gap: var(--space-2);
-  overflow: hidden;
 }
 
 .journal-note-header {
@@ -222,6 +196,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
+  min-height: 120px;
 }
 
 .journal-empty-hint {
@@ -261,7 +236,7 @@
 }
 
 .journal-confirm-box {
-  background: var(--bg-sidebar);
+  background: var(--bg-elevated);
   border: 1px solid var(--accent-gold);
   padding: var(--space-6);
   display: flex;

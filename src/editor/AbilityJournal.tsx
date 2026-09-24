@@ -6,11 +6,14 @@ import './AbilityJournal.css'
 interface Props {
   journal: AbilityJournal
   onChange: (journal: AbilityJournal) => void
-  isOpen: boolean
-  onToggle: () => void
+  /** Which ability the notes belong to, e.g. "Q · Hammer Shock". */
+  label: string
 }
 
-export default function AbilityJournalPanel({ journal, onChange, isOpen, onToggle }: Props) {
+// The notes for one ability. Wide windows give it a permanent column beside the form; narrow ones
+// turn it into a compact strip above the form that "Expand" makes taller (see AbilitiesSection.css).
+export default function AbilityJournalPanel({ journal, onChange, label }: Props) {
+  const [expanded, setExpanded] = useState(false)
   const [activeTabId, setActiveTabId] = useState<string | null>(
     journal.tabs.length > 0 ? journal.tabs[0].id : null
   )
@@ -18,7 +21,7 @@ export default function AbilityJournalPanel({ journal, onChange, isOpen, onToggl
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
-  const activeTab = journal.tabs.find(t => t.id === activeTabId) ?? null
+  const activeTab = journal.tabs.find(t => t.id === activeTabId) ?? journal.tabs[0] ?? null
 
   useEffect(() => {
     if (editingTabId && nameInputRef.current) {
@@ -75,24 +78,23 @@ export default function AbilityJournalPanel({ journal, onChange, isOpen, onToggl
 
   return (
     <>
-      <div
-        className={`journal-toggle${isOpen ? ' open' : ''}`}
-        onClick={onToggle}
-      >
-        <span className="journal-toggle-icon">Journal</span>
-      </div>
-
-      <div className={`journal-panel${isOpen ? ' open' : ''}`}>
+      <div className={`journal-panel${expanded ? ' expanded' : ''}`}>
         <div className="journal-header">
-          <span className="journal-title">Ability Journal</span>
+          <span className="journal-title">Journal</span>
+          <span className="journal-for" title={label}>{label}</span>
           <button className="journal-new-tab-btn" onClick={addTab}>+ New</button>
+          {journal.tabs.length > 0 && (
+            <button className="journal-expand-btn" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
+              {expanded ? 'Collapse' : 'Expand'}
+            </button>
+          )}
         </div>
 
         <div className="journal-tabs">
           {journal.tabs.map(tab => (
             <div
               key={tab.id}
-              className={`journal-tab${activeTabId === tab.id ? ' active' : ''}`}
+              className={`journal-tab${activeTab?.id === tab.id ? ' active' : ''}`}
               onClick={() => setActiveTabId(tab.id)}
               onDoubleClick={() => handleTabDoubleClick(tab.id)}
             >

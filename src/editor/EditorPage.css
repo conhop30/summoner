@@ -226,11 +226,6 @@
   overflow-y: auto;
 }
 
-.stat-block-stage.compact {
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
 .stat-block-shell {
   width: 100%;
 }

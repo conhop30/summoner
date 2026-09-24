@@ -4,26 +4,27 @@ import './StatBlock.css'
 
 interface Props {
   champion: Champion
+  onEdit: () => void
 }
 
-// Condensed, read-only stat display — mirrors the in-game "show stats" HUD
-// block (icon + value only, no labels/growth) that replaces StatsPanel's
-// full editable grid while the Abilities tab is active.
-export default function StatBlock({ champion }: Props) {
+// Condensed stat readout — mirrors the in-game "show stats" HUD block (icon + value only, no
+// labels or growth). It sits beside the ability keys on the Abilities tab, in two rows; clicking
+// it goes back to the Stats tab to edit.
+export default function StatBlock({ champion, onEdit }: Props) {
   const stats = champion.base_stats
 
   return (
-    <div className="stat-block">
+    <button className="stat-block" onClick={onEdit} title="Click to edit the base stats">
       {BASE_STATS.map(f => {
         const value = stats[f.valueKey]
         return (
-          <div key={f.valueKey} className="stat-chip">
+          <span key={f.valueKey} className="stat-chip">
             <span className="stat-chip-icon">{f.icon}</span>
             <span className="stat-chip-value">{typeof value === 'number' ? value : '—'}</span>
-          </div>
+          </span>
         )
       })}
-      <span className="stat-block-hint">Click to edit</span>
-    </div>
+      <span className="stat-block-hint">Edit</span>
+    </button>
   )
 }

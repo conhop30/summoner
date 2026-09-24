@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
+import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, Effect, EffectType, RatioEntry, RecastStruct, AbilityJournal } from '../champion/types'
 import { normalizeRankArray } from '../champion/disclosure'
 import './AbilitiesSection.css'
@@ -306,6 +307,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
 interface Props {
   champion: Champion
   onChange: (c: Champion) => void
+  onEditStats: () => void
 }
 
 const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
@@ -328,10 +330,9 @@ function normalizeBodyRanks<T extends AbilityBody>(body: T, next: number): T {
   }
 }
 
-export default function AbilitiesSection({ champion, onChange }: Props) {
+export default function AbilitiesSection({ champion, onChange, onEditStats }: Props) {
   const [activeSlot, setActiveSlot] = useState<AbilitySlot>('passive')
   const [mode, setMode] = useState<Mode>('simple')
-  const [journalOpen, setJournalOpen] = useState(false)
   const iconInputRef = useRef<HTMLInputElement>(null)
 
   const ability = champion.abilities[activeSlot]
@@ -396,26 +397,23 @@ export default function AbilitiesSection({ champion, onChange }: Props) {
   }
 
   return (
-    <div className="abilities-root" style={{ position: 'relative', overflow: 'hidden' }}>
-      <div
-        className="abilities-content"
-        style={{
-          marginRight: journalOpen ? '320px' : '0',
-          transition: 'margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-      >
-        <div className="abilities-slot-bar">
-          {SLOTS.map(s => (
-            <button
-              key={s}
-              className={`slot-btn${activeSlot === s ? ' active' : ''}${champion.abilities[s].name ? ' named' : ''}`}
-              onClick={() => setActiveSlot(s)}
-            >
-              {champion.abilities[s].icon_path
-                ? <img className="slot-btn-icon" src={champion.abilities[s].icon_path} alt={SLOT_LABELS[s]} />
-                : SLOT_LABELS[s]}
-            </button>
-          ))}
+    <div className="abilities-root">
+      <div className="abilities-layout">
+        <div className="abilities-band">
+          <div className="abilities-slot-bar">
+            {SLOTS.map(s => (
+              <button
+                key={s}
+                className={`slot-btn${activeSlot === s ? ' active' : ''}${champion.abilities[s].name ? ' named' : ''}`}
+                onClick={() => setActiveSlot(s)}
+              >
+                {champion.abilities[s].icon_path
+                  ? <img className="slot-btn-icon" src={champion.abilities[s].icon_path} alt={SLOT_LABELS[s]} />
+                  : SLOT_LABELS[s]}
+              </button>
+            ))}
+          </div>
+          <StatBlock champion={champion} onEdit={onEditStats} />
         </div>
 
         <div className="abilities-editor">
@@ -568,14 +566,15 @@ export default function AbilitiesSection({ champion, onChange }: Props) {
             </button>
           </div>
         </div>
-      </div>
 
-      <AbilityJournalPanel
-        journal={ability.journal ?? { tabs: [] }}
-        onChange={updateJournal}
-        isOpen={journalOpen}
-        onToggle={() => setJournalOpen(o => !o)}
-      />
+        {/* Keyed by slot so each ability opens on its own first note. */}
+        <AbilityJournalPanel
+          key={activeSlot}
+          journal={ability.journal ?? { tabs: [] }}
+          onChange={updateJournal}
+          label={ability.name ? `${SLOT_LABELS[activeSlot]} · ${ability.name}` : SLOT_LABELS[activeSlot]}
+        />
+      </div>
     </div>
   )
 }
