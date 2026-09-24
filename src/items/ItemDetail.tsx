@@ -6,9 +6,12 @@ interface Props {
   emptyMessage: string
   /** Smaller layout for the inventory's mini-spotlight vs. the full store panel. */
   mini?: boolean
+  /** The shown item is pinned (right-clicked) in the store; shows an unpin control. */
+  pinned?: boolean
+  onUnpin?: () => void
 }
 
-export default function ItemDetail({ item, emptyMessage, mini }: Props) {
+export default function ItemDetail({ item, emptyMessage, mini, pinned, onUnpin }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   if (!item) {
@@ -19,6 +22,12 @@ export default function ItemDetail({ item, emptyMessage, mini }: Props) {
 
   return (
     <>
+      {pinned && (
+        <div className="item-detail-pinned">
+          <span>📌 Pinned</span>
+          <button className="item-detail-unpin" onClick={onUnpin}>Unpin</button>
+        </div>
+      )}
       <div className="item-detail-header">
         {item.image_url && (
           <img className="item-detail-image" src={item.image_url} alt={item.name} />

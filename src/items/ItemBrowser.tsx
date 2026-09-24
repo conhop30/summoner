@@ -31,6 +31,10 @@ export default function ItemBrowser({
   const [sortKey, setSortKey] = useState<SortKey>('cost')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  // Right-click pins an item's details so they stay put while the mouse moves on; the last
+  // item hovered is kept too, so leaving the grid doesn't snap the panel to an unrelated item.
+  const [pinnedId, setPinnedId] = useState<string | null>(null)
+  const [lastHoveredId, setLastHoveredId] = useState<string | null>(null)
 
   const visible = useMemo(() => {
     let list = items
@@ -47,9 +51,13 @@ export default function ItemBrowser({
     return [...list].sort((a, b) => compareItems(a, b, sortKey, sortDir))
   }, [items, search, purchasableOnly, includeOtherModes, category, sortKey, sortDir])
 
+  // Hover previews any item; with the mouse off the grid, the pinned item (else the last one
+  // hovered) is shown. Nothing shows until you point at something.
   const detailItem = useMemo(
-    () => visible.find(i => i.id === hoveredId) ?? visible[0] ?? null,
-    [visible, hoveredId]
+    () => [hoveredId, pinnedId, lastHoveredId]
+      .map(id => (id ? visible.find(i => i.id === id) : undefined))
+      .find(Boolean) ?? null,
+    [visible, hoveredId, pinnedId, lastHoveredId]
   )
 
   // When browsing "All Items", split the already-sorted list into tier
@@ -178,11 +186,15 @@ export default function ItemBrowser({
                     const count = equipped.get(item.id) ?? 0
                     return (
                       <div
-                        className={`item-tile${detailItem?.id === item.id ? ' active' : ''}${count > 0 ? ' equipped' : ''}`}
+                        className={`item-tile${detailItem?.id === item.id ? ' active' : ''}${count > 0 ? ' equipped' : ''}${pinnedId === item.id ? ' pinned' : ''}`}
                         key={item.id}
-                        onMouseEnter={() => setHoveredId(item.id)}
+                        onMouseEnter={() => { setHoveredId(item.id); setLastHoveredId(item.id) }}
                         onClick={() => onAddItem(item)}
-                        title="Click to add to build"
+                        onContextMenu={e => {
+                          e.preventDefault()
+                          setPinnedId(id => (id === item.id ? null : item.id))
+                        }}
+                        title="Click to add to build · Right-click to pin its details"
                       >
                         <div className="item-tile-image-wrap">
                           {item.image_url ? (
@@ -193,6 +205,7 @@ export default function ItemBrowser({
                           {item.gold_total != null && item.gold_total > 0 && (
                             <span className="item-tile-gold">{item.gold_total}</span>
                           )}
+                          {pinnedId === item.id && <span className="item-tile-pin" aria-label="Pinned">📌</span>}
                           {count > 0 && (
                             <span className="item-tile-equipped-badge">{count > 1 ? `×${count}` : '✓'}</span>
                           )}
@@ -212,7 +225,12 @@ export default function ItemBrowser({
             </div>
 
             <div className="item-detail-panel">
-              <ItemDetail item={detailItem} emptyMessage="Hover an item to see its details" />
+              <ItemDetail
+                item={detailItem}
+                emptyMessage="Hover an item to see its details, or right-click one to pin it here."
+                pinned={!!detailItem && detailItem.id === pinnedId}
+                onUnpin={() => setPinnedId(null)}
+              />
             </div>
           </div>
         </div>
