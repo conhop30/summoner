@@ -8,7 +8,10 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder --publish never",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
+    "test:db": "node scripts/run-db-tests.mjs",
     "preview": "vite preview",
+    "prerelease": "npm test && npm run test:db",
     "release": "tsc && vite build && electron-builder --publish always"
   },
   "dependencies": {
@@ -36,7 +39,8 @@
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
     "vite-plugin-electron": "^0.28.6",
-    "vite-plugin-electron-renderer": "^0.14.5"
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vitest": "^2.1.9"
   },
   "main": "dist-electron/main.js"
 }

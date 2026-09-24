@@ -47,6 +47,8 @@ A few problems came up during development that were non-obvious enough to be wor
 - **Accessibility pass on text contrast.** An early pass at the dark/light color tokens left several text tiers (muted labels, secondary text) sitting right at the WCAG AA floor (~4.5:1), which read as legible in isolated review but felt strained during real use. Retuned every text-color tier in both themes to clear ~7:1 (AAA) against both the base and elevated-surface backgrounds, fixing it once at the design-token layer rather than patching individual components.
 - **The window icon and title were never actually wired up.** Both looked fine in the source but were dead code: `BrowserWindow`'s `icon` option pointed at an `.svg`, which Electron's native icon loader silently can't render, and `index.html`'s `<title>` was still the literal Vite template default — so the real OS taskbar icon and window title never matched the custom in-app title bar that *said* "Summoner". Fixed by pointing both at a real `.png`. Also had to add `base: './'` to the Vite config, for the same reason the router had to become hash-based: the packaged app loads over `file://` with no server, so root-absolute asset URLs 404 once bundled, even though they resolve fine in dev.
 
+- **Attack speed growth is a percentage, and the app treated it as points.** Data Dragon's `attackspeedperlevel` of 2 means +2% of the base per level, but the View page added it to the base like any other stat, so a 0.658 attack speed read 34.7 at level 18 (and whole-number rounding flattened the small decimals that remained). The fix was not a one-line patch but a single `statSpec` module that records, per stat, whether it is a whole number or a decimal, how many decimals it keeps, and what unit its growth is in — every input, suggestion, lookup, level table and build comparison now goes through it, and a regression test pins the attack-speed case.
+
 ## Project layout
 
 ```
@@ -61,6 +63,15 @@ src/items/        Renderer UI — standalone item browser / build comparison too
 src/settings/     Renderer UI — settings page
 src/router/       createHashRouter route table
 ```
+
+## Testing
+
+```
+npm test          # pure logic under plain Node (stat rules, Data Dragon mapping, builds and stacking, item parsing/sorting, settings, splash crop maths)
+npm run test:db   # champion/settings/roster persistence and schema upgrades against real SQLite, run under Electron's Node
+```
+
+Vitest, with tests beside the code (`*.test.ts`). `better-sqlite3` is compiled for Electron's ABI and cannot load under a normal Node, so `*.db.test.ts` files run through `scripts/run-db-tests.mjs`, which starts Vitest with Electron's bundled Node (`ELECTRON_RUN_AS_NODE`) against an in-memory database — the same driver and SQL the app uses. `npm run release` runs both suites first. UI behaviour (layout, audio, drag interactions) is verified by driving the real app, not by unit tests.
 
 ## Roadmap
 
@@ -82,6 +93,9 @@ src/router/       createHashRouter route table
 - Readability pass: the type scale was far below normal desktop sizes (most labels were 8–10px). It now follows the Windows 11 type ramp (12px is the floor and the caption size, 14px is body, 16px and up for headings) with nothing rendering under 12px, and letter-spacing on the uppercase labels was trimmed to compensate. The stat editor's label column was widened and collapses to one column in narrow windows so the larger text never truncates.
 - Base stat lookup: a search bar in the Stats tab finds any synced champion by name (punctuation-insensitive, so `kaisa` finds Kai'Sa) and opens a collapsible picker listing their stats. Tick the one or two you care about — say Rakan's attack range while building Poppy — and Compare pins them, name and value, onto the champion's result line. It only reads: nothing is written into the fields (copying a whole set is the suggested-stats pop-up's job). The pop-up and the lookup share one roster sync.
 - Editor layout: the old permanent left Story column is gone. Name and Title sit in a strip above the Stats/Abilities tabs so they're on every screen, and under the base stats a centered **Story | Identity | Items** switcher swaps one panel at a time — Story (splash art, theme audio, lore), Identity (class, lane, attack type, resource, playstyle, tags) or the item build. The theme audio keeps playing while you switch panels; the left-rail Story button jumps straight to the Story panel.
+- Champion themes have their own volume (a gold mute button and diamond-thumb slider under the theme player), saved separately from the background-music volume; settings saved before it existed inherit the music volume.
+- Stats: one definition per stat of whole vs decimal and growth unit (see Engineering challenges); attack speed growth is now a percentage everywhere.
+- Test suite: unit tests for the pure logic and database tests against real SQLite (see Testing).
 - Splash art framing: while you hover or drag the splash preview, a gold frame with a centre mark shows exactly what the gallery tile keeps (both boxes cover-fit the image with the same position, so the frame is computed from the image's size and the tile's 0.72 ratio). A `?` beside the label recommends 16:9 at about 2880 × 1620 px — sharp on 2x screens at the View banner's 1440px maximum width — and explains that larger images are only scaled down.
 - Abilities layout: the ability keys and a two-row stat block share one band above the ability name, and the journal is no longer a slide-over drawer. In a wide window it is a permanent full-height column beside the form (its header names the ability the notes belong to, and each ability opens on its own first note); in a narrow one a CSS container query turns it into a compact strip above the form with an Expand button. One component, two placements, no JavaScript layout switching.
 - Lore and ability descriptions size to their text (`field-sizing: content`) instead of being scroll/resize boxes; the journal keeps a fixed-height box.
