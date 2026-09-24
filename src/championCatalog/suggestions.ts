@@ -1,4 +1,4 @@
-import type { BaseStats, ChampionClass } from '../champion/types';
+import type { BaseStats } from '../champion/types';
 import type { ChampionCatalogEntry, ChampionCatalogStats } from './types';
 
 // Data Dragon's per-champion `stats` object uses its own key names; map the
@@ -88,25 +88,31 @@ export interface ChampionPresetSuggestion {
   stats: Partial<BaseStats>;
 }
 
-// One-click "use this champion's stats" presets — a small curated set of
-// well-known, stat-representative champions per class, not the whole roster.
-const PRESET_CHAMPION_IDS: Record<ChampionClass, string> = {
-  Fighter: 'Darius',
-  Tank: 'Malphite',
-  Mage: 'Annie',
-  Marksman: 'Ashe',
-  Support: 'Soraka',
-  Assassin: 'Zed',
-};
+export interface ClassPresetGroup {
+  tag: string;
+  champions: ChampionPresetSuggestion[];
+}
 
-export function getPresetSuggestions(catalog: ChampionCatalogEntry[]): ChampionPresetSuggestion[] {
-  const byId = new Map(catalog.map(c => [c.id, c]));
-  const presets: ChampionPresetSuggestion[] = [];
-  for (const [, championId] of Object.entries(PRESET_CHAMPION_IDS)) {
-    const entry = byId.get(championId);
-    if (!entry) continue;
-    if (presets.some(p => p.championId === championId)) continue;
-    presets.push({ championId, championName: entry.name, stats: mapDDragonStats(entry.stats) });
+// One-click "use this champion's stats" presets: every synced champion, grouped under each of
+// its class tags (a Fighter/Tank appears in both), so one class can offer a real range of
+// styles — e.g. Tank spans Braum, Leona and Thresh, whose stats differ a lot.
+export function getPresetsByClass(catalog: ChampionCatalogEntry[]): ClassPresetGroup[] {
+  const byTag = new Map<string, ChampionPresetSuggestion[]>();
+  for (const entry of catalog) {
+    const preset: ChampionPresetSuggestion = {
+      championId: entry.id,
+      championName: entry.name,
+      stats: mapDDragonStats(entry.stats),
+    };
+    for (const tag of entry.tags) {
+      if (!byTag.has(tag)) byTag.set(tag, []);
+      byTag.get(tag)!.push(preset);
+    }
   }
-  return presets;
+  return [...byTag.entries()]
+    .map(([tag, champions]) => ({
+      tag,
+      champions: champions.sort((a, b) => a.championName.localeCompare(b.championName)),
+    }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
 }
