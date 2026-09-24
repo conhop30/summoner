@@ -4,21 +4,21 @@ import type { Item } from '../item/types'
 interface Props {
   item: Item | null
   emptyMessage: string
-  /** Smaller layout for the inventory's mini-spotlight vs. the full store panel. */
-  mini?: boolean
+  /** Show the whole description up front (no "show full details" fold) — for roomy panels. */
+  showAll?: boolean
   /** The shown item is pinned (right-clicked) in the store; shows an unpin control. */
   pinned?: boolean
   onUnpin?: () => void
 }
 
-export default function ItemDetail({ item, emptyMessage, mini, pinned, onUnpin }: Props) {
+export default function ItemDetail({ item, emptyMessage, showAll, pinned, onUnpin }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   if (!item) {
     return <div className="item-detail-empty">{emptyMessage}</div>
   }
 
-  const collapsible = !mini && !!item.description
+  const collapsible = !showAll && !!item.description
 
   return (
     <>
@@ -37,7 +37,7 @@ export default function ItemDetail({ item, emptyMessage, mini, pinned, onUnpin }
           {item.gold_total != null && item.gold_total > 0 && (
             <div className="item-detail-gold-row">
               <span className="item-detail-gold-buy">{item.gold_total}g</span>
-              {!mini && item.gold_sell != null && (
+              {item.gold_sell != null && (
                 <span className="item-detail-gold-sell">sell {item.gold_sell}g</span>
               )}
             </div>
@@ -59,7 +59,7 @@ export default function ItemDetail({ item, emptyMessage, mini, pinned, onUnpin }
         )}
       </div>
 
-      {!mini && item.tags.length > 0 && (
+      {item.tags.length > 0 && (
         <div className="item-detail-tags">
           {item.tags.map(tag => (
             <span key={tag} className="item-detail-tag">{tag}</span>

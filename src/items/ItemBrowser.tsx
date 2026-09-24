@@ -16,7 +16,7 @@ interface Props {
   /** item id -> count currently in the build, for the equipped badge */
   equipped: Map<string, number>
   onAddItem: (item: Item) => void
-  /** Extra panel(s) rendered in the right-hand sidebar, below the hover-detail panel. */
+  /** Extra panel(s) rendered in the right-hand sidebar, beside the pinned-item panel. */
   sidebarExtra?: ReactNode
   compact?: boolean
 }
@@ -30,11 +30,9 @@ export default function ItemBrowser({
   const [category, setCategory] = useState<Category>('all')
   const [sortKey, setSortKey] = useState<SortKey>('cost')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
-  // Right-click pins an item's details so they stay put while the mouse moves on; the last
-  // item hovered is kept too, so leaving the grid doesn't snap the panel to an unrelated item.
+  // The details panel is only ever filled by a pinned item (right-click), so it stays a calm
+  // empty slot until you ask for something to be held there.
   const [pinnedId, setPinnedId] = useState<string | null>(null)
-  const [lastHoveredId, setLastHoveredId] = useState<string | null>(null)
 
   const visible = useMemo(() => {
     let list = items
@@ -51,13 +49,10 @@ export default function ItemBrowser({
     return [...list].sort((a, b) => compareItems(a, b, sortKey, sortDir))
   }, [items, search, purchasableOnly, includeOtherModes, category, sortKey, sortDir])
 
-  // Hover previews any item; with the mouse off the grid, the pinned item (else the last one
-  // hovered) is shown. Nothing shows until you point at something.
-  const detailItem = useMemo(
-    () => [hoveredId, pinnedId, lastHoveredId]
-      .map(id => (id ? visible.find(i => i.id === id) : undefined))
-      .find(Boolean) ?? null,
-    [visible, hoveredId, pinnedId, lastHoveredId]
+  // Looked up in the full catalog, so a pinned item stays put even if a filter hides its tile.
+  const pinnedItem = useMemo(
+    () => (pinnedId ? items.find(i => i.id === pinnedId) ?? null : null),
+    [items, pinnedId]
   )
 
   // When browsing "All Items", split the already-sorted list into tier
@@ -172,7 +167,7 @@ export default function ItemBrowser({
             ))}
           </div>
 
-          <div className="items-grid-col" onMouseLeave={() => setHoveredId(null)}>
+          <div className="items-grid-col">
             {sections.map(section => (
               <div className="items-category-group" key={section.key}>
                 {category === 'all' && (
@@ -186,9 +181,8 @@ export default function ItemBrowser({
                     const count = equipped.get(item.id) ?? 0
                     return (
                       <div
-                        className={`item-tile${detailItem?.id === item.id ? ' active' : ''}${count > 0 ? ' equipped' : ''}${pinnedId === item.id ? ' pinned' : ''}`}
+                        className={`item-tile${count > 0 ? ' equipped' : ''}${pinnedId === item.id ? ' pinned' : ''}`}
                         key={item.id}
-                        onMouseEnter={() => { setHoveredId(item.id); setLastHoveredId(item.id) }}
                         onClick={() => onAddItem(item)}
                         onContextMenu={e => {
                           e.preventDefault()
@@ -225,9 +219,9 @@ export default function ItemBrowser({
 
             <div className="item-detail-panel">
               <ItemDetail
-                item={detailItem}
-                emptyMessage="Hover an item to see its details, or right-click one to pin it here."
-                pinned={!!detailItem && detailItem.id === pinnedId}
+                item={pinnedItem}
+                emptyMessage="Right-click an item to pin its details here."
+                pinned={!!pinnedItem}
                 onUnpin={() => setPinnedId(null)}
               />
             </div>

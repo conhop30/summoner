@@ -26,13 +26,12 @@ export default function BuildPanel({
   onSelectBuild, onAddBuild, onRenameBuild, onDeleteBuild,
   onRemoveOneFromSlot, onClearActiveBuild, headerExtra,
 }: Props) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const activeBuild = builds.find(b => b.id === activeBuildId) ?? builds[0]
   const resolved = resolveBuild(activeBuild.items, catalog)
   const gold = buildGoldTotal(resolved)
-  const spotlightItem = resolved[hoveredIndex ?? -1]?.item ?? resolved[selectedIndex ?? -1]?.item ?? null
+  const selectedItem = resolved[selectedIndex ?? -1]?.item ?? null
   const statTotals = [...aggregateBuildStats(resolved).values()].sort((a, b) => compareStatLabels(a.label, b.label))
 
   function selectBuild(id: string) {
@@ -61,31 +60,34 @@ export default function BuildPanel({
           onDelete={onDeleteBuild}
         />
 
-        <div className="build-inventory-row">
-          <div className="build-slots" onMouseLeave={() => setHoveredIndex(null)}>
-            {Array.from({ length: MAX_BUILD_SLOTS }).map((_, slot) => {
-              const r = resolved[slot]
-              return r ? (
-                <div
-                  className={`build-slot filled${selectedIndex === slot ? ' selected' : ''}`}
-                  key={`slot-${slot}`}
-                  onMouseEnter={() => setHoveredIndex(slot)}
-                  onClick={() => setSelectedIndex(slot)}
-                  onContextMenu={e => removeFromSlot(e, r.item.id)}
-                  title={`${r.item.name} — click to highlight, right-click to remove one`}
-                >
-                  <img src={r.item.image_url} alt={r.item.name} />
-                  {r.entry.count > 1 && <span className="build-slot-count">×{r.entry.count}</span>}
-                </div>
-              ) : (
-                <div className="build-slot empty" key={`slot-${slot}`} />
-              )
-            })}
-          </div>
+        <div className="build-slots">
+          {Array.from({ length: MAX_BUILD_SLOTS }).map((_, slot) => {
+            const r = resolved[slot]
+            return r ? (
+              <div
+                className={`build-slot filled${selectedIndex === slot ? ' selected' : ''}`}
+                key={`slot-${slot}`}
+                onClick={() => setSelectedIndex(i => (i === slot ? null : slot))}
+                onContextMenu={e => removeFromSlot(e, r.item.id)}
+                title={`${r.item.name} — click to show its details, right-click to remove one`}
+              >
+                <img src={r.item.image_url} alt={r.item.name} />
+                {r.entry.count > 1 && <span className="build-slot-count">×{r.entry.count}</span>}
+              </div>
+            ) : (
+              <div className="build-slot empty" key={`slot-${slot}`} />
+            )
+          })}
+        </div>
 
-          <div className="build-mini-spotlight">
-            <ItemDetail item={spotlightItem} emptyMessage="Hover or click a slot" mini />
-          </div>
+        {/* Full width under the slots, so an item's stats and passives get real room. */}
+        <div className="build-item-detail">
+          <ItemDetail
+            key={selectedItem?.id ?? 'none'}
+            item={selectedItem}
+            emptyMessage="Click an item in the build to see its details"
+            showAll
+          />
         </div>
 
         <div className="build-footer">
@@ -94,7 +96,7 @@ export default function BuildPanel({
         </div>
 
         {resolved.length > 0 && (
-          <button className="build-clear-btn" onClick={onClearActiveBuild}>Clear build</button>
+          <button className="build-clear-btn" onClick={() => { onClearActiveBuild(); setSelectedIndex(null) }}>Clear build</button>
         )}
       </div>
 

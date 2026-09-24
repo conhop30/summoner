@@ -240,8 +240,7 @@
   border: 1px solid var(--border-subtle);
   transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
-.item-tile:hover .item-tile-image-wrap,
-.item-tile.active .item-tile-image-wrap {
+.item-tile:hover .item-tile-image-wrap {
   border-color: var(--accent-gold);
   transform: scale(1.08);
 }
@@ -623,20 +622,12 @@
 }
 .build-tab-add:hover { color: var(--text-accent-gold); border-color: var(--accent-gold); }
 
-/* ── Inventory: 3x2 slot grid + mini-spotlight side by side ── */
-
-.build-inventory-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
-}
+/* ── Inventory: one row of six slots, with the selected item's details full width below ── */
 
 .build-slots {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  width: 160px;
-  flex-shrink: 0;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
 }
 
 .build-slot {
@@ -673,26 +664,17 @@
   padding: 0 2px;
 }
 
-.build-mini-spotlight {
-  flex: 1;
-  min-width: 0;
-  min-height: 108px;
+/* The clicked item's details, using the panel's full width. */
+.build-item-detail {
+  min-height: 96px;
   background: var(--bg-base);
   border: 1px solid var(--border-subtle);
-  padding: var(--space-2);
+  padding: var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
+  gap: var(--space-3);
 }
-.build-mini-spotlight .item-detail-header {
-  gap: var(--space-2);
-  padding-bottom: var(--space-1);
-}
-.build-mini-spotlight .item-detail-image { width: 32px; height: 32px; }
-.build-mini-spotlight .item-detail-name { font-size: var(--font-size-base); }
-.build-mini-spotlight .item-detail-body { font-size: var(--font-size-xs); line-height: 1.4; }
-.build-mini-spotlight .item-detail-empty { padding: 0; font-size: var(--font-size-xs); }
+.build-item-detail .item-detail-empty { font-size: var(--font-size-sm); color: var(--text-muted); }
 
 .build-footer {
   display: flex;
@@ -780,19 +762,4 @@
    side-by-side layout here too. */
 .item-browser.compact .items-sidebar {
   position: static;
-}
-
-/* Below the row/column breakpoint, also stack the build slot grid above
-   the mini-spotlight instead of squeezing them side by side — applies
-   equally to the standalone page if its window is ever narrowed this far. */
-@container (max-width: 759.98px) {
-  .build-inventory-row {
-    flex-direction: column;
-  }
-  .build-slots {
-    width: auto;
-  }
-  .build-mini-spotlight {
-    min-height: 72px;
-  }
 }
