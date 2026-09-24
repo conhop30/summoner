@@ -61,10 +61,17 @@ function createWindow() {
     },
   })
 
-  // The header hides the window buttons and shows in-app navigation while fullscreen.
-  const sendFullScreen = (on: boolean) => win?.webContents.send('window:fullscreenChanged', on)
-  win.on('enter-full-screen', () => sendFullScreen(true))
-  win.on('leave-full-screen', () => sendFullScreen(false))
+  // Fullscreen is chrome-free: the header hides its window buttons and shows in-app
+  // navigation, and the native File/Edit/View/Window/Help menu bar goes too. Windowed mode
+  // gets both back.
+  const applyFullScreen = (on: boolean) => {
+    win?.setMenuBarVisibility(!on)
+    win?.webContents.send('window:fullscreenChanged', on)
+  }
+  win.on('enter-full-screen', () => applyFullScreen(true))
+  win.on('leave-full-screen', () => applyFullScreen(false))
+  // A window created fullscreen never fires enter-full-screen for its initial state.
+  if (settings.window_fullscreen) win.setMenuBarVisibility(false)
 
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', new Date().toLocaleString())
