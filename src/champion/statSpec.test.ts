@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { BaseStats } from './types'
 import {
   STAT_SPECS, statSpecFor, normalizeStat, normalizeBaseStats, parseStatInput,
-  formatStat, formatGrowth, statAtLevel, inputStep,
+  formatStat, formatGrowth, statAtLevel, levelFactor, inputStep,
 } from './statSpec'
 
 const WHOLE: (keyof BaseStats)[] = ['health', 'resource', 'attack_damage', 'armor', 'magic_resistance', 'movement_speed']
@@ -36,7 +36,7 @@ describe('normalizeStat', () => {
   it('rounds whole-number stats', () => {
     expect(normalizeStat('attack_damage', 64.7)).toBe(65)
     expect(normalizeStat('attack_damage', 64.4)).toBe(64)
-    expect(normalizeStat('resource', 325.6)).toBe(326) // Data Dragon has fractional mana pools
+    expect(normalizeStat('resource', 325.6)).toBe(326) // (Data Dragon's own pools are always whole; this covers typed input)
   })
 
   it('trims decimal stats to their precision instead of rounding them away', () => {
@@ -48,7 +48,12 @@ describe('normalizeStat', () => {
   it('keeps growth to two decimals even for whole-number stats', () => {
     expect(normalizeStat('armor_growth', 4.777)).toBe(4.78)
     expect(normalizeStat('health_growth', 104)).toBe(104)
-    expect(normalizeStat('attack_speed_growth', 2.5)).toBe(2.5)
+    expect(normalizeStat('resource_growth', 23.5)).toBe(23.5) // Lux's mana growth in Data Dragon
+  })
+
+  it('keeps three decimals on attack speed growth (Data Dragon has Alistar at 2.125)', () => {
+    expect(normalizeStat('attack_speed_growth', 2.125)).toBe(2.125)
+    expect(normalizeStat('attack_speed_growth', 2.1259)).toBe(2.126)
   })
 
   it('passes non-finite numbers and unknown keys through untouched', () => {
@@ -107,15 +112,40 @@ describe('formatting', () => {
   })
 })
 
+describe('levelFactor (the game\'s growth curve)', () => {
+  it('is 0 at level 1 and exactly 17 at level 18', () => {
+    expect(levelFactor(1)).toBe(0)
+    expect(levelFactor(18)).toBeCloseTo(17, 10)
+  })
+
+  it('follows (n-1) * (0.7025 + 0.0175 * (n-1))', () => {
+    expect(levelFactor(2)).toBeCloseTo(0.72, 10)
+    expect(levelFactor(6)).toBeCloseTo(3.95, 10)
+    expect(levelFactor(11)).toBeCloseTo(8.775, 10)
+    expect(levelFactor(16)).toBeCloseTo(14.475, 10)
+  })
+
+  it('grows every level, but slower than a straight line until level 18', () => {
+    for (let n = 2; n <= 18; n++) expect(levelFactor(n)).toBeGreaterThan(levelFactor(n - 1))
+    for (let n = 2; n <= 17; n++) expect(levelFactor(n)).toBeLessThan(n - 1)
+  })
+
+  it('does not go negative below level 1', () => {
+    expect(levelFactor(0)).toBe(0)
+    expect(levelFactor(-4)).toBe(0)
+  })
+})
+
 describe('statAtLevel', () => {
   it('level 1 is the base value', () => {
     expect(statAtLevel('health', 610, 104, 1)).toBe(610)
     expect(statAtLevel('attack_speed', 0.658, 2, 1)).toBe(0.658)
   })
 
-  it('adds flat growth once per level gained', () => {
+  it('applies flat growth along the game\'s curve', () => {
     expect(statAtLevel('health', 610, 104, 18)).toBe(2378)
-    expect(statAtLevel('armor', 38, 4.7, 11)).toBe(85)
+    expect(statAtLevel('health', 610, 104, 6)).toBe(1021)   // 610 + 104 * 3.95
+    expect(statAtLevel('armor', 38, 4.7, 11)).toBe(79)      // 38 + 4.7 * 8.775
   })
 
   it('treats attack speed growth as a percentage of base (regression: it used to be added as points)', () => {
@@ -124,8 +154,16 @@ describe('statAtLevel', () => {
     expect(statAtLevel('attack_speed', 0.658, 2, 18)).toBeLessThan(2)
   })
 
+  it('applies the same curve to attack speed as to everything else', () => {
+    expect(statAtLevel('attack_speed', 0.658, 2.5, 6)).toBe(0.723) // 0.658 * (1 + 0.025 * 3.95) = 0.72298
+  })
+
   it('keeps decimal results decimal', () => {
     expect(statAtLevel('health_regen', 8.5, 0.55, 18)).toBe(17.85)
+  })
+
+  it('does nothing for a stat with no growth value', () => {
+    expect(statAtLevel('movement_speed', 345, 0, 18)).toBe(345)
   })
 
   it('never goes below the base for levels under 1', () => {

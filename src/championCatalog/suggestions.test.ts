@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import type { ChampionCatalogEntry, ChampionCatalogStats } from './types'
 import { mapDDragonStats, computeClassAverages, getPresetsByClass } from './suggestions'
 
-function entry(name: string, tags: string[], stats: ChampionCatalogStats): ChampionCatalogEntry {
-  return { id: name, ddragon_version: '16.1.1', key: '1', name, tags, stats, synced_at: '2026-01-01T00:00:00.000Z' }
+function entry(name: string, tags: string[], stats: ChampionCatalogStats, partype?: string): ChampionCatalogEntry {
+  return { id: name, ddragon_version: '16.1.1', key: '1', name, tags, stats, partype, synced_at: '2026-01-01T00:00:00.000Z' }
 }
 
 describe('mapDDragonStats', () => {
@@ -27,6 +27,11 @@ describe('mapDDragonStats', () => {
   it('only maps what Data Dragon provides', () => {
     expect(mapDDragonStats({ hp: 500 })).toEqual({ health: 500 })
     expect(mapDDragonStats({})).toEqual({})
+  })
+
+  it('keeps every decimal Data Dragon actually uses', () => {
+    const mapped = mapDDragonStats({ attackspeedperlevel: 2.125, mpperlevel: 23.5, hpregenperlevel: 0.55, spellblockperlevel: 2.05 })
+    expect(mapped).toEqual({ attack_speed_growth: 2.125, resource_growth: 23.5, health_regen_growth: 0.55, magic_resistance_growth: 2.05 })
   })
 
   it('coerces fractional values to what each stat allows', () => {
@@ -65,6 +70,37 @@ describe('computeClassAverages', () => {
   it('averages a stat over only the champions that have it', () => {
     const tank = computeClassAverages(catalog).find(r => r.tag === 'Tank')!
     expect(tank.stats.attack_speed).toBe(0.635) // Ornn has none
+  })
+
+  it('averages attack speed growth in its own percent units, with its third decimal', () => {
+    const two = [entry('A', ['Marksman'], { attackspeedperlevel: 2.125 }), entry('B', ['Marksman'], { attackspeedperlevel: 2.215 })]
+    expect(computeClassAverages(two)[0].stats.attack_speed_growth).toBe(2.17) // (2.125 + 2.215) / 2
+  })
+
+  describe('resource averages', () => {
+    const mage = entry('Lux', ['Mage'], { mp: 480, mpregen: 8, mpperlevel: 23.5 }, 'Mana')
+    const mage2 = entry('Ahri', ['Mage'], { mp: 418, mpregen: 8, mpperlevel: 25 }, 'Mana')
+    const viego = entry('Viego', ['Mage'], { mp: 10000, mpregen: 0, mpperlevel: 0 }, 'None') // Data Dragon's placeholder
+    const rage = entry('Rengar', ['Mage'], { mp: 0, mpregen: 0, mpperlevel: 0 }, 'Ferocity')
+
+    it('leaves resource-less champions out, so a placeholder pool of 10000 cannot swamp the average', () => {
+      const stats = computeClassAverages([mage, mage2, viego, rage])[0].stats
+      expect(stats.resource).toBe(449) // (480 + 418) / 2
+      expect(stats.resource_growth).toBe(24.25)
+      expect(stats.resource_regen).toBe(8)
+    })
+
+    it('still counts them for every other stat', () => {
+      const withHp = [
+        { ...mage, stats: { ...mage.stats, hp: 600 } },
+        { ...viego, stats: { ...viego.stats, hp: 700 } },
+      ]
+      expect(computeClassAverages(withHp)[0].stats.health).toBe(650)
+    })
+
+    it('offers no resource average for a class with no one who has a pool', () => {
+      expect(computeClassAverages([viego, rage])[0].stats.resource).toBeUndefined()
+    })
   })
 
   it('returns nothing for an empty roster', () => {

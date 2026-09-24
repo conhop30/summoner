@@ -46,15 +46,24 @@ export interface ClassStatSuggestion {
   stats: Partial<BaseStats>;
 }
 
+const RESOURCE_KEYS = new Set<keyof BaseStats>(['resource', 'resource_growth', 'resource_regen', 'resource_regen_growth']);
+
+// Data Dragon gives resource-less champions a mana pool of 0 — or, for Viego, a placeholder of
+// 10000 with the resource type "None". Neither says anything about how much mana a class has,
+// and 10000 would swamp the average, so those champions sit out of the resource averages.
+function hasResourcePool(entry: ChampionCatalogEntry): boolean {
+  return (entry.stats.mp ?? 0) > 0 && entry.partype !== 'None';
+}
+
 // Averages every synced champion's mapped stats, grouped by class tag — a
 // champion with multiple tags (e.g. Fighter/Tank) contributes to each.
 export function computeClassAverages(catalog: ChampionCatalogEntry[]): ClassStatSuggestion[] {
-  const byTag = new Map<string, Partial<BaseStats>[]>();
+  const byTag = new Map<string, { mapped: Partial<BaseStats>; hasPool: boolean }[]>();
   for (const entry of catalog) {
-    const mapped = mapDDragonStats(entry.stats);
+    const sample = { mapped: mapDDragonStats(entry.stats), hasPool: hasResourcePool(entry) };
     for (const tag of entry.tags) {
       if (!byTag.has(tag)) byTag.set(tag, []);
-      byTag.get(tag)!.push(mapped);
+      byTag.get(tag)!.push(sample);
     }
   }
 
@@ -62,7 +71,10 @@ export function computeClassAverages(catalog: ChampionCatalogEntry[]): ClassStat
   for (const [tag, samples] of byTag) {
     const stats: Partial<BaseStats> = {};
     for (const key of AVERAGED_KEYS) {
-      const values = samples.map(s => s[key]).filter((v): v is number => typeof v === 'number');
+      const values = samples
+        .filter(s => s.hasPool || !RESOURCE_KEYS.has(key))
+        .map(s => s.mapped[key])
+        .filter((v): v is number => typeof v === 'number');
       if (values.length === 0) continue;
       // An average is a new number, so it is coerced the same way (whole for whole stats).
       (stats as any)[key] = normalizeStat(key, values.reduce((a, b) => a + b, 0) / values.length);
