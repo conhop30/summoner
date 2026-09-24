@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useSettings } from './useSettings'
 import { useMusicTracks } from './useMusicTracks'
 import { useUpdater } from '../updater/useUpdater'
@@ -14,6 +14,7 @@ const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
 
 export default function SettingsPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { settings, update, apply } = useSettings()
   const { tracks, current, builtInIds } = useMusicTracks()
   const [dataStatus, setDataStatus] = useState<string | null>(null)
@@ -63,7 +64,14 @@ export default function SettingsPage() {
   return (
     <div className="settings-root">
       <div className="settings-top-bar">
-        <button className="settings-back-btn" onClick={() => navigate('/')}>← Gallery</button>
+        {/* Back returns to whatever screen opened Settings (an editor, the store, …); the
+            gallery is only the fallback when Settings was the first screen. */}
+        <button
+          className="settings-back-btn"
+          onClick={() => (location.key !== 'default' ? navigate(-1) : navigate('/'))}
+        >
+          ← Back
+        </button>
         <span className="settings-title">Settings</span>
       </div>
 
