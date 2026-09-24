@@ -88,6 +88,11 @@ src/router/       createHashRouter route table
 **Known issues**
 - A couple of stray test build tabs from development were left on a sample champion record and should be cleaned up via the UI.
 
+**Planned next** (design agreed, not started)
+- Fit-to-text fields: Lore, ability descriptions and journal notes size to their content (`field-sizing: content`) instead of being scroll/resize boxes.
+- Stat lookup as a comparator: pick one or two stats of a searched champion and show them on that champion's result line (name + value) for reference, without writing anything into the fields — copying a whole stat set stays the job of the suggested-stats pop-up.
+- Editor layout: retire the permanent left Story column. Name and Title stay visible on every screen; the workbench under Base stats becomes a switcher — **Items | Story | Identity** — where Story holds the splash art, theme audio and lore, and Identity holds class, lane, attack type, resource, playstyle and tags. The freed width is reserved for an always-visible win-rate predictor based on stats (design to come).
+
 **Not yet started / open ideas**
 - Roadmap items get added here as new feature work is planned — keep this section current rather than letting it drift from what's actually built.
 
