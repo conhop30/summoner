@@ -338,6 +338,45 @@ function registerIpcHandlers() {
   })
 }
 
+// Audio needs real byte-range support: an <audio> element only treats a source as seekable if
+// the response says `Accept-Ranges: bytes`, and it seeks by asking for `Range: bytes=N-`. The
+// plain file loader answers both with a bare 200, so every seek snapped back to the start
+// (the editor's theme player couldn't scrub). Serve audio ourselves with proper 200/206.
+const AUDIO_MIME: Record<string, string> = {
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.flac': 'audio/flac',
+}
+
+function serveAudio(filePath: string, contentType: string, rangeHeader: string | null): Response {
+  const fsNode = require('fs')
+  const { Readable } = require('node:stream')
+  let size: number
+  try {
+    size = fsNode.statSync(filePath).size
+  } catch {
+    return new Response('Not found', { status: 404 })
+  }
+
+  const baseHeaders = { 'Content-Type': contentType, 'Accept-Ranges': 'bytes' }
+  const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader ?? '')
+  if (!match || (!match[1] && !match[2])) {
+    const body = Readable.toWeb(fsNode.createReadStream(filePath)) as ReadableStream
+    return new Response(body, { status: 200, headers: { ...baseHeaders, 'Content-Length': String(size) } })
+  }
+
+  // "bytes=N-M", "bytes=N-" (to the end) or "bytes=-N" (the last N bytes).
+  let start = match[1] ? parseInt(match[1], 10) : Math.max(0, size - parseInt(match[2], 10))
+  let end = match[1] && match[2] ? parseInt(match[2], 10) : size - 1
+  end = Math.min(end, size - 1)
+  if (start >= size || start > end) {
+    return new Response('Range not satisfiable', { status: 416, headers: { 'Content-Range': `bytes */${size}` } })
+  }
+  const body = Readable.toWeb(fsNode.createReadStream(filePath, { start, end })) as ReadableStream
+  return new Response(body, {
+    status: 206,
+    headers: { ...baseHeaders, 'Content-Range': `bytes ${start}-${end}/${size}`, 'Content-Length': String(end - start + 1) },
+  })
+}
+
 // ─── App Lifecycle ───────────────────────────────────────────────────────────
 
 app.on('window-all-closed', () => {
@@ -362,8 +401,11 @@ protocol.registerSchemesAsPrivileged([
 
 app.whenReady().then(() => {
   protocol.handle('app-asset', (request) => {
-    const url = request.url.replace('app-asset://', '')
-    return net.fetch('file://' + decodeURIComponent(url))
+    const filePath = decodeURIComponent(request.url.replace('app-asset://', ''))
+    const audioType = AUDIO_MIME[path.extname(filePath).toLowerCase()]
+    // Images and everything else: load the file as before.
+    if (!audioType) return net.fetch('file://' + filePath)
+    return serveAudio(filePath, audioType, request.headers.get('range'))
   })
   registerIpcHandlers()
   initUpdater()
