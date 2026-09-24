@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Champion, AbilitySlot } from '../champion/types'
 import { useChampionTheme } from '../audio/useChampionTheme'
+import { formatStat, formatGrowth, statAtLevel } from '../champion/statSpec'
+import type { BaseStats } from '../champion/types'
 import './ViewPage.css'
 
 const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
@@ -19,13 +21,14 @@ const STAT_FIELDS = [
 ] as const
 
 interface StatRowProps {
+  statKey: keyof BaseStats
   label: string
   icon: string
   base?: number
   growth?: number
 }
 
-function StatRow({ label, icon, base, growth }: StatRowProps) {
+function StatRow({ statKey, label, icon, base, growth }: StatRowProps) {
   const [expanded, setExpanded] = useState(false)
   if (!base) return null
   return (
@@ -33,7 +36,7 @@ function StatRow({ label, icon, base, growth }: StatRowProps) {
       <div className="view-stat-main" onClick={() => growth && setExpanded(e => !e)}>
         <span className="view-stat-icon">{icon}</span>
         <span className="view-stat-label">{label}</span>
-        <span className="view-stat-val">{base}</span>
+        <span className="view-stat-val">{formatStat(statKey, base)}</span>
         {growth && (
           <span className={`view-stat-toggle${expanded ? ' open' : ''}`}>▾</span>
         )}
@@ -42,12 +45,12 @@ function StatRow({ label, icon, base, growth }: StatRowProps) {
         <div className="view-stat-scaling">
           <div className="view-stat-scaling-row">
             <span>Per level</span>
-            <span>+{growth}</span>
+            <span>{formatGrowth(statKey, growth)}</span>
           </div>
           {[6, 11, 16, 18].map(lvl => (
             <div key={lvl} className="view-stat-scaling-row">
               <span>Level {lvl}</span>
-              <span>{Math.round(base + growth * (lvl - 1))}</span>
+              <span>{formatStat(statKey, statAtLevel(statKey, base, growth, lvl))}</span>
             </div>
           ))}
         </div>
@@ -457,6 +460,7 @@ export default function ViewPage() {
               {STAT_FIELDS.map(f => (
                 <StatRow
                   key={f.key}
+                  statKey={f.key}
                   label={f.label}
                   icon={f.icon}
                   base={base_stats[f.key as keyof typeof base_stats] as number | undefined}

@@ -4,6 +4,7 @@ import type { ChampionCatalogEntry } from '../championCatalog/types'
 import type { CatalogState } from '../championCatalog/useChampionCatalog'
 import { mapDDragonStats } from '../championCatalog/suggestions'
 import { BASE_STATS } from './statFields'
+import { formatStat, formatGrowth } from '../champion/statSpec'
 import './StatLookup.css'
 
 interface Props {
@@ -26,21 +27,18 @@ const MAX_MATCHES = 8
 
 const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-function fmt(n: number): string {
-  return Number.isInteger(n) ? String(n) : String(Math.round(n * 1000) / 1000)
-}
-
 function readNumber(stats: Partial<BaseStats>, key: keyof BaseStats): number | undefined {
   const v = stats[key]
   return Array.isArray(v) ? v[0] : v
 }
 
-// "610 (+104/lvl)" — a value with its growth, or just the value; null when there isn't one.
+// "610 (+104/lvl)" or "0.658 (+2%/lvl)" — a value with its growth in its own unit, or just the
+// value; null when there isn't one.
 function describe(stats: Partial<BaseStats>, keys: (keyof BaseStats)[]): string | null {
   const value = readNumber(stats, keys[0])
   if (value === undefined) return null
   const growth = keys[1] ? readNumber(stats, keys[1]) : undefined
-  return growth !== undefined ? `${fmt(value)} (+${fmt(growth)}/lvl)` : fmt(value)
+  return growth !== undefined ? `${formatStat(keys[0], value)} (${formatGrowth(keys[0], growth)}/lvl)` : formatStat(keys[0], value)
 }
 
 // Look up any synced champion by name and compare the one or two stats you care about — e.g. Rakan's

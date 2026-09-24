@@ -3,6 +3,7 @@ import type { NamedBuild, Champion, BaseStats } from '../champion/types'
 import type { Item } from '../item/types'
 import { MAX_BUILD_SLOTS, resolveBuild, buildGoldTotal, aggregateBuildStats } from '../item/buildLogic'
 import { CHAMP_KEY_BY_LABEL, compareStatLabels } from '../item/statParsing'
+import { formatStat } from '../champion/statSpec'
 import BuildTabs from './BuildTabs'
 import ItemDetail from './ItemDetail'
 
@@ -113,11 +114,11 @@ export default function BuildPanel({
               const base = champKey ? (champion.base_stats[champKey] as number | undefined) ?? 0 : undefined
               const bonusText = s.isPercent
                 ? `+${Math.round(s.value * 100)}%`
-                : base != null ? `→ ${Math.round(base + s.value)}` : `+${Math.round(s.value)}`
+                : base != null && champKey ? `→ ${formatStat(champKey, base + s.value)}` : `+${Math.round(s.value)}`
               return (
                 <div className="stat-compare-row" key={s.label}>
                   <span className="stat-compare-label">{s.label}</span>
-                  <span className="stat-compare-base">{base != null ? Math.round(base) : '—'}</span>
+                  <span className="stat-compare-base">{base != null && champKey ? formatStat(champKey, base) : '—'}</span>
                   <span className="stat-compare-bonus has-bonus">{bonusText}</span>
                 </div>
               )

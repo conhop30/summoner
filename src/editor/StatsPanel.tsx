@@ -4,6 +4,7 @@ import Workbench, { type WorkbenchView } from './Workbench'
 import StatSuggestions from './StatSuggestions'
 import StatLookup from './StatLookup'
 import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
+import { parseStatInput, normalizeBaseStats, inputStep, statSpecFor } from '../champion/statSpec'
 import './StatsPanel.css'
 
 interface Props {
@@ -22,8 +23,7 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
   const stats = champion.base_stats
 
   function updateStat(key: keyof BaseStats, raw: string) {
-    const val = raw === '' ? undefined : parseFloat(raw)
-    onChange({ ...champion, base_stats: { ...stats, [key]: val } })
+    onChange({ ...champion, base_stats: { ...stats, [key]: parseStatInput(key, raw) } })
   }
 
   return (
@@ -33,10 +33,11 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
         <span className="sp-label">{label}</span>
       </div>
       <div className="sp-inputs">
-        <input className="sp-input" type="number" placeholder="Base"
+        <input className="sp-input" type="number" placeholder="Base" step={inputStep(valueKey)}
           value={typeof stats[valueKey] === 'number' ? stats[valueKey] : ''} onChange={e => updateStat(valueKey, e.target.value)} />
         {growthKey && (
-          <input className="sp-input sp-growth" type="number" placeholder="+/lvl"
+          <input className="sp-input sp-growth" type="number" step={inputStep(growthKey)}
+            placeholder={statSpecFor(valueKey)?.spec.growthUnit === 'percent' ? '+%/lvl' : '+/lvl'}
             value={typeof stats[growthKey] === 'number' ? stats[growthKey] : ''} onChange={e => updateStat(growthKey, e.target.value)} />
         )}
       </div>
@@ -50,12 +51,11 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench 
   const catalogState = useChampionCatalog()
 
   function updateAttackRange(raw: string) {
-    const val = raw === '' ? 0 : parseFloat(raw)
-    onChange({ ...champion, base_stats: { ...stats, attack_range: [val] } })
+    onChange({ ...champion, base_stats: { ...stats, attack_range: [parseStatInput('attack_range', raw) ?? 0] } })
   }
 
   function acceptSuggestion(suggested: Partial<BaseStats>) {
-    onChange({ ...champion, base_stats: { ...stats, ...suggested } })
+    onChange({ ...champion, base_stats: { ...stats, ...normalizeBaseStats(suggested) } })
   }
 
   return (

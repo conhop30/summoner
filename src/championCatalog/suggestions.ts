@@ -1,4 +1,5 @@
 import type { BaseStats } from '../champion/types';
+import { normalizeBaseStats, normalizeStat } from '../champion/statSpec';
 import type { ChampionCatalogEntry, ChampionCatalogStats } from './types';
 
 // Data Dragon's per-champion `stats` object uses its own key names; map the
@@ -26,7 +27,9 @@ export function mapDDragonStats(stats: ChampionCatalogStats): Partial<BaseStats>
   if (stats.spellblockperlevel !== undefined) mapped.magic_resistance_growth = stats.spellblockperlevel;
   if (stats.movespeed !== undefined) mapped.movement_speed = stats.movespeed;
   if (stats.attackrange !== undefined) mapped.attack_range = [stats.attackrange];
-  return mapped;
+  // Data Dragon has fractional values for stats that are whole numbers in our model (e.g. a
+  // mana pool of 325.6), so coerce to what each stat allows before anything else sees them.
+  return normalizeBaseStats(mapped);
 }
 
 const AVERAGED_KEYS: (keyof BaseStats)[] = [
@@ -36,20 +39,6 @@ const AVERAGED_KEYS: (keyof BaseStats)[] = [
   'armor', 'armor_growth', 'magic_resistance', 'magic_resistance_growth',
   'movement_speed',
 ];
-
-// Averages are shown as whole numbers. The exceptions are stats whose real values are all
-// tiny (attack speed ~0.65, per-level regen ~0.6), where rounding to a whole number would
-// change them by 50%+ or more.
-const AVERAGE_DECIMALS: Partial<Record<keyof BaseStats, number>> = {
-  attack_speed: 2,
-  health_regen_growth: 1,
-  resource_regen_growth: 1,
-};
-
-function roundAverage(key: keyof BaseStats, n: number): number {
-  const factor = 10 ** (AVERAGE_DECIMALS[key] ?? 0);
-  return Math.round(n * factor) / factor;
-}
 
 export interface ClassStatSuggestion {
   tag: string;
@@ -75,7 +64,8 @@ export function computeClassAverages(catalog: ChampionCatalogEntry[]): ClassStat
     for (const key of AVERAGED_KEYS) {
       const values = samples.map(s => s[key]).filter((v): v is number => typeof v === 'number');
       if (values.length === 0) continue;
-      (stats as any)[key] = roundAverage(key, values.reduce((a, b) => a + b, 0) / values.length);
+      // An average is a new number, so it is coerced the same way (whole for whole stats).
+      (stats as any)[key] = normalizeStat(key, values.reduce((a, b) => a + b, 0) / values.length);
     }
     results.push({ tag, sampleSize: samples.length, stats });
   }
