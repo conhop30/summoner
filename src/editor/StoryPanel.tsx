@@ -1,5 +1,7 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Champion } from '../champion/types'
+import { galleryFrame, SPLASH_RECOMMENDED, VIEW_BANNER_MAX_WIDTH } from '../champion/splashFrame'
+import HelpTip from '../shared/HelpTip'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import ThemeAudioPlayer from '../audio/ThemeAudioPlayer'
 import './StoryPanel.css'
@@ -13,11 +15,30 @@ interface Props {
 export default function StoryPanel({ champion, onChange }: Props) {
   const { identity } = champion
   const fileRef = useRef<HTMLInputElement>(null)
+  const splashRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [imageSize, setImageSize] = useState<{ w: number; h: number } | null>(null)
+  const [boxSize, setBoxSize] = useState<{ w: number; h: number } | null>(null)
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number; w: number; h: number } | null>(null)
 
   function update(partial: Partial<typeof identity>) {
     onChange({ ...champion, identity: { ...identity, ...partial } })
   }
+
+  // The preview box's size, so the gallery frame can be placed inside it.
+  const hasImage = !!(identity as any).image_path
+  useEffect(() => {
+    const el = splashRef.current
+    if (!el) return
+    const measure = () => setBoxSize({ w: el.clientWidth, h: el.clientHeight })
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [hasImage])
+
+  const position = (identity as any).image_position ?? { x: 50, y: 50 }
+  const frame = imageSize && boxSize ? galleryFrame(imageSize, boxSize, position) : null
 
   // ── Champion theme ──
   // (A preview started here is stopped by the editor page when you leave, not when this panel
@@ -60,6 +81,7 @@ export default function StoryPanel({ champion, onChange }: Props) {
     const pos = (identity as any).image_position ?? { x: 50, y: 50 }
     const rect = e.currentTarget.getBoundingClientRect()
     dragRef.current = { startX: e.clientX, startY: e.clientY, originX: pos.x, originY: pos.y, w: rect.width, h: rect.height }
+    setDragging(true)
 
     function onMove(ev: MouseEvent) {
       if (!dragRef.current) return
@@ -72,6 +94,7 @@ export default function StoryPanel({ champion, onChange }: Props) {
 
     function onUp() {
       dragRef.current = null
+      setDragging(false)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
@@ -84,9 +107,18 @@ export default function StoryPanel({ champion, onChange }: Props) {
     <div className="story-panel">
       <div className="story-media">
         <div className="story-splash-wrap">
+          <div className="story-field-label story-splash-label">
+            Splash art
+            <HelpTip label="Splash art size and cropping">
+              <p><strong>Recommended: {SPLASH_RECOMMENDED.ratio} landscape</strong>, about {SPLASH_RECOMMENDED.width} × {SPLASH_RECOMMENDED.height} px — the shape of League splash art.</p>
+              <p>The View banner is at most {VIEW_BANNER_MAX_WIDTH}px wide, so {SPLASH_RECOMMENDED.width}px across is as sharp as it gets — larger is scaled down, and under {VIEW_BANNER_MAX_WIDTH}px is stretched and soft.</p>
+              <p>The banner keeps a wide band and the gallery tile a tall strip, so keep your subject near the middle and drag to fine-tune. The gold frame is what the gallery tile keeps.</p>
+            </HelpTip>
+          </div>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
           <div
-            className={`story-splash${(identity as any).image_path ? ' has-image' : ''}`}
+            ref={splashRef}
+            className={`story-splash${(identity as any).image_path ? ' has-image' : ''}${dragging ? ' dragging' : ''}`}
             onClick={() => !(identity as any).image_path && fileRef.current?.click()}
             onMouseDown={handleDragStart}
           >
@@ -98,7 +130,18 @@ export default function StoryPanel({ champion, onChange }: Props) {
                   className="story-splash-img"
                   style={{ objectPosition: `${(identity as any).image_position?.x ?? 50}% ${(identity as any).image_position?.y ?? 50}%` }}
                   draggable={false}
+                  onLoad={e => setImageSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
                 />
+                {frame && (
+                  <div
+                    className="story-splash-frame"
+                    style={{ left: frame.left, top: frame.top, width: frame.width, height: frame.height }}
+                    aria-hidden="true"
+                  >
+                    <span className="story-splash-frame-label">Gallery</span>
+                    <span className="story-splash-frame-center" />
+                  </div>
+                )}
                 <div className="story-splash-reupload"
                   onClick={e => { e.stopPropagation(); fileRef.current?.click() }}
                   onMouseDown={e => e.stopPropagation()}>
