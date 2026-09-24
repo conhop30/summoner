@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ChampionCatalogEntry, ChampionCatalogSyncStatus } from './types';
 
+export type CatalogState = ReturnType<typeof useChampionCatalog>;
+
 export function useChampionCatalog() {
   const [catalog, setCatalog] = useState<ChampionCatalogEntry[]>([]);
   const [status, setStatus] = useState<ChampionCatalogSyncStatus>({ version: null, synced_at: null });

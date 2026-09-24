@@ -1,0 +1,189 @@
+.stat-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stat-lookup-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  transition: border-color var(--transition-fast);
+}
+.stat-lookup-search:focus-within { border-color: var(--border-focus); }
+
+.stat-lookup-icon {
+  padding: 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  line-height: 1;
+}
+
+.stat-lookup-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px var(--space-2) 6px 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  font-family: var(--font-sans);
+}
+.stat-lookup-input::placeholder { color: var(--text-placeholder); }
+.stat-lookup-input:disabled { cursor: not-allowed; }
+
+.stat-lookup-clear {
+  padding: 0 var(--space-2);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+.stat-lookup-clear:hover { color: var(--text-danger); }
+
+.stat-lookup-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.stat-lookup-option {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px var(--space-3);
+  font-size: var(--font-size-base);
+  color: var(--text-body);
+  cursor: pointer;
+}
+.stat-lookup-option em {
+  font-style: normal;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+.stat-lookup-option.highlighted { background: var(--accent-hex-dim); color: var(--text-accent-hex); }
+
+.stat-lookup-sync { display: flex; align-items: center; gap: var(--space-3); }
+
+/* The result window: a header that collapses it, then a tickable list of the champion's stats. */
+.stat-lookup-window {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.stat-lookup-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+
+.stat-lookup-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+.stat-lookup-toggle:hover .stat-lookup-name { color: var(--text-accent-gold); }
+.stat-lookup-chevron { color: var(--text-muted); width: 12px; }
+.stat-lookup-name { font-weight: 500; transition: color var(--transition-fast); }
+.stat-lookup-toggle em {
+  font-style: normal;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+.stat-lookup-count { font-size: var(--font-size-xs); color: var(--text-accent-gold); }
+
+.stat-lookup-cols,
+.stat-lookup-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.3fr) minmax(0, 1.4fr) minmax(0, 1.4fr);
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.stat-lookup-cols {
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.stat-lookup-cols span:nth-child(n + 2),
+.stat-lookup-theirs,
+.stat-lookup-yours { text-align: right; }
+
+.stat-lookup-rows { display: flex; flex-direction: column; }
+
+.stat-lookup-row {
+  padding: 3px 0;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+.stat-lookup-row:hover { background: var(--accent-gold-dim); }
+
+.stat-lookup-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+.stat-lookup-label input { accent-color: var(--accent-gold); margin: 0; cursor: pointer; }
+
+.stat-lookup-theirs { color: var(--text-body); font-variant-numeric: tabular-nums; }
+.stat-lookup-yours { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.stat-lookup-row.checked .stat-lookup-label { color: var(--text-accent-gold); }
+.stat-lookup-row.checked .stat-lookup-theirs { color: var(--text-accent-gold); font-weight: 500; }
+
+.stat-lookup-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--border-subtle);
+}
+.stat-lookup-note {
+  margin-right: auto;
+  font-size: var(--font-size-xs);
+  color: var(--text-accent-hex);
+}
+
+.stat-lookup-link {
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.stat-lookup-link:hover:not(:disabled) { color: var(--text-body); }
+.stat-lookup-link:disabled { opacity: 0.4; cursor: default; }
+
+.stat-lookup .stat-suggest-accept-btn:disabled { opacity: 0.4; cursor: default; }
+
+@container (max-width: 520px) {
+  .stat-lookup-cols,
+  .stat-lookup-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .stat-lookup-cols span:nth-child(3),
+  .stat-lookup-yours { display: none; }
+}

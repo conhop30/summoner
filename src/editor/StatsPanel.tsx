@@ -2,6 +2,8 @@ import type { Champion, BaseStats } from '../champion/types'
 import { BASE_STATS, HIDDEN_STATS, type StatFieldDef } from './statFields'
 import ItemLoadoutPanel from './ItemLoadoutPanel'
 import StatSuggestions from './StatSuggestions'
+import StatLookup from './StatLookup'
+import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
 import './StatsPanel.css'
 
 interface Props {
@@ -42,6 +44,8 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
 
 export default function StatsPanel({ champion, onChange }: Props) {
   const stats = champion.base_stats
+  // One shared roster for the suggestions pop-up and the lookup, so syncing in one updates both.
+  const catalogState = useChampionCatalog()
 
   function updateAttackRange(raw: string) {
     const val = raw === '' ? 0 : parseFloat(raw)
@@ -57,8 +61,9 @@ export default function StatsPanel({ champion, onChange }: Props) {
       <div className="sp-group">
         <div className="sp-group-title-row">
           <div className="sp-group-title">Base stats</div>
-          <StatSuggestions champion={champion} onAccept={acceptSuggestion} />
+          <StatSuggestions champion={champion} catalogState={catalogState} onAccept={acceptSuggestion} />
         </div>
+        <StatLookup champion={champion} catalogState={catalogState} onApply={acceptSuggestion} />
         <div className="sp-grid">
           {BASE_STATS.map(f => (
             <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />

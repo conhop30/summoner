@@ -6,7 +6,7 @@ import type { ChampionCatalogEntry, ChampionCatalogStats } from './types';
 // single `attackrange` number wrapped in an array to match our tuple shape.
 // crit_damage_multiplier and *_regen aren't in DDragon's summary stats, so
 // they're left out — never suggested, never overwritten.
-function mapDDragonStats(stats: ChampionCatalogStats): Partial<BaseStats> {
+export function mapDDragonStats(stats: ChampionCatalogStats): Partial<BaseStats> {
   const mapped: Partial<BaseStats> = {};
   if (stats.hp !== undefined) mapped.health = stats.hp;
   if (stats.hpperlevel !== undefined) mapped.health_growth = stats.hpperlevel;

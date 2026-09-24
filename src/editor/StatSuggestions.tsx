@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { BaseStats, Champion } from '../champion/types'
-import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
+import type { CatalogState } from '../championCatalog/useChampionCatalog'
 import { computeClassAverages, getPresetsByClass, type ChampionPresetSuggestion } from '../championCatalog/suggestions'
 import './StatSuggestions.css'
 
 interface Props {
   champion: Champion
+  catalogState: CatalogState
   onAccept: (stats: Partial<BaseStats>) => void
 }
 
@@ -34,8 +35,8 @@ function summarize(stats: Partial<BaseStats>): string {
 // Two tabs: per-class averages (computed live from the synced roster) and every synced
 // champion grouped by class as one-click "use this champion's stats" presets.
 // Never occupies permanent layout space.
-export default function StatSuggestions({ champion, onAccept }: Props) {
-  const { catalog, status, syncing, error, sync } = useChampionCatalog()
+export default function StatSuggestions({ champion, catalogState, onAccept }: Props) {
+  const { catalog, status, syncing, error, sync } = catalogState
   const [open, setOpen] = useState(false)
   const [discovered, setDiscovered] = useState(readDiscovered)
   const [tab, setTab] = useState<Tab>('averages')
