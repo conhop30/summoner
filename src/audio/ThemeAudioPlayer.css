@@ -135,3 +135,71 @@
   transition: opacity var(--transition-slow);
 }
 .mist-cap { filter: drop-shadow(0 0 calc(var(--glow, 0) * 4px) var(--accent-gold)); }
+
+/* ── Volume ──
+   Same gold language as the rest of the player: a round outlined button like play/pause, and a
+   thin track that fills gold with a diamond thumb, echoing the mist's endcaps. */
+.tap-volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tap-mute {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--tag-gold-border, var(--border-default));
+  border-radius: 50%;
+  color: var(--text-accent-gold);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-base);
+}
+.tap-mute:hover,
+.tap-mute:focus-visible {
+  background: var(--accent-gold-dim);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px var(--accent-gold-dim);
+  outline: none;
+}
+
+.tap-volume-slider {
+  --fill: 50%;
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.tap-volume-slider:focus-visible { outline: 1px solid var(--border-default); outline-offset: 2px; }
+.tap-volume-slider::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--accent-gold) var(--fill), var(--border-default) var(--fill));
+}
+.tap-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  margin-top: -5px;
+  border: none;
+  background: var(--accent-gold);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  transition: background var(--transition-fast);
+}
+.tap-volume-slider:hover::-webkit-slider-thumb,
+.tap-volume-slider:focus-visible::-webkit-slider-thumb { background: var(--text-accent-gold); }
+
+.tap-volume-value {
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}

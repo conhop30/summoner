@@ -13,6 +13,10 @@ export interface AppSettings {
   theme: ThemeMode;
   music_enabled: boolean;
   music_volume: number;
+  // Champion themes have their own volume (the control lives on the theme player), so a quiet
+  // background track and a full-volume theme can coexist. Older settings without it inherit
+  // music_volume — see getSettings.
+  theme_volume: number;
   // Selected track id ('builtin:<file>' or 'custom:<id>'); '' falls back to the first available.
   music_track: string;
   music_custom_tracks: MusicTrack[];
@@ -24,6 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
   music_enabled: false,
   music_volume: 0.5,
+  theme_volume: 0.5,
   music_track: '',
   music_custom_tracks: [],
   window_frameless: true,

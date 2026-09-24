@@ -3,14 +3,14 @@ import { useSettings } from '../settings/useSettings'
 import { useChampionTheme } from './useChampionTheme'
 
 // Mounted once at the app root (next to MusicPlayer) so a theme keeps playing across route
-// changes until it ends or a page stops it. Plays at the same volume as the background music.
+// changes until it ends or a page stops it. Plays at its own volume (the theme volume setting).
 // It owns the single <audio> element; the editor's player only reads and drives the store.
 export default function ThemePlayer() {
   const playing = useChampionTheme(s => s.playing)
   const paused = useChampionTheme(s => s.paused)
   const seekRequest = useChampionTheme(s => s.seekRequest)
   const stop = useChampionTheme(s => s.stop)
-  const volume = useSettings(s => s.settings.music_volume)
+  const volume = useSettings(s => s.settings.theme_volume)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   const applySeek = () => {

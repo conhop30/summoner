@@ -8,10 +8,21 @@ export function getSettings(db: Database): AppSettings {
   const row = db.prepare(`SELECT value FROM schema_meta WHERE key = ?`).get(KEY) as { value: string } | undefined;
   if (!row) return { ...DEFAULT_SETTINGS };
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(row.value) };
+    return withDefaults(JSON.parse(row.value));
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
+}
+
+// Fill in anything a stored settings blob lacks. Themes used to play at the background music's
+// volume, so a blob saved before theme_volume existed inherits music_volume — nobody's themes
+// suddenly jump to a different loudness after updating.
+export function withDefaults(stored: Partial<AppSettings>): AppSettings {
+  const merged = { ...DEFAULT_SETTINGS, ...stored };
+  if (stored.theme_volume === undefined && typeof stored.music_volume === 'number') {
+    merged.theme_volume = stored.music_volume;
+  }
+  return merged;
 }
 
 export function updateSettings(db: Database, partial: Partial<AppSettings>): AppSettings {

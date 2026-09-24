@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChampionTheme } from './useChampionTheme'
+import { useSettings } from '../settings/useSettings'
 import MistCanvas, { MIST_PAD } from './MistCanvas'
 import './ThemeAudioPlayer.css'
 
@@ -61,6 +62,25 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
   const duration = isLoaded && liveDuration > 0 ? liveDuration : idleDuration
   const time = isLoaded ? liveTime : 0
   const fraction = duration > 0 ? Math.min(1, time / duration) : 0
+
+  // Themes have their own volume. The slider moves in 1% steps, so a drag fires a lot of changes:
+  // show and apply each one straight away, but save to the database only once it settles.
+  const settings = useSettings(s => s.settings)
+  const applySettings = useSettings(s => s.apply)
+  const [volume, setVolume] = useState(settings.theme_volume)
+  const volumeSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastAudible = useRef(settings.theme_volume > 0 ? settings.theme_volume : 0.5)
+  useEffect(() => () => { if (volumeSaveTimer.current) clearTimeout(volumeSaveTimer.current) }, [])
+  // Settings load asynchronously at startup; follow them until the user has touched the slider.
+  useEffect(() => { setVolume(settings.theme_volume) }, [settings.theme_volume])
+
+  function changeVolume(v: number) {
+    setVolume(v)
+    if (v > 0) lastAudible.current = v
+    applySettings({ ...useSettings.getState().settings, theme_volume: v })
+    if (volumeSaveTimer.current) clearTimeout(volumeSaveTimer.current)
+    volumeSaveTimer.current = setTimeout(() => window.summoner.settings.update({ theme_volume: v }), 250)
+  }
 
   const trackRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -156,6 +176,34 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
         <span className={`tap-time${hover !== null ? ' hovering' : ''}`}>
           {formatTime(hover !== null ? hover * duration : time)} / {formatTime(duration)}
         </span>
+      </div>
+
+      <div className="tap-volume">
+        <button
+          className="tap-mute"
+          onClick={() => changeVolume(volume > 0 ? 0 : lastAudible.current)}
+          title={volume > 0 ? 'Mute the theme' : 'Unmute the theme'}
+          aria-label={volume > 0 ? 'Mute the theme' : 'Unmute the theme'}
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 9.5v5h3.6L12 18.5v-13L7.6 9.5z" />
+            {volume > 0 && <path d="M15.2 9.2a4 4 0 0 1 0 5.6" />}
+            {volume > 0.5 && <path d="M17.8 6.6a7.6 7.6 0 0 1 0 10.8" />}
+            {volume === 0 && <path d="m15.5 9.5 5 5m0-5-5 5" />}
+          </svg>
+        </button>
+        <input
+          className="tap-volume-slider"
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={volume}
+          onChange={e => changeVolume(parseFloat(e.target.value))}
+          aria-label="Theme volume"
+          style={{ '--fill': `${Math.round(volume * 100)}%` } as React.CSSProperties}
+        />
+        <span className="tap-volume-value">{Math.round(volume * 100)}%</span>
       </div>
     </div>
   )
