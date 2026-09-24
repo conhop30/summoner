@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { BaseStats, Champion } from '../champion/types'
 import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
 import { computeClassAverages, getPresetSuggestions } from '../championCatalog/suggestions'
@@ -9,12 +9,28 @@ interface Props {
   onAccept: (stats: Partial<BaseStats>) => void
 }
 
-// Hover pop-up off a small icon — never occupies permanent layout space.
-// Offers per-class-tag averages (computed live from the synced roster) and a
-// few one-click "use this champion's stats" presets.
+// Click the ✨ button to open or close the pop-up; it stays open while you use it and
+// closes on Escape, on a click anywhere outside it, or right after you accept a suggestion.
+// Offers per-class-tag averages (computed live from the synced roster) and a few
+// one-click "use this champion's stats" presets. Never occupies permanent layout space.
 export default function StatSuggestions({ champion, onAccept }: Props) {
   const { catalog, status, syncing, error, sync } = useChampionCatalog()
   const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   const ownTags = champion.identity.class ?? []
   const classAverages = computeClassAverages(catalog)
@@ -22,13 +38,23 @@ export default function StatSuggestions({ champion, onAccept }: Props) {
   const otherAverages = classAverages.filter(a => !ownTags.includes(a.tag))
   const presets = getPresetSuggestions(catalog)
 
+  function accept(stats: Partial<BaseStats>) {
+    onAccept(stats)
+    setOpen(false)
+  }
+
   return (
-    <div
-      className="stat-suggest-wrap"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <button type="button" className="stat-suggest-trigger" aria-label="Suggested stats">✨</button>
+    <div className="stat-suggest-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className={`stat-suggest-trigger${open ? ' open' : ''}`}
+        aria-label="Suggested stats"
+        aria-expanded={open}
+        title="Suggested stats"
+        onClick={() => setOpen(o => !o)}
+      >
+        ✨
+      </button>
 
       {open && (
         <div className="stat-suggest-popup">
@@ -50,7 +76,7 @@ export default function StatSuggestions({ champion, onAccept }: Props) {
                   {ownAverages.map(a => (
                     <div key={a.tag} className="stat-suggest-row">
                       <span>{a.tag} average <em>({a.sampleSize} champions)</em></span>
-                      <button className="stat-suggest-accept-btn" onClick={() => onAccept(a.stats)}>Accept</button>
+                      <button className="stat-suggest-accept-btn" onClick={() => accept(a.stats)}>Accept</button>
                     </div>
                   ))}
                 </div>
@@ -62,7 +88,7 @@ export default function StatSuggestions({ champion, onAccept }: Props) {
                   {otherAverages.map(a => (
                     <div key={a.tag} className="stat-suggest-row">
                       <span>{a.tag} average <em>({a.sampleSize} champions)</em></span>
-                      <button className="stat-suggest-accept-btn" onClick={() => onAccept(a.stats)}>Accept</button>
+                      <button className="stat-suggest-accept-btn" onClick={() => accept(a.stats)}>Accept</button>
                     </div>
                   ))}
                 </div>
@@ -74,7 +100,7 @@ export default function StatSuggestions({ champion, onAccept }: Props) {
                   {presets.map(p => (
                     <div key={p.championId} className="stat-suggest-row">
                       <span>{p.championName}'s stats</span>
-                      <button className="stat-suggest-accept-btn" onClick={() => onAccept(p.stats)}>Accept</button>
+                      <button className="stat-suggest-accept-btn" onClick={() => accept(p.stats)}>Accept</button>
                     </div>
                   ))}
                 </div>
