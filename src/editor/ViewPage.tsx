@@ -267,7 +267,7 @@ export default function ViewPage() {
   const [downloading, setDownloading] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<AbilitySlot | null>(null)
   const [hoveredSlot, setHoveredSlot] = useState<AbilitySlot | null>(null)
-  const themePlaying = useChampionTheme(s => !!id && s.playing?.championId === id)
+  const themePlaying = useChampionTheme(s => !!id && s.playing?.championId === id && !s.paused)
   const playTheme = useChampionTheme(s => s.play)
   const stopTheme = useChampionTheme(s => s.stop)
   // The theme belongs to this page: leaving the champion's showcase ends it.
