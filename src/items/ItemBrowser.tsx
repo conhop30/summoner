@@ -205,7 +205,6 @@ export default function ItemBrowser({
                           {item.gold_total != null && item.gold_total > 0 && (
                             <span className="item-tile-gold">{item.gold_total}</span>
                           )}
-                          {pinnedId === item.id && <span className="item-tile-pin" aria-label="Pinned">📌</span>}
                           {count > 0 && (
                             <span className="item-tile-equipped-badge">{count > 1 ? `×${count}` : '✓'}</span>
                           )}

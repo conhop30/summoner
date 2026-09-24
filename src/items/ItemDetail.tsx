@@ -24,7 +24,7 @@ export default function ItemDetail({ item, emptyMessage, mini, pinned, onUnpin }
     <>
       {pinned && (
         <div className="item-detail-pinned">
-          <span>📌 Pinned</span>
+          <span>Pinned</span>
           <button className="item-detail-unpin" onClick={onUnpin}>Unpin</button>
         </div>
       )}

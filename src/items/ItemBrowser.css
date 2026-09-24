@@ -287,18 +287,41 @@
   justify-content: center;
 }
 .item-tile.equipped .item-tile-image-wrap { border-color: var(--accent-hex); }
-.item-tile.pinned .item-tile-image-wrap {
-  border-color: var(--accent-gold);
-  box-shadow: 0 0 0 1px var(--accent-gold);
+/* Pinned: the same hextech language as the gallery's View/Edit hover — a cyan border with a
+   soft mist that slowly drifts around it (conic gradient behind the icon, blurred, so only the
+   part poking out past the border shows). Motion is opacity/angle only and is skipped for
+   reduced-motion, leaving the static cyan border. */
+@property --pin-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
 
-.item-tile-pin {
+.item-tile.pinned .item-tile-image-wrap {
+  isolation: isolate;
+  border-color: var(--accent-hex);
+}
+.item-tile.pinned .item-tile-image-wrap::before {
+  content: '';
   position: absolute;
-  top: -5px;
-  right: -4px;
-  font-size: 11px;
-  line-height: 1;
+  inset: -3px;
+  z-index: -1;
+  background: conic-gradient(
+    from var(--pin-angle),
+    transparent 0 45%,
+    var(--accent-hex-glow) 70%,
+    var(--accent-hex) 85%,
+    transparent 100%
+  );
+  filter: blur(3px);
+  animation: pin-drift 5s linear infinite;
   pointer-events: none;
+}
+@keyframes pin-drift {
+  to { --pin-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .item-tile.pinned .item-tile-image-wrap::before { animation: none; }
 }
 
 .item-detail-pinned {
@@ -309,7 +332,7 @@
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--text-accent-gold);
+  color: var(--text-muted);
 }
 .item-detail-unpin {
   font-size: var(--font-size-xs);
