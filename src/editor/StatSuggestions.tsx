@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { BaseStats, Champion } from '../champion/types'
 import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
 import { computeClassAverages, getPresetsByClass, type ChampionPresetSuggestion } from '../championCatalog/suggestions'
@@ -10,6 +10,13 @@ interface Props {
 }
 
 type Tab = 'averages' | 'champions'
+
+// The hover highlight on the hint text only exists to help someone notice the button; once
+// they've clicked it, it's retired for good (remembered per install).
+const DISCOVERED_KEY = 'summoner:suggestions-discovered'
+function readDiscovered(): boolean {
+  try { return localStorage.getItem(DISCOVERED_KEY) === '1' } catch { return false }
+}
 
 // The few numbers that tell one champion's style from another's at a glance
 // (a Braum, a Leona and a Thresh differ mostly in exactly these).
@@ -30,10 +37,29 @@ function summarize(stats: Partial<BaseStats>): string {
 export default function StatSuggestions({ champion, onAccept }: Props) {
   const { catalog, status, syncing, error, sync } = useChampionCatalog()
   const [open, setOpen] = useState(false)
+  const [discovered, setDiscovered] = useState(readDiscovered)
   const [tab, setTab] = useState<Tab>('averages')
   const [classTag, setClassTag] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const wrapRef = useRef<HTMLDivElement>(null)
+  const line1Ref = useRef<HTMLSpanElement>(null)
+  const line2Ref = useRef<HTMLSpanElement>(null)
+
+  // Stretch the shorter hint line with letter-spacing (not word-spacing, which just opens a
+  // gap in the middle) until both lines are the same width, so they read as one tidy block.
+  useLayoutEffect(() => {
+    const fit = () => {
+      const a = line1Ref.current, b = line2Ref.current
+      if (!a || !b) return
+      a.style.letterSpacing = b.style.letterSpacing = ''
+      const wa = a.offsetWidth, wb = b.offsetWidth
+      const [short, shortW, longW] = wa < wb ? [a, wa, wb] : [b, wb, wa]
+      const chars = (short.textContent ?? '').length
+      if (chars > 1) short.style.letterSpacing = `calc(var(--tracking-normal) + ${(longW - shortW) / (chars - 1)}px)`
+    }
+    fit()
+    document.fonts?.ready.then(fit)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -73,6 +99,14 @@ export default function StatSuggestions({ champion, onAccept }: Props) {
     return presetGroups.find(g => g.tag === activeTag)?.champions ?? []
   }, [presetGroups, activeTag, trimmed])
 
+  function toggle() {
+    setOpen(o => !o)
+    if (!discovered) {
+      setDiscovered(true)
+      try { localStorage.setItem(DISCOVERED_KEY, '1') } catch { /* fine — just shows the hover hint again next launch */ }
+    }
+  }
+
   function accept(stats: Partial<BaseStats>) {
     onAccept(stats)
     setOpen(false)
@@ -94,13 +128,17 @@ export default function StatSuggestions({ champion, onAccept }: Props) {
     <div className="stat-suggest-wrap" ref={wrapRef}>
       <button
         type="button"
-        className={`stat-suggest-trigger${open ? ' open' : ''}`}
+        className={`stat-suggest-trigger${open ? ' open' : ''}${discovered ? ' discovered' : ''}`}
         aria-label="Suggested stats"
         aria-expanded={open}
-        title="Suggested stats"
-        onClick={() => setOpen(o => !o)}
+        onClick={toggle}
       >
-        ✨
+        <span className="stat-suggest-spark" aria-hidden="true">✨</span>
+        {/* Two lines letter-spaced to one width, so the hint reads as a tidy block. */}
+        <span className="stat-suggest-hint" aria-hidden="true">
+          <span ref={line1Ref}>Click for</span>
+          <span ref={line2Ref}>suggestions</span>
+        </span>
       </button>
 
       {open && (
