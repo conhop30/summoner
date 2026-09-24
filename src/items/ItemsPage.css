@@ -1,6 +1,6 @@
 .items-root {
   background: var(--bg-base);
-  min-height: calc(100vh - var(--titlebar-height, 0px));
+  min-height: calc(100vh - var(--chrome-height, 0px));
   font-family: var(--font-sans);
   display: flex;
   flex-direction: column;

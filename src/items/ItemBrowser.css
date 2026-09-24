@@ -314,7 +314,7 @@
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
-  top: var(--space-5);
+  top: calc(var(--appbar-height) + var(--space-5)); /* stay clear of the sticky brand bar */
   display: flex;
   flex-direction: column;
   align-items: stretch;

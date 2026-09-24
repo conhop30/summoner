@@ -107,6 +107,7 @@ export default function EditorPage({ mode }: Props) {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const isNew = useRef(mode === 'create')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingSave = useRef<Champion | null>(null)
 
   useEffect(() => {
     if (mode === 'edit' && id) {
@@ -156,8 +157,19 @@ export default function EditorPage({ mode }: Props) {
   const handleChange = useCallback((updated: Champion) => {
     setChampion(updated)
     setSaveStatus('unsaved')
+    pendingSave.current = updated
     if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => save(updated), 600)
+    saveTimer.current = setTimeout(() => {
+      pendingSave.current = null
+      save(updated)
+    }, 600)
+  }, [save])
+
+  // Leaving the page (back arrow, header logo, …) inside the debounce window would otherwise
+  // drop the last edit, so flush it on unmount.
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    if (pendingSave.current) save(pendingSave.current)
   }, [save])
 
   if (!champion) return <div className="editor-loading" />

@@ -142,6 +142,9 @@
   /* Layout */
   --content-max-width: 1440px;
   --titlebar-height: 0px;
+  --appbar-height: 60px;
+  /* Everything above a page's own content: the frameless title bar (when on) plus the brand bar. */
+  --chrome-height: calc(var(--titlebar-height) + var(--appbar-height));
 
   /* Border radius */
   --radius-none: 0;

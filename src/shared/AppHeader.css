@@ -1,0 +1,49 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--appbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-header-home {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.app-header-logo {
+  height: 44px;
+  width: 44px;
+  object-fit: contain;
+  transition: transform var(--transition-base), filter var(--transition-base);
+}
+
+.app-header-name {
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  transition: color var(--transition-fast);
+}
+
+.app-header-home:hover .app-header-name,
+.app-header-home:focus-visible .app-header-name {
+  color: var(--text-accent-gold);
+}
+.app-header-home:hover .app-header-logo,
+.app-header-home:focus-visible .app-header-logo {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 6px var(--accent-gold-dim));
+}
+.app-header-home:focus-visible { outline: 1px solid var(--accent-gold); outline-offset: 2px; }
