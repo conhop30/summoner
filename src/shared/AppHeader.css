@@ -47,3 +47,26 @@
   filter: drop-shadow(0 0 6px var(--accent-gold-dim));
 }
 .app-header-home:focus-visible { outline: 1px solid var(--accent-gold); outline-offset: 2px; }
+
+/* Frameless: the whole bar drags the window; anything clickable opts back out. */
+.app-header.frameless { -webkit-app-region: drag; padding-right: 0; }
+.app-header.frameless .app-header-home { -webkit-app-region: no-drag; }
+
+.app-header-controls {
+  margin-left: auto;
+  align-self: stretch;
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+.app-header-controls button {
+  width: 48px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.app-header-controls button:hover { background: var(--bg-hover); color: var(--text-bright); }
+.app-header-controls button.close:hover { background: var(--accent-danger); color: var(--text-bright); }
