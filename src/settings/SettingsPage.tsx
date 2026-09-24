@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettings } from './useSettings'
 import { useMusicTracks } from './useMusicTracks'
@@ -19,6 +19,19 @@ export default function SettingsPage() {
   const [dataStatus, setDataStatus] = useState<string | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
   const { state: updateState, currentVersion } = useUpdater()
+
+  // The volume slider moves in 1% steps, so a drag fires a lot of changes. Show and apply each
+  // one instantly (local value + optimistic store update so playback follows the thumb) but only
+  // write to the database once the slider settles.
+  const [volume, setVolume] = useState(settings.music_volume)
+  const volumeSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (volumeSaveTimer.current) clearTimeout(volumeSaveTimer.current) }, [])
+  function handleVolume(v: number) {
+    setVolume(v)
+    apply({ ...settings, music_volume: v })
+    if (volumeSaveTimer.current) clearTimeout(volumeSaveTimer.current)
+    volumeSaveTimer.current = setTimeout(() => window.summoner.settings.update({ music_volume: v }), 250)
+  }
   const updateBusy = ['checking', 'downloading', 'downloaded'].includes(updateState.status)
   const updateMessage = {
     disabled: 'Updates are only available in the installed app, not when running from source.',
@@ -129,11 +142,11 @@ export default function SettingsPage() {
                   type="range"
                   min={0}
                   max={1}
-                  step={0.05}
-                  value={settings.music_volume}
-                  onChange={e => update({ music_volume: parseFloat(e.target.value) })}
+                  step={0.01}
+                  value={volume}
+                  onChange={e => handleVolume(parseFloat(e.target.value))}
                 />
-                <span className="settings-slider-value">{Math.round(settings.music_volume * 100)}%</span>
+                <span className="settings-slider-value">{Math.round(volume * 100)}%</span>
               </label>
             </>
           )}
