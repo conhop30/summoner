@@ -63,7 +63,7 @@ export default function StatsPanel({ champion, onChange }: Props) {
           <div className="sp-group-title">Base stats</div>
           <StatSuggestions champion={champion} catalogState={catalogState} onAccept={acceptSuggestion} />
         </div>
-        <StatLookup champion={champion} catalogState={catalogState} onApply={acceptSuggestion} />
+        <StatLookup catalogState={catalogState} />
         <div className="sp-grid">
           {BASE_STATS.map(f => (
             <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />

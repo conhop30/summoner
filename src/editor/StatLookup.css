@@ -87,7 +87,7 @@
   border: 1px solid var(--border-default);
 }
 
-.stat-lookup-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.stat-lookup-head { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: var(--space-4); row-gap: var(--space-1); }
 
 .stat-lookup-toggle {
   display: flex;
@@ -108,12 +108,17 @@
   font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
-.stat-lookup-count { font-size: var(--font-size-xs); color: var(--text-accent-gold); }
+
+/* The compared stats, on the champion's line: stat name, then its value. */
+.stat-lookup-compared { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: 2px; }
+.stat-lookup-chip { display: inline-flex; align-items: baseline; gap: var(--space-2); font-size: var(--font-size-sm); }
+.stat-lookup-chip-name { color: var(--text-secondary); }
+.stat-lookup-chip-value { color: var(--text-accent-gold); font-weight: 500; font-variant-numeric: tabular-nums; }
 
 .stat-lookup-cols,
 .stat-lookup-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.3fr) minmax(0, 1.4fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(150px, 1.3fr) minmax(0, 1fr);
   gap: var(--space-3);
   align-items: center;
 }
@@ -127,8 +132,7 @@
   color: var(--text-muted);
 }
 .stat-lookup-cols span:nth-child(n + 2),
-.stat-lookup-theirs,
-.stat-lookup-yours { text-align: right; }
+.stat-lookup-theirs { text-align: right; }
 
 .stat-lookup-rows { display: flex; flex-direction: column; }
 
@@ -148,7 +152,6 @@
 .stat-lookup-label input { accent-color: var(--accent-gold); margin: 0; cursor: pointer; }
 
 .stat-lookup-theirs { color: var(--text-body); font-variant-numeric: tabular-nums; }
-.stat-lookup-yours { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .stat-lookup-row.checked .stat-lookup-label { color: var(--text-accent-gold); }
 .stat-lookup-row.checked .stat-lookup-theirs { color: var(--text-accent-gold); font-weight: 500; }
 
@@ -159,11 +162,6 @@
   gap: var(--space-3);
   padding-top: var(--space-1);
   border-top: 1px solid var(--border-subtle);
-}
-.stat-lookup-note {
-  margin-right: auto;
-  font-size: var(--font-size-xs);
-  color: var(--text-accent-hex);
 }
 
 .stat-lookup-link {
@@ -180,10 +178,3 @@
 .stat-lookup-link:disabled { opacity: 0.4; cursor: default; }
 
 .stat-lookup .stat-suggest-accept-btn:disabled { opacity: 0.4; cursor: default; }
-
-@container (max-width: 520px) {
-  .stat-lookup-cols,
-  .stat-lookup-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .stat-lookup-cols span:nth-child(3),
-  .stat-lookup-yours { display: none; }
-}
