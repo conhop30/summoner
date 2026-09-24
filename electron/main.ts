@@ -61,6 +61,11 @@ function createWindow() {
     },
   })
 
+  // The header hides the window buttons and shows in-app navigation while fullscreen.
+  const sendFullScreen = (on: boolean) => win?.webContents.send('window:fullscreenChanged', on)
+  win.on('enter-full-screen', () => sendFullScreen(true))
+  win.on('leave-full-screen', () => sendFullScreen(false))
+
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', new Date().toLocaleString())
   })

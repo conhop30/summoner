@@ -80,6 +80,7 @@ declare global {
         close: () => Promise<void>
         isFullScreen: () => Promise<boolean>
         toggleFullScreen: () => Promise<void>
+        onFullScreenChange: (cb: (fullscreen: boolean) => void) => () => void
       }
 
       data: {

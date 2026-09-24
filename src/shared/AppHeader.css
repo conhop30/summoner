@@ -49,13 +49,14 @@
 .app-header-home:focus-visible { outline: 1px solid var(--accent-gold); outline-offset: 2px; }
 
 /* Frameless: the whole bar drags the window; anything clickable opts back out. */
-.app-header.frameless { -webkit-app-region: drag; padding-right: 0; }
+.app-header.frameless { -webkit-app-region: drag; }
+.app-header.has-controls { padding-right: 0; }
 .app-header.frameless .app-header-home { -webkit-app-region: no-drag; }
 
 .app-header-controls {
-  margin-left: auto;
   align-self: stretch;
   display: flex;
+  margin-left: var(--space-2);
   -webkit-app-region: no-drag;
 }
 .app-header-controls button {
@@ -70,3 +71,47 @@
 }
 .app-header-controls button:hover { background: var(--bg-hover); color: var(--text-bright); }
 .app-header-controls button.close:hover { background: var(--accent-danger); color: var(--text-bright); }
+
+/* In-app navigation: Items, Settings (icon), fullscreen toggle. */
+.app-header-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  -webkit-app-region: no-drag;
+}
+
+.app-header-link,
+.app-header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+.app-header-link {
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+.app-header-icon-btn { width: 36px; }
+
+.app-header-link:hover,
+.app-header-icon-btn:hover,
+.app-header-link:focus-visible,
+.app-header-icon-btn:focus-visible {
+  color: var(--text-accent-gold);
+  border-color: var(--accent-gold);
+  outline: none;
+}
+.app-header-link.active,
+.app-header-icon-btn.active {
+  color: var(--text-accent-gold);
+  background: var(--accent-gold-dim);
+  border-color: var(--accent-gold);
+}

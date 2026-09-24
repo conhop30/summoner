@@ -31,22 +31,6 @@
   gap: var(--space-3);
 }
 
-.gallery-nav-link {
-  font-size: var(--font-size-xs);
-  letter-spacing: var(--tracking-wider);
-  text-transform: uppercase;
-  padding: 5px var(--space-3);
-  border: 1px solid var(--border-default);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-.gallery-nav-link:hover {
-  color: var(--text-accent-gold);
-  border-color: var(--accent-gold);
-}
-
 .gallery-sort {
   display: flex;
   gap: 2px;

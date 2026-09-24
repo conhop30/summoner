@@ -116,6 +116,13 @@ contextBridge.exposeInMainWorld('summoner', {
 
     toggleFullScreen: (): Promise<void> =>
       ipcRenderer.invoke('window:toggleFullScreen'),
+
+    // Returns an unsubscribe function.
+    onFullScreenChange: (cb: (fullscreen: boolean) => void): (() => void) => {
+      const handler = (_e: unknown, on: boolean) => cb(on)
+      ipcRenderer.on('window:fullscreenChanged', handler)
+      return () => ipcRenderer.removeListener('window:fullscreenChanged', handler)
+    },
   },
 
   data: {

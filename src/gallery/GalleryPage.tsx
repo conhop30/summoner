@@ -63,8 +63,6 @@ const handleFavoriteToggle = useCallback(async (champion: Champion) => {
       <div className="gallery-top-bar">
         <span className="gallery-title">My Champions</span>
         <div className="gallery-controls">
-          <button className="gallery-nav-link" onClick={() => navigate('/items')}>Items</button>
-          <button className="gallery-nav-link" onClick={() => navigate('/settings')}>Settings</button>
           <div className="gallery-sort">
             <button
               className={`gallery-sort-btn${sort === 'updated' ? ' active' : ''}`}
