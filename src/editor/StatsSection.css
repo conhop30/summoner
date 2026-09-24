@@ -12,7 +12,7 @@
 }
 
 .stats-group-title {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #fff;
@@ -48,7 +48,7 @@
 }
 
 .stat-label {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #5b5b63;
@@ -96,14 +96,14 @@
 }
 
 .statlab-label {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #1e2a38;
 }
 
 .statlab-hint {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #0d1117;

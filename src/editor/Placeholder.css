@@ -12,7 +12,7 @@
   position: absolute;
   top: 20px;
   left: 24px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #c89b3c;
@@ -29,7 +29,7 @@
 }
 
 .placeholder-id {
-  font-size: 11px;
+  font-size: 12px;
   color: #1e2328;
   letter-spacing: 0.08em;
 }

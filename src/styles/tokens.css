@@ -110,13 +110,14 @@
   --interactive-active:   var(--primitive-navy-800);
   --interactive-disabled: var(--primitive-navy-700);
 
-  /* Typography scale */
+  /* Typography scale — follows the Windows 11 type ramp: 12px is the smallest text anywhere
+     (caption), 14px is body. Nothing should render below 12px. */
   --font-sans:            'Inter', system-ui, -apple-system, sans-serif;
-  --font-size-xs:         8px;
-  --font-size-sm:         10px;
-  --font-size-base:       12px;
-  --font-size-md:         14px;
-  --font-size-lg:         18px;
+  --font-size-xs:         12px;
+  --font-size-sm:         13px;
+  --font-size-base:       14px;
+  --font-size-md:         16px;
+  --font-size-lg:         20px;
   --font-size-xl:         24px;
   --font-size-2xl:        32px;
   --font-size-3xl:        40px;
@@ -124,9 +125,9 @@
   /* Letter spacing */
   --tracking-tight:       0.02em;
   --tracking-normal:      0.05em;
-  --tracking-wide:        0.1em;
-  --tracking-wider:       0.14em;
-  --tracking-widest:      0.2em;
+  --tracking-wide:        0.08em;
+  --tracking-wider:       0.1em;
+  --tracking-widest:      0.16em;
 
   /* Spacing */
   --space-1:  4px;

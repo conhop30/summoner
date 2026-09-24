@@ -1,4 +1,5 @@
 .stats-panel {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -42,12 +43,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  width: 108px;
+  width: 160px;
   flex-shrink: 0;
 }
 
 .sp-icon {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--accent-gold);
   width: 16px;
   text-align: center;
@@ -89,4 +90,10 @@
 .sp-growth:focus {
   border-color: var(--border-default);
   color: var(--text-body);
+}
+
+/* Two columns need roughly 760px; below that (a narrow window, or the Story panel open),
+   stack to one column so the labels and inputs stay readable at the larger text size. */
+@container (max-width: 759px) {
+  .sp-grid { grid-template-columns: 1fr; }
 }
