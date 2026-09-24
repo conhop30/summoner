@@ -37,9 +37,10 @@ interface Props {
   onView: () => void
   onEdit: () => void
   onFavoriteToggle: () => void
+  onDelete: () => void
 }
 
-export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggle }: Props) {
+export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggle, onDelete }: Props) {
   const { identity, metadata } = champion
   const color      = getPlaceholderColor(metadata.id)
   const initials   = getInitials(identity.name)
@@ -119,6 +120,17 @@ export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggl
             <span className="tile-action-label">Edit</span>
           </button>
         </div>
+
+        <button
+          className="tile-delete-btn"
+          title={`Delete ${identity.name || 'champion'}`}
+          aria-label={`Delete ${identity.name || 'champion'}`}
+          onClick={e => { e.stopPropagation(); onDelete() }}
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+          </svg>
+        </button>
       </div>
     </div>
   )

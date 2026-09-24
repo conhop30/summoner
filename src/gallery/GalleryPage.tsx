@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { Champion } from '../champion/types'
 import ChampionTile from './ChampionTile'
 import CreateTile from './CreateTile'
+import ConfirmDialog from '../shared/ConfirmDialog'
 import './GalleryPage.css'
 
 const CLASS_FILTERS = ['All', 'Favorites', 'Assassin', 'Fighter', 'Mage', 'Marksman', 'Support', 'Tank']
@@ -14,6 +15,7 @@ export default function GalleryPage() {
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState('All')
   const [sort, setSort] = useState<SortMode>('updated')
+  const [pendingDelete, setPendingDelete] = useState<Champion | null>(null)
   const navigate = useNavigate()
 
   const load = useCallback(() => {
@@ -32,6 +34,13 @@ const handleFavoriteToggle = useCallback(async (champion: Champion) => {
     })
     load()
   }, [load])
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return
+    await window.summoner.champion.delete(pendingDelete.metadata.id)
+    setPendingDelete(null)
+    load()
+  }, [pendingDelete, load])
 
   const filtered = champions
     .filter(c => {
@@ -103,10 +112,21 @@ const handleFavoriteToggle = useCallback(async (champion: Champion) => {
             onView={() => navigate(`/view/${c.metadata.id}`)}
             onEdit={() => navigate(`/edit/${c.metadata.id}`)}
             onFavoriteToggle={() => handleFavoriteToggle(c)}
+            onDelete={() => setPendingDelete(c)}
           />
         ))}
         <CreateTile onClick={() => navigate('/create')} />
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete ${pendingDelete.identity.name || 'this champion'}?`}
+          message="This permanently deletes the champion along with their story, stats, abilities, and item builds. This can't be undone."
+          confirmLabel="Delete champion"
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   )
 }

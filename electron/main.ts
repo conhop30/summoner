@@ -104,7 +104,19 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('champion:delete', (_event, id: string) => {
-    return deleteChampion(db, id)
+    const deleted = deleteChampion(db, id)
+    if (deleted && id) {
+      // Splash art and ability icons are saved as `<championId>*` — drop them with the champion.
+      const imageDir = path.join(app.getPath('userData'), 'images')
+      try {
+        for (const f of fs.readdirSync(imageDir)) {
+          if (f.startsWith(id)) fs.unlinkSync(path.join(imageDir, f))
+        }
+      } catch {
+        // No images folder, or a file is locked — leftover files are harmless.
+      }
+    }
+    return deleted
   })
 
   ipcMain.handle('item:sync', async () => {

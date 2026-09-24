@@ -91,8 +91,37 @@
 .tile-bottom {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  padding: var(--space-4) var(--space-3) var(--space-3);
+  /* Right padding keeps long names clear of the delete button. */
+  padding: var(--space-4) 38px var(--space-3) var(--space-3);
   z-index: 1;
+}
+
+/* Quiet by default so it never competes with the art, but red enough to be found; it sits
+   above the hover footer (z-index 2) so it stays clickable while View / Edit are showing. */
+.tile-delete-btn {
+  position: absolute;
+  bottom: var(--space-2); right: var(--space-2);
+  z-index: 4;
+  width: 26px; height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--accent-danger);
+  opacity: 0.35;
+  cursor: pointer;
+  transition: opacity var(--transition-fast), background var(--transition-fast),
+    border-color var(--transition-fast), color var(--transition-fast);
+}
+.tile-delete-btn:hover,
+.tile-delete-btn:focus-visible {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.55);
+  border-color: var(--border-danger);
+  color: var(--accent-danger-hover);
+  outline: none;
 }
 
 .tile-name {
