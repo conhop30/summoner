@@ -202,8 +202,9 @@
   font-size: var(--font-size-base);
   line-height: 1.8;
   padding: 10px var(--space-3);
-  resize: vertical;
-  min-height: 120px;
+  resize: none;
+  field-sizing: content;   /* grows and shrinks with the text */
+  min-height: 5.5em;
   outline: none;
   font-family: var(--font-sans);
   width: 100%;

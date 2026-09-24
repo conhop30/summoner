@@ -123,8 +123,9 @@
   font-size: var(--font-size-base);
   line-height: 1.7;
   padding: var(--space-3) 14px;
-  resize: vertical;
-  min-height: 100px;
+  resize: none;
+  field-sizing: content;   /* grows and shrinks with the text */
+  min-height: 4.5em;
   outline: none;
   border-radius: var(--radius-none);
   font-family: var(--font-sans);
