@@ -25,10 +25,10 @@ interface Wisp {
   trail: boolean              // shed by the head as it moves, vs. the standing body of mist
 }
 
-// A short-lived gold streak shed by the hover slice; it stretches vertically and is left
-// behind as the slice moves, which is what gives the slice its sense of drag.
+// A short-lived gold streak pulled up or down the hover slice. It's positioned relative to the
+// slice, so it travels with the pointer and nothing is ever left behind.
 interface Streak {
-  x: number; y: number; vx: number; vy: number
+  dx: number; y: number; vy: number
   age: number; life: number
   w: number; h: number
 }
@@ -98,7 +98,7 @@ interface State {
   t: number              // simulation clock; only advances while playing, so pausing freezes the mist
   head: number           // displayed head x (eased toward the target so seeks glide)
   slice: number          // 0–1 how present the gold hover slice is (fades in and out)
-  sx: number             // slice x, eased toward the pointer so it trails a fast-moving mouse
+  sx: number             // slice x: exactly the pointer (no easing, so nothing lags or trails)
   hx: number             // last pointer x, kept so the slice can fade out where it was
   streaks: Streak[]
   streakEmit: number
@@ -113,8 +113,8 @@ interface State {
 }
 
 // The theme player's progress indicator. There is no bar: the played part of the song is a
-// bank of drifting hextech mist, thickest at the head, which is a small swirling orb that sheds
-// wisps as it moves. Hovering cuts a gold slice through the mist at the pointer.
+// bank of drifting hextech mist, thickest at its leading edge, which sheds small wisps as it
+// moves. Hovering cuts a gold slice through the mist at the pointer.
 export default function MistCanvas({ fraction, active, hover }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const props = useRef({ fraction, active, hover })
@@ -175,7 +175,7 @@ export default function MistCanvas({ fraction, active, hover }: Props) {
       for (const w of S.wisps) if (!w.trail) have++
       for (let i = 0; have < want && i < 10; i++, have++) spawn(x0, S.head)
 
-      // While playing, the head sheds small bright wisps that drift back into the bank.
+      // While playing, the leading edge sheds small bright wisps that drift back into the bank.
       if (sim > 0) {
         S.emit += sim * 26
         while (S.emit >= 1 && S.wisps.length < 420) {
@@ -190,35 +190,28 @@ export default function MistCanvas({ fraction, active, hover }: Props) {
         }
       }
 
-      // The gold slice follows the pointer with a little lag and only exists while it's over the
-      // mist: it fades out fast when the pointer leaves, and starts fresh (no glide from where
-      // it last was) the next time it comes back.
+      // The gold slice sits exactly on the pointer and only exists while it's over the mist: it
+      // fades out fast when the pointer leaves, and never glides in from where it last was.
       const hovering = hv !== null
       if (hovering) {
         S.hx = x0 + clamp01(hv) * (x1 - x0)
-        if (S.slice < 0.03) S.sx = S.hx
+        S.sx = S.hx
       }
-      const prevSx = S.sx
-      S.sx += (S.hx - S.sx) * Math.min(1, dt * 22)
-      const velocity = dt > 0 ? (S.sx - prevSx) / dt : 0
       S.slice += ((hovering ? 1 : 0) - S.slice) * Math.min(1, dt * (hovering ? 16 : 24))
       if (!hovering && S.slice < 0.01) { S.slice = 0; S.streaks = [] }
 
       for (const k of S.streaks) {
         k.age += dt
-        k.x += k.vx * dt
         k.y += k.vy * dt
       }
       S.streaks = S.streaks.filter(k => k.age < k.life)
       if (hovering && !still) {
-        S.streakEmit += dt * 90
-        while (S.streakEmit >= 1 && S.streaks.length < 90) {
+        S.streakEmit += dt * 70
+        while (S.streakEmit >= 1 && S.streaks.length < 60) {
           S.streakEmit -= 1
-          const dir = Math.random() < 0.5 ? -1 : 1
           S.streaks.push({
-            x: S.sx + rand(-3, 3), y: S.h / 2 + rand(-14, 14),
-            // dragged backwards along the pointer's motion, and pulled up or down the slice
-            vx: -velocity * 0.12 + rand(-8, 8), vy: dir * rand(45, 130),
+            dx: rand(-3, 3), y: S.h / 2 + rand(-14, 14),
+            vy: (Math.random() < 0.5 ? -1 : 1) * rand(45, 130),
             age: 0, life: rand(0.35, 0.8),
             w: rand(4, 8), h: rand(14, 30),
           })
@@ -269,27 +262,18 @@ export default function MistCanvas({ fraction, active, hover }: Props) {
         puff(w.bright, x, y, w.size * w.aspect, w.size, env * edge * along * w.strength * dim, goldNear(x))
       }
 
-      // The gold slice: a strong vertical blade of gold where the pointer is, shimmering as
-      // gold streaks are pulled up and down it and smeared behind it as it moves. It lives only
-      // while hovering; nothing is left behind once the pointer goes.
+      // The gold slice: a strong vertical blade of gold where the pointer is, with gold streaks
+      // pulled up and down it. It lives only while hovering and doesn't trail the pointer.
       if (slice > 0.01) {
         for (const k of S.streaks) {
           const env = Math.sin(Math.PI * (k.age / k.life))
-          puff(true, k.x, k.y, k.w, k.h, env * 0.9 * slice, slice)
+          puff(true, S.sx + k.dx, k.y, k.w, k.h, env * 0.9 * slice, slice)
         }
         const shimmer = 0.9 + 0.1 * Math.sin(S.hx * 0.05 + performance.now() / 90)
         puff(true, S.sx, cy, 12, S.h * 1.05, 0.7 * shimmer * slice, 1)
         puff(true, S.sx, cy, 4, S.h * 0.9, 1 * shimmer * slice, 1)
       }
 
-      // The head: a bright orb with a few tiny motes swirling around it.
-      const breathe = 1 + 0.1 * Math.sin(S.t * 3)
-      puff(true, head, cy, 30 * breathe, 26 * breathe, 0.55 * dim, goldNear(head))
-      puff(true, head, cy, 11 * breathe, 11 * breathe, 1 * dim, goldNear(head))
-      for (let i = 0; i < 5; i++) {
-        const ang = S.t * (1.6 + i * 0.35) + i * 1.257
-        puff(true, head + Math.cos(ang) * (9 + i), cy + Math.sin(ang) * 6, 8, 8, 0.7 * dim, goldNear(head))
-      }
       ctx.globalAlpha = 1
     }
 
