@@ -86,93 +86,26 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--tracking-normal);
   color: var(--text-muted);
+  transition: color var(--transition-fast);
 }
+.tap-time.hovering { color: var(--text-accent-gold); }
 
-/* ── Hextech-mist progress bar ──
-   A slim dark track. The played portion is a cyan core wrapped in a soft blurred halo (the
-   mist), with a few blurred strands drifting through it — the same vapor language as the
-   gallery tiles' hover — and a glowing head at the leading edge. Motion is transform-only and
-   only runs while playing; reduced-motion keeps the still glow. The bar's box is taller than
-   the track so the halo has room and the whole thing is an easy click target. */
+/* ── Hextech-mist progress ──
+   No bar: MistCanvas paints drifting mist over the played part of the song, and this box is
+   just its hit area, tall enough for the mist to billow and an easy target to click or drag. */
 .mist-bar {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 22px;
-  display: flex;
-  align-items: center;
+  height: 40px;
   cursor: pointer;
   touch-action: none;
 }
 .mist-bar:focus-visible { outline: 1px solid var(--border-default); outline-offset: 2px; }
 
-.mist-bar-track {
-  position: relative;
+.mist-canvas {
+  display: block;
   width: 100%;
-  height: 6px;
-  background: var(--bg-base);
-  border: 1px solid var(--border-default);
-}
-
-.mist-bar-fill {
-  position: absolute;
-  left: -1px; top: -1px; bottom: -1px;
-  background: linear-gradient(90deg, var(--accent-hex-deep), var(--accent-hex));
-  /* no width transition: the width follows the audio position frame by frame */
-}
-
-.mist-bar-halo {
-  position: absolute;
-  inset: -5px -2px;
-  background: var(--accent-hex-glow);
-  filter: blur(7px);
-  opacity: 0.55;
+  height: 100%;
   pointer-events: none;
-  transition: opacity var(--transition-slow);
-}
-.mist-bar.active .mist-bar-halo { opacity: 0.95; }
-
-.mist-bar-clip {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.mist-bar-strand {
-  position: absolute;
-  left: -40%;
-  width: 90%;
-  height: 4px;
-  border-radius: 50%;
-  background: linear-gradient(90deg, transparent, var(--accent-hex-bright) 50%, transparent);
-  filter: blur(2px);
-  opacity: 0.7;
-  animation: mist-bar-drift 3.4s ease-in-out infinite;
-  animation-play-state: paused;
-}
-.mist-bar.active .mist-bar-strand { animation-play-state: running; }
-.mist-bar-strand.s1 { top: -1px; animation-duration: 3.1s; }
-.mist-bar-strand.s2 { top: 1px;  animation-duration: 4.3s; animation-delay: -1.4s; }
-.mist-bar-strand.s3 { top: 3px;  animation-duration: 3.7s; animation-delay: -2.5s; }
-
-@keyframes mist-bar-drift {
-  0%   { transform: translateX(0);    opacity: 0.35; }
-  50%  { transform: translateX(80%);  opacity: 0.85; }
-  100% { transform: translateX(0);    opacity: 0.35; }
-}
-
-.mist-bar-head {
-  position: absolute;
-  right: -5px; top: 50%;
-  width: 10px; height: 10px;
-  transform: translateY(-50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-hex-bright) 0 30%, var(--accent-hex) 60%, transparent 72%);
-  box-shadow: 0 0 10px var(--accent-hex-glow);
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mist-bar-strand { animation: none; }
 }

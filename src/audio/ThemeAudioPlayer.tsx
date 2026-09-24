@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChampionTheme } from './useChampionTheme'
+import MistCanvas, { MIST_PAD } from './MistCanvas'
 import './ThemeAudioPlayer.css'
 
 interface Props {
@@ -19,8 +20,8 @@ function formatTime(seconds: number): string {
 }
 
 // The champion theme's player, used in the editor: outlined play/pause, a seekable progress
-// bar drawn as hextech mist (a cyan glow with blurred strands drifting through it, like the
-// gallery tiles' hover), and elapsed / total time. Playback itself lives in ThemePlayer at the
+// bar drawn as hextech mist (no bar at all: drifting mist fills the played part, and hovering
+// turns it gold and marks where a click will land), and elapsed / total time. Playback itself lives in ThemePlayer at the
 // app root, so a theme keeps going if you navigate; this just drives and displays it.
 export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove }: Props) {
   const isLoaded = useChampionTheme(s => s.playing?.championId === owner && s.playing.src === src)
@@ -50,6 +51,14 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
 
   const trackRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
+  const [hover, setHover] = useState<number | null>(null)
+
+  // Position under the pointer, using the same inset the mist is drawn with.
+  function fractionAt(clientX: number): number | null {
+    const rect = trackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width <= MIST_PAD * 2) return null
+    return Math.max(0, Math.min(1, (clientX - rect.left - MIST_PAD) / (rect.width - MIST_PAD * 2)))
+  }
 
   function start() { play({ championId: owner, name, src }) }
 
@@ -60,9 +69,8 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
 
   // Jump to a spot on the bar; from idle this also starts playback there.
   function seekToPointer(clientX: number) {
-    const rect = trackRef.current?.getBoundingClientRect()
-    if (!rect || duration <= 0) return
-    const f = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const f = fractionAt(clientX)
+    if (f === null || duration <= 0) return
     if (!isLoaded) start()
     seek(f * duration)
   }
@@ -99,7 +107,7 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
 
       <div className="tap-bottom">
         <div
-          className={`mist-bar${isPlaying ? ' active' : ''}`}
+          className="mist-bar"
           ref={trackRef}
           role="slider"
           tabIndex={0}
@@ -114,23 +122,25 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
             e.currentTarget.setPointerCapture(e.pointerId)
             seekToPointer(e.clientX)
           }}
-          onPointerMove={e => { if (dragging.current) seekToPointer(e.clientX) }}
-          onPointerUp={e => { dragging.current = false; e.currentTarget.releasePointerCapture(e.pointerId) }}
-          onPointerCancel={() => { dragging.current = false }}
+          onPointerMove={e => {
+            setHover(fractionAt(e.clientX))
+            if (dragging.current) seekToPointer(e.clientX)
+          }}
+          onPointerUp={e => {
+            dragging.current = false
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            const r = e.currentTarget.getBoundingClientRect()
+            if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) setHover(null)
+          }}
+          onPointerCancel={() => { dragging.current = false; setHover(null) }}
+          onPointerLeave={() => { if (!dragging.current) setHover(null) }}
         >
-          <div className="mist-bar-track">
-            <div className="mist-bar-fill" style={{ width: `${fraction * 100}%` }}>
-              <span className="mist-bar-halo" />
-              <span className="mist-bar-clip">
-                <span className="mist-bar-strand s1" />
-                <span className="mist-bar-strand s2" />
-                <span className="mist-bar-strand s3" />
-              </span>
-              {fraction > 0 && <span className="mist-bar-head" />}
-            </div>
-          </div>
+          <MistCanvas fraction={fraction} active={isPlaying} hover={hover} />
         </div>
-        <span className="tap-time">{formatTime(time)} / {formatTime(duration)}</span>
+        {/* While hovering, the readout shows the time a click would jump to. */}
+        <span className={`tap-time${hover !== null ? ' hovering' : ''}`}>
+          {formatTime(hover !== null ? hover * duration : time)} / {formatTime(duration)}
+        </span>
       </div>
     </div>
   )
