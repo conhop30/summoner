@@ -46,124 +46,24 @@
       },
       "abilities": {
         "passive": {
-          "max_rank": 1,
           "name": "Glow",
           "description": "Passive text."
         },
         "q": {
-          "max_rank": 5,
           "name": "Lantern Bolt",
           "description": "Fires a bolt.",
-          "cooldown": [
-            8,
-            7.5,
-            7,
-            6.5,
-            6
-          ],
-          "cost": [
-            50,
-            55,
-            60,
-            65,
-            70
-          ],
-          "cost_type": "Mana",
-          "effects": [
-            {
-              "type": "damage",
-              "damage_type": "Magic",
-              "base": [
-                60,
-                90,
-                120,
-                150,
-                180
-              ],
-              "notes": "On hit",
-              "ratios": [
-                {
-                  "stat": "AP",
-                  "values": [
-                    0.4,
-                    0.45,
-                    0.5,
-                    0.55,
-                    0.6
-                  ]
-                }
-              ]
-            }
-          ],
           "icon": {
             "mime": "image/png",
             "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-          },
-          "journal": {
-            "tabs": [
-              {
-                "id": "tab-one",
-                "name": "Scrapped",
-                "content": "It used to stun.",
-                "created_at": "2026-09-01T10:00:00.000Z"
-              }
-            ]
-          },
-          "blocks": [
-            {
-              "kind": "alternate_form",
-              "name": "Empowered Bolt",
-              "description": "Bigger.",
-              "cooldown": [
-                9,
-                9,
-                9,
-                9,
-                9
-              ]
-            },
-            {
-              "kind": "recast",
-              "name": "Recast",
-              "recast": {
-                "max_recasts": 2,
-                "recast_window": 4,
-                "recast_extends_on": "after Q hits"
-              }
-            }
-          ],
-          "extra": {
-            "recast": {
-              "max_recasts": 1,
-              "recast_window": 3
-            },
-            "flavour": "note"
           }
         },
         "w": {
-          "max_rank": 5,
-          "name": "Ward",
-          "cooldown": [
-            14,
-            13,
-            12
-          ],
-          "effects": [
-            {
-              "type": "shield",
-              "base": [
-                50,
-                80
-              ]
-            }
-          ]
+          "name": "Ward"
         },
-        "e": {
-          "max_rank": 5
-        },
+        "e": {},
         "r": {
-          "max_rank": 3,
-          "name": "Eclipse"
+          "name": "Eclipse",
+          "description": "The lantern goes out."
         }
       }
     },

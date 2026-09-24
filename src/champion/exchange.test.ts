@@ -45,16 +45,18 @@ describe('conceptSnapshot', () => {
 
     const renamed = champion({ identity: { ...base.identity, name: 'Other' } })
     const edited = champion({ abilities: { ...base.abilities, q: { ...base.abilities.q, name: 'Bolt' } } })
+    const described = champion({ abilities: { ...base.abilities, w: { ...base.abilities.w, description: 'Slows.' } } })
+    const iconed = champion({ abilities: { ...base.abilities, e: { ...base.abilities.e, icon_path: 'app-asset://x/e.png' } } })
     const tagged = champion({ metadata: { ...base.metadata, tags: ['fox', 'mage'] } })
-    for (const changed of [renamed, edited, tagged]) expect(conceptSnapshot(changed)).not.toBe(conceptSnapshot(base))
+    for (const changed of [renamed, edited, described, iconed, tagged]) expect(conceptSnapshot(changed)).not.toBe(conceptSnapshot(base))
   })
 
-  it('does not move when only stats, builds or the favorite flag change', () => {
+  it('does not move when only stats, builds, ability numbers, blocks, notes or the favorite flag change', () => {
     const base = champion()
     const statted = champion({ base_stats: { ...base.base_stats, health: 999 } })
     const starred = champion({ metadata: { ...base.metadata, is_favorite: false } })
-    expect(conceptSnapshot(statted)).toBe(conceptSnapshot(base))
-    expect(conceptSnapshot(starred)).toBe(conceptSnapshot(base))
+    const tuned = champion({ abilities: { ...base.abilities, q: { ...base.abilities.q, cooldown: [9, 8, 7, 6, 5], cost: [1, 2, 3, 4, 5], effects: [{ type: 'stun' }], blocks: [{ kind: 'passive' }], journal: { tabs: [] }, max_rank: 4 } } })
+    for (const same of [statted, starred, tuned]) expect(conceptSnapshot(same)).toBe(conceptSnapshot(base))
   })
 })
 
@@ -71,10 +73,20 @@ describe('championToRecord', () => {
     expect(text).not.toContain('image_path')
   })
 
-  it('adds stats and builds only for a full export', () => {
-    const record = toRecord(champion(), 'full')
+  it('adds stats, builds and ability numbers only for a full export', () => {
+    const c = champion()
+    c.abilities.q = { ...c.abilities.q, name: 'Bolt', cooldown: [8, 7, 6, 5, 4], effects: [{ type: 'damage' }] }
+    const record = toRecord(c, 'full')
     expect(record.desktop?.base_stats.health).toBe(600)
     expect(record.desktop?.builds).toHaveLength(1)
+    expect(record.desktop?.abilities.q.cooldown).toEqual([8, 7, 6, 5, 4])
+    expect(record.desktop?.abilities.q).not.toHaveProperty('name')
+    expect(record.abilities.q).toEqual({ name: 'Bolt' })
+    // A concept export has the name but none of the numbers.
+    const concept = toRecord(c)
+    expect(concept.abilities.q).toEqual({ name: 'Bolt' })
+    expect(JSON.stringify(concept)).not.toContain('cooldown')
+    expect(JSON.stringify(concept)).not.toContain('effects')
   })
 
   it('embeds ability icons and skips images it cannot read', () => {
@@ -135,14 +147,23 @@ describe('classify and actionFor', () => {
 describe('recordToChampion: updating, never overwriting', () => {
   const noAssets = { icons: {} }
 
-  it('keeps stats, builds, theme audio and favorite when a concept record updates a champion', () => {
+  it('keeps stats, builds, ability numbers, theme audio and favorite when a concept record updates a champion', () => {
     const local = champion({ identity: { name: 'Nyxara', theme_audio: { name: 'a.mp3', src: 'app-asset://x/a.mp3' } } })
     local.base_stats.health = 777
+    local.abilities.q = { ...local.abilities.q, name: 'Old Q', icon_path: 'app-asset://x/oldq.png', cooldown: [8, 7, 6, 5, 4], max_rank: 4, blocks: [{ kind: 'recast', recast: { max_recasts: 1, recast_window: 3 } }], journal: { tabs: [{ id: 'tab-1', name: 'n', content: 'c', created_at: T1 }] } }
     const record: ChampionRecord = {
       ...toRecord(champion()), concept_updated_at: T3, tags: ['fox', 'edited'],
       identity: { name: 'Nyxara, Renamed', lore: 'New lore' },
+      abilities: { ...toRecord(champion()).abilities, q: { name: 'New Q', description: 'Fresh text.' } },
     }
     const merged = recordToChampion(record, local, noAssets)
+    expect(merged.abilities.q.name).toBe('New Q')
+    expect(merged.abilities.q.description).toBe('Fresh text.')
+    expect(merged.abilities.q.icon_path).toBeUndefined() // the file has no icon, so it is removed
+    expect(merged.abilities.q.cooldown).toEqual([8, 7, 6, 5, 4])
+    expect(merged.abilities.q.max_rank).toBe(4)
+    expect(merged.abilities.q.blocks).toEqual(local.abilities.q.blocks)
+    expect(merged.abilities.q.journal).toEqual(local.abilities.q.journal)
     expect(merged.identity.name).toBe('Nyxara, Renamed')
     expect(merged.identity.lore).toBe('New lore')
     expect(merged.metadata.tags).toEqual(['fox', 'edited'])
@@ -181,12 +202,16 @@ describe('recordToChampion: updating, never overwriting', () => {
     expect(merged.metadata.id).toBe(champion().metadata.id)
   })
 
-  it('a full record does replace stats and builds', () => {
+  it('a full record does replace stats, builds and ability numbers', () => {
     const record = { ...toRecord(champion(), 'full'), concept_updated_at: T3 } as ChampionRecord
     record.desktop!.base_stats = { ...record.desktop!.base_stats, health: 640 }
+    record.desktop!.abilities.q = { max_rank: 5, cooldown: [5, 5, 5, 5, 5] }
     const local = champion()
     local.base_stats.health = 500
-    expect(recordToChampion(record, local, noAssets).base_stats.health).toBe(640)
+    local.abilities.q = { ...local.abilities.q, cooldown: [9, 9, 9, 9, 9] }
+    const merged = recordToChampion(record, local, noAssets)
+    expect(merged.base_stats.health).toBe(640)
+    expect(merged.abilities.q.cooldown).toEqual([5, 5, 5, 5, 5])
   })
 
   it('"keep both" makes a separate copy with its own id and name, leaving the original alone', () => {
@@ -204,6 +229,7 @@ describe('the mobile round trip', () => {
     // Desktop side: a champion with stats, exported for mobile.
     const desktop = champion()
     desktop.base_stats.health = 615
+    desktop.abilities.q = { ...desktop.abilities.q, cooldown: [8, 7, 6, 5, 4], cost: [50, 55, 60, 65, 70], effects: [{ type: 'damage', base: [1, 2, 3, 4, 5] }] }
     const exported = JSON.parse(JSON.stringify(toRecord(desktop))) as ChampionRecord
     expect(exported.desktop).toBeUndefined()
 
@@ -212,13 +238,16 @@ describe('the mobile round trip', () => {
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     const edited: ChampionRecord = JSON.parse(JSON.stringify(parsed.file.records[0]))
-    edited.abilities.q = { ...edited.abilities.q, name: 'Lantern Bolt', cooldown: [8, 8, 8, 8, 8] }
+    edited.abilities.q = { ...edited.abilities.q, name: 'Lantern Bolt', description: 'Written on the bus.' }
     edited.concept_updated_at = T3
 
     // Back on the desktop: it is an update, and stats survive.
     expect(classify(desktop, edited)).toBe('update')
     const merged = recordToChampion(edited, desktop, { icons: {} })
     expect(merged.abilities.q.name).toBe('Lantern Bolt')
+    expect(merged.abilities.q.description).toBe('Written on the bus.')
+    expect(merged.abilities.q.cooldown).toEqual([8, 7, 6, 5, 4])
+    expect(merged.abilities.q.effects).toEqual(desktop.abilities.q.effects)
     expect(merged.base_stats.health).toBe(615)
     expect(merged.builds).toEqual(desktop.builds)
   })

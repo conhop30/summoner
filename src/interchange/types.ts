@@ -5,8 +5,10 @@
 export const FORMAT = 'summoner-export'
 export const VERSION = 2
 
-// 'concept'  — what a champion IS: identity, lore, splash art, abilities. Both apps read and write it.
-// 'full'     — concept plus the desktop-owned part (base stats, item builds). Only desktop writes it.
+// 'concept'  — what a champion IS: identity, lore, splash art, and each ability's name, description
+//              and icon. Both apps read and write it.
+// 'full'     — concept plus the desktop-owned part: base stats, item builds, and every ability's
+//              numbers, blocks and notes. Only desktop writes it.
 export type Scope = 'concept' | 'full'
 
 export type ImageMime = 'image/jpeg' | 'image/png' | 'image/webp'
@@ -57,12 +59,19 @@ export interface AbilityBlock extends AbilityBody {
 
 export interface JournalTab { id: string; name: string; content: string; created_at: string }
 
-export interface AbilityRecord extends AbilityBody {
+// The conceptual face of an ability: what the phone shows and edits.
+export interface AbilityText {
+  name?: string
+  description?: string
+  icon?: ImageRef
+}
+
+// Everything else about an ability. Desktop-owned; travels only in a 'full' file.
+export interface AbilityDetails extends AbilityBody {
   max_rank: number
   extra?: { recast?: RecastStruct; [key: string]: string | number | boolean | RecastStruct | undefined }
   journal?: { tabs: JournalTab[] }
   blocks?: AbilityBlock[]
-  icon?: ImageRef
 }
 
 export interface IdentityRecord {
@@ -83,17 +92,18 @@ export interface DesktopSection {
   base_stats: Record<string, number | number[]>
   builds: { id: string; name: string; items: { item_id: string; count: number }[] }[]
   active_build_id?: string
+  abilities: Record<AbilitySlot, AbilityDetails>
 }
 
 export interface ChampionRecord {
   id: string
   created_at: string
-  // When the concept content (identity, abilities, tags) last changed. Decides who is newer on
+  // When the concept content (identity, ability names/descriptions/icons, tags) last changed. Decides who is newer on
   // import. Editing only desktop-owned data (stats, builds) does not move it.
   concept_updated_at: string
   tags: string[]
   identity: IdentityRecord
-  abilities: Record<AbilitySlot, AbilityRecord>
+  abilities: Record<AbilitySlot, AbilityText>
   desktop?: DesktopSection
 }
 

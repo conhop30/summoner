@@ -32,10 +32,10 @@ A file over 100 MB is refused before it is parsed.
 
 | scope | contains | written by |
 |---|---|---|
-| `concept` | what a champion *is*: identity, splash art, lore, abilities, tags | both apps |
-| `full` | concept **plus** a `desktop` section (base stats, item builds) | desktop only ("Export backup") |
+| `concept` | what a champion *is*: identity, splash art, lore, tags, and each ability's **name, description and icon** | both apps |
+| `full` | concept **plus** a `desktop` section: base stats, item builds, and every ability's numbers, blocks and notes | desktop only ("Export backup") |
 
-Summoner Mobile never writes `full`, and ignores the `desktop` section of any file it reads (it is dropped, not stored).
+Summoner Mobile never writes `full`, and ignores the `desktop` section of any file it reads (it is dropped, not stored). It also drops any ability field outside name, description and icon, even in a `concept` file: the phone is about the idea of a champion, not its numbers.
 
 ### ChampionRecord
 
@@ -43,15 +43,15 @@ Summoner Mobile never writes `full`, and ignores the `desktop` section of any fi
 {
   "id": "uuid",                        // 8-64 chars of A-Z a-z 0-9 _ -
   "created_at": "ISO date",
-  "concept_updated_at": "ISO date",    // when identity/abilities/tags last changed. Decides who is newer
+  "concept_updated_at": "ISO date",    // when identity, ability text or tags last changed. Decides who is newer
   "tags": ["fox"],                     // at most 50, each at most 40 chars
   "identity": { ... },
-  "abilities": { "passive": {...}, "q": {...}, "w": {...}, "e": {...}, "r": {...} },
+  "abilities": { "passive": {...}, "q": {...}, "w": {...}, "e": {...}, "r": {...} },   // text only, see below
   "desktop": { ... }                   // scope "full" only
 }
 ```
 
-`concept_updated_at` moves only when the concept side changes. Editing stats or builds on the desktop does not move it. That is what lets a phone's edit and a desktop's stat tweak coexist.
+`concept_updated_at` moves only when the concept side changes. Editing stats, builds, or an ability's cooldown, cost, effects, blocks or notes on the desktop does not move it. That is what lets a phone's edit and a desktop's number tweak coexist.
 
 ### identity
 
@@ -67,27 +67,39 @@ Summoner Mobile never writes `full`, and ignores the `desktop` section of any fi
 | `image_position` | `{x, y}` | each clamped 0–100 (splash focal point, percent) |
 | `splash` | ImageRef | see Images |
 
-### abilities
+### abilities (the concept side)
 
 Each of `passive`, `q`, `w`, `e`, `r` may be missing or `{}`; every slot is always present after parsing.
 
 | field | notes |
 |---|---|
-| `max_rank` | integer 1–6. Defaults to 5 (3 for `r`) |
-| `name` (80), `description` (4,000) | |
-| `cooldown`, `cost` | number[]; always exactly `max_rank` long after parsing (shorter arrays are padded with their last value, longer are cut) |
-| `cost_type` | string, 40 |
-| `effects` | up to 20 of `{type, damage_type?, base?, ratios?, duration?, notes?}`. `type` is required (40 chars); `damage_type` is `Physical`/`Magic`/`True` or dropped; `ratios` up to 10 of `{stat, values[]}` |
-| `blocks` | up to 20 of `{kind, ...body}`. `kind` is `passive`, `alternate_form` or `recast` (others are dropped); a `recast` block carries `recast: {max_recasts, recast_window, recast_static_cooldown?, recast_extends_on?}` |
-| `extra` | `{recast?, ...}` up to 20 keys with string/number/boolean values |
-| `journal` | `{tabs: [{id, name, content, created_at}]}`, up to 50 tabs, 20,000 chars each |
+| `name` | string, 80 chars |
+| `description` | string, 4,000 chars |
 | `icon` | ImageRef |
 
-Numbers must be real JSON numbers (strings like `"12"` are dropped) and are clamped to ±1,000,000.
+That is all. The phone shows the ability the way the desktop's View page does, by name and description. Any other field in an ability is dropped.
+
+Text limits: control characters are stripped, over-long text is cut and reported.
 
 ### desktop (scope `full` only)
 
-`{ base_stats, builds, active_build_id }`. Stats are a fixed whitelist of numbers (`health`, `health_growth`, … `attack_range[]`); builds are up to 10, each up to 12 `{item_id, count}`. Summoner Mobile does not read this section.
+`{ base_stats, builds, active_build_id, abilities }`. Summoner Mobile does not read this section.
+
+- **`base_stats`**: a fixed whitelist of numbers (`health`, `health_growth`, ... `crit_damage_multiplier`, and `attack_range[]`).
+- **`builds`**: up to 10, each up to 12 `{item_id, count}`.
+- **`abilities`**: for each slot, everything about it that isn't name, description or icon:
+
+| field | notes |
+|---|---|
+| `max_rank` | integer 1-6. Defaults to 5 (3 for `r`) |
+| `cooldown`, `cost` | number[]; always exactly `max_rank` long after parsing (shorter arrays are padded with their last value, longer are cut) |
+| `cost_type` | string, 40 |
+| `effects` | up to 20 of `{type, damage_type?, base?, ratios?, duration?, notes?}`. `type` is required (40 chars); `damage_type` is `Physical`/`Magic`/`True` or dropped; `ratios` up to 10 of `{stat, values[]}` |
+| `blocks` | up to 20 of `{kind, name?, description?, ...numbers}`. `kind` is `passive`, `alternate_form` or `recast` (others are dropped); a `recast` block carries `recast: {max_recasts, recast_window, recast_static_cooldown?, recast_extends_on?}` |
+| `extra` | `{recast?, ...}` up to 20 keys with string/number/boolean values |
+| `journal` | `{tabs: [{id, name, content, created_at}]}`, up to 50 tabs, 20,000 chars each |
+
+Numbers must be real JSON numbers (strings like `"12"` are dropped) and are clamped to +-1,000,000.
 
 ### Images
 
@@ -112,15 +124,15 @@ Records are matched by `id`. For each one, compare `concept_updated_at` with the
 
 What an update touches:
 
-- **Concept fields** (identity, abilities, tags) are replaced by the file's, **including absence**: if the file has no splash, the local splash is removed. The local `concept_updated_at` becomes the file's, so importing the same file again is a no-op.
-- **Never touched by a `concept` file:** base stats, builds, theme audio, the favorite flag.
-- A `full` file additionally replaces stats and builds.
+- **Concept fields** (identity, tags, and each ability's name, description and icon) are replaced by the file's, **including absence**: if the file has no splash, the local splash is removed; if it has no name for the Q, the local Q name is cleared. The local `concept_updated_at` becomes the file's, so importing the same file again is a no-op.
+- **Never touched by a `concept` file:** base stats, builds, every ability's numbers, blocks and notes, theme audio, the favorite flag. A champion's abilities keep their cooldowns, costs and effects while their names and descriptions change.
+- A `full` file additionally replaces stats, builds and every ability's numbers, blocks and notes.
 
 Errors that refuse the whole file: not JSON, not a Summoner export, a newer version than the app knows, a missing `scope`/`champions`, more than 500 champions, a file over the size limit. Problems inside one champion trim or skip only that champion. Skipped or trimmed items are listed to the user, never silent.
 
 ## Version 1 (legacy)
 
-The original desktop export: `{format, version: 1, exported_at, champions: [raw desktop records]}` (a bare array is accepted too). Records are lifted into the current shape: `metadata.id` → `id`, `metadata.updated_at` → `concept_updated_at`, stats/builds → `desktop`. Image paths and theme audio are dropped (they pointed at files on another machine), with one warning. Treated as scope `full`.
+The original desktop export: `{format, version: 1, exported_at, champions: [raw desktop records]}` (a bare array is accepted too). Records are lifted into the current shape: `metadata.id` → `id`, `metadata.updated_at` → `concept_updated_at`, stats, builds and ability numbers/blocks/notes → `desktop`; ability names and descriptions stay in the concept. Image paths and theme audio are dropped (they pointed at files on another machine), with one warning. Treated as scope `full`.
 
 ## Changing the format
 

@@ -31,6 +31,7 @@ write('concept-minimal.json', file('concept', [
   { id: ID(1), created_at: T1, concept_updated_at: T1, tags: [], identity: { name: 'Ahri' }, abilities: {} },
 ]))
 
+// What a phone writes: identity and each ability's name, description and icon. Nothing else.
 write('concept-rich.json', file('concept', [
   {
     id: ID(2), created_at: T1, concept_updated_at: T2, tags: ['fox', 'mage'],
@@ -41,38 +42,59 @@ write('concept-rich.json', file('concept', [
       splash: { mime: 'image/png', data: PNG },
     },
     abilities: {
-      passive: { max_rank: 1, name: 'Glow', description: 'Passive text.' },
-      q: {
-        max_rank: 5, name: 'Lantern Bolt', description: 'Fires a bolt.', cooldown: [8, 7.5, 7, 6.5, 6],
-        cost: [50, 55, 60, 65, 70], cost_type: 'Mana',
-        effects: [{
-          type: 'damage', damage_type: 'Magic', base: [60, 90, 120, 150, 180], notes: 'On hit',
-          ratios: [{ stat: 'AP', values: [0.4, 0.45, 0.5, 0.55, 0.6] }],
-        }],
-        icon: { mime: 'image/png', data: PNG },
-        journal: { tabs: [{ id: 'tab-one', name: 'Scrapped', content: 'It used to stun.', created_at: T1 }] },
-        blocks: [
-          { kind: 'alternate_form', name: 'Empowered Bolt', description: 'Bigger.', cooldown: [9, 9, 9, 9, 9] },
-          { kind: 'recast', name: 'Recast', recast: { max_recasts: 2, recast_window: 4, recast_extends_on: 'after Q hits' } },
-        ],
-        extra: { recast: { max_recasts: 1, recast_window: 3 }, flavour: 'note' },
-      },
-      w: { max_rank: 5, name: 'Ward', cooldown: [14, 13, 12], effects: [{ type: 'shield', base: [50, 80] }] },
-      e: { max_rank: 5 },
-      r: { max_rank: 3, name: 'Eclipse' },
+      passive: { name: 'Glow', description: 'Passive text.' },
+      q: { name: 'Lantern Bolt', description: 'Fires a bolt.', icon: { mime: 'image/png', data: PNG } },
+      w: { name: 'Ward' },
+      e: {},
+      r: { name: 'Eclipse', description: 'The lantern goes out.' },
     },
   },
   { id: ID(3), created_at: T1, concept_updated_at: T1, tags: [], identity: { name: 'Brakk' }, abilities: {} },
 ]))
 
+// A concept file that carries things it shouldn't (numbers, blocks, a desktop section). A parser
+// keeps the text and drops the rest without complaint: this is what "extraneous data" looks like.
+write('concept-extraneous.json', file('concept', [{
+  id: ID(13), created_at: T1, concept_updated_at: T1, tags: [], identity: { name: 'Overpacked' },
+  abilities: {
+    q: {
+      name: 'Bolt', description: 'Text stays.', max_rank: 5, cooldown: [8, 7, 6, 5, 4], cost: [50, 55, 60, 65, 70], cost_type: 'Mana',
+      effects: [{ type: 'damage', base: [60, 90, 120, 150, 180] }],
+      blocks: [{ kind: 'alternate_form', name: 'Other form' }],
+      journal: { tabs: [{ id: 'tab-one', name: 'Notes', content: 'x', created_at: T1 }] },
+      extra: { recast: { max_recasts: 1, recast_window: 3 } },
+    },
+  },
+  desktop: { base_stats: { health: 999 }, builds: [], abilities: {} },
+}]))
+
+// A full backup: concept plus everything desktop-owned, including every ability's numbers.
 write('full-with-stats.json', file('full', [
   {
     id: ID(4), created_at: T1, concept_updated_at: T2, tags: [],
-    identity: { name: 'Ironwall', class: ['Tank'] }, abilities: {},
+    identity: { name: 'Ironwall', class: ['Tank'] },
+    abilities: { q: { name: 'Lantern Bolt', description: 'Fires a bolt.' }, r: { name: 'Eclipse' } },
     desktop: {
       base_stats: { health: 620, health_growth: 95, attack_damage: 60, attack_speed: 0.65, attack_speed_growth: 2.5, attack_range: [175], crit_damage_multiplier: 1.75 },
       builds: [{ id: 'build-0001', name: 'Standard', items: [{ item_id: '3078', count: 1 }, { item_id: '1001', count: 2 }] }],
       active_build_id: 'build-0001',
+      abilities: {
+        q: {
+          max_rank: 5, name: 'ignored', cooldown: [8, 7.5, 7, 6.5, 6], cost: [50, 55, 60, 65, 70], cost_type: 'Mana',
+          effects: [{
+            type: 'damage', damage_type: 'Magic', base: [60, 90, 120, 150, 180], notes: 'On hit',
+            ratios: [{ stat: 'AP', values: [0.4, 0.45, 0.5, 0.55, 0.6] }],
+          }],
+          journal: { tabs: [{ id: 'tab-one', name: 'Scrapped', content: 'It used to stun.', created_at: T1 }] },
+          blocks: [
+            { kind: 'alternate_form', name: 'Empowered Bolt', description: 'Bigger.', cooldown: [9, 9, 9, 9, 9] },
+            { kind: 'recast', name: 'Recast', recast: { max_recasts: 2, recast_window: 4, recast_extends_on: 'after Q hits' } },
+          ],
+          extra: { recast: { max_recasts: 1, recast_window: 3 }, flavour: 'note' },
+        },
+        w: { max_rank: 5, cooldown: [14, 13, 12], effects: [{ type: 'shield', base: [50, 80] }] },
+        r: { max_rank: 3 },
+      },
     },
   },
 ]))
@@ -86,7 +108,7 @@ write('legacy-v1.json', {
       theme_audio: { name: 'theme.mp3', src: 'app-asset://C%3A%5Ctheme.mp3' }, class: ['Fighter'],
     },
     base_stats: { health: 600, attack_range: [125] },
-    abilities: { q: { max_rank: 5, name: 'Old Q', icon_path: 'app-asset://C%3A%5Cicon.png' } },
+    abilities: { q: { max_rank: 5, name: 'Old Q', cooldown: [9, 8, 7, 6, 5], icon_path: 'app-asset://C%3A%5Cicon.png' } },
     builds: [{ id: 'build-0002', name: 'Build 1', items: [{ item_id: '1055', count: 1 }] }],
     active_build_id: 'build-0002',
     metadata: { id: ID(5), created_at: T1, updated_at: T2, version: '1.0', is_favorite: true, tags: ['legacy'] },
@@ -112,14 +134,15 @@ write('bad-not-an-export.json', { hello: 'world' })
 // __proto__ / constructor smuggled in at every level. JSON.parse makes them ordinary own keys,
 // so the test is that none of it reaches the output and nothing is polluted.
 write('hostile-prototype.json', `{
-  "format": "summoner-export", "version": 2, "scope": "concept", "exported_at": "2026-09-24T12:00:00.000Z",
+  "format": "summoner-export", "version": 2, "scope": "full", "exported_at": "2026-09-24T12:00:00.000Z",
   "__proto__": { "polluted": true },
   "champions": [{
     "id": "${ID(7)}", "created_at": "${T1}", "concept_updated_at": "${T1}", "tags": ["__proto__"],
     "__proto__": { "polluted": true }, "constructor": { "prototype": { "polluted": true } },
     "identity": { "name": "Proto", "__proto__": { "polluted": true }, "constructor": "x" },
-    "abilities": { "q": { "max_rank": 5, "__proto__": { "polluted": true },
-      "extra": { "__proto__": { "polluted": true }, "constructor": "x", "prototype": "x", "kept": "yes" } } }
+    "abilities": { "q": { "name": "Bolt", "__proto__": { "polluted": true } } },
+    "desktop": { "base_stats": {}, "builds": [], "__proto__": { "polluted": true }, "abilities": { "q": { "max_rank": 5, "__proto__": { "polluted": true },
+      "extra": { "__proto__": { "polluted": true }, "constructor": "x", "prototype": "x", "kept": "yes" } } } }
   }]
 }
 `)
@@ -132,26 +155,42 @@ write('hostile-images.json', file('concept', [{
     splash: { mime: 'image/png', data: JPEG_HEAD },
   },
   abilities: {
-    q: { max_rank: 5, icon: 'data:image/png;base64,' + PNG, icon_path: 'file:///C:/secret.png' },
-    w: { max_rank: 5, icon: { mime: 'image/svg+xml', data: PNG } },
-    e: { max_rank: 5, icon: { mime: 'image/png', data: 'not base64!!' } },
-    r: { max_rank: 3, icon: { mime: 'image/png', data: PNG } },
+    q: { icon: 'data:image/png;base64,' + PNG, icon_path: 'file:///C:/secret.png' },
+    w: { icon: { mime: 'image/svg+xml', data: PNG } },
+    e: { icon: { mime: 'image/png', data: 'not base64!!' } },
+    r: { icon: { mime: 'image/png', data: PNG } },
   },
 }]))
 
-write('hostile-text-and-numbers.json', file('concept', [{
+// Control characters are built here (not typed) so this source file stays plain text.
+const NUL = String.fromCharCode(0)
+const BEL = String.fromCharCode(7)
+write('hostile-text.json', file('concept', [{
   id: ID(9), created_at: T1, concept_updated_at: T1, tags: Array.from({ length: 80 }, (_, i) => `tag${i}`),
   identity: {
-    name: 'N'.repeat(200), title: 'Tab\tand\u0000null\u0007bell', lore: 'ok',
+    name: 'N'.repeat(200), title: `Tab\tand${NUL}null${BEL}bell`, lore: 'ok',
     image_position: { x: 250, y: -40 },
   },
   abilities: {
-    q: {
-      max_rank: 99, name: 'Q', cooldown: [1e30, '12', null, 5, 6, 7, 8, 9], cost: 'free',
-      effects: [{ type: 'damage', damage_type: 'Fire', base: [10, 20] }, 'nonsense', { notes: 'no type' }],
+    q: { name: 'Q'.repeat(300), description: `Line\nbreak and ${String.fromCharCode(1)} control` },
+    w: { name: 12, description: { not: 'text' } },
+  },
+}]))
+
+// Damaged numbers inside the desktop section of a full file.
+write('hostile-full-numbers.json', file('full', [{
+  id: ID(14), created_at: T1, concept_updated_at: T1, tags: [], identity: { name: 'Numbers' }, abilities: {},
+  desktop: {
+    base_stats: { health: 1e30, attack_speed: '0.65', armor: null, attack_range: [175, 'far', 550], bogus_stat: 5 },
+    builds: [{ id: 'build-x1', name: 'X', items: [{ item_id: '../../etc', count: 5 }, { item_id: '3078', count: 500 }, 'not an id!', '1001'] }],
+    abilities: {
+      q: {
+        max_rank: 99, cooldown: [1e30, '12', null, 5, 6, 7, 8, 9], cost: 'free',
+        effects: [{ type: 'damage', damage_type: 'Fire', base: [10, 20] }, 'nonsense', { notes: 'no type' }],
+      },
+      w: { max_rank: 2, cooldown: [10, 9, 8, 7] },
+      e: { max_rank: 'many' },
     },
-    w: { max_rank: 2, cooldown: [10, 9, 8, 7] },
-    e: { max_rank: 'many' },
   },
 }]))
 

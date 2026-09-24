@@ -6,7 +6,7 @@
 // reported as warnings; only a file that isn't a Summoner export at all is refused outright.
 
 import type {
-  AbilityBlock, AbilityBody, AbilityRecord, AbilitySlot, ChampionRecord, DesktopSection, Effect,
+  AbilityBlock, AbilityBody, AbilityDetails, AbilitySlot, AbilityText, ChampionRecord, DesktopSection, Effect,
   IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RecastStruct, Scope,
 } from './types'
 import { FORMAT, SLOTS, VERSION } from './types'
@@ -214,9 +214,9 @@ function sanitizeBody(v: Obj, maxRank: number, warn: Warn, label: string): Abili
   return body
 }
 
-function sanitizeExtra(v: unknown, warn: Warn, label: string): AbilityRecord['extra'] {
+function sanitizeExtra(v: unknown, warn: Warn, label: string): AbilityDetails['extra'] {
   if (!isObj(v)) return undefined
-  const extra: NonNullable<AbilityRecord['extra']> = {}
+  const extra: NonNullable<AbilityDetails['extra']> = {}
   let count = 0
   for (const key of Object.keys(v)) {
     if (UNSAFE_KEYS.has(key) || key.length > LIMITS.short || count >= LIMITS.listItems) continue
@@ -237,7 +237,7 @@ function sanitizeExtra(v: unknown, warn: Warn, label: string): AbilityRecord['ex
   return count > 0 ? extra : undefined
 }
 
-function sanitizeJournal(v: unknown, warn: Warn, label: string): AbilityRecord['journal'] {
+function sanitizeJournal(v: unknown, warn: Warn, label: string): AbilityDetails['journal'] {
   if (!isObj(v) || !Array.isArray(v.tabs)) return undefined
   const tabs: JournalTab[] = []
   const seen = new Set<string>()
@@ -264,11 +264,33 @@ function sanitizeBlock(v: unknown, maxRank: number, warn: Warn, label: string): 
   return block
 }
 
-function sanitizeAbility(v: unknown, slot: AbilitySlot, warn: Warn): AbilityRecord {
-  const label = slot === 'passive' ? 'Passive' : slot.toUpperCase()
+function slotLabel(slot: AbilitySlot) {
+  return slot === 'passive' ? 'Passive' : slot.toUpperCase()
+}
+
+// What the phone sees of an ability: a name, a description and an icon. Nothing else.
+function sanitizeAbilityText(v: unknown, slot: AbilitySlot, warn: Warn): AbilityText {
+  const label = slotLabel(slot)
+  const raw: Obj = isObj(v) ? v : {}
+  const ability: AbilityText = {}
+  const name = text(raw.name, LIMITS.abilityName, warn, `${label} name`)
+  if (name) ability.name = name
+  const description = text(raw.description, LIMITS.description, warn, `${label} description`)
+  if (description) ability.description = description
+  const icon = sanitizeImage(raw.icon, warn, `${label} icon`)
+  if (icon) ability.icon = icon
+  return ability
+}
+
+// Numbers, blocks and notes: the desktop's part of an ability.
+function sanitizeAbilityDetails(v: unknown, slot: AbilitySlot, warn: Warn): AbilityDetails {
+  const label = slotLabel(slot)
   const raw: Obj = isObj(v) ? v : {}
   const maxRank = int(raw.max_rank, 1, 6) ?? (slot === 'r' ? 3 : 5)
-  const ability: AbilityRecord = { max_rank: maxRank, ...sanitizeBody(raw, maxRank, warn, label) }
+  const body = sanitizeBody(raw, maxRank, warn, label)
+  delete body.name
+  delete body.description
+  const ability: AbilityDetails = { max_rank: maxRank, ...body }
 
   const extra = sanitizeExtra(raw.extra, warn, label)
   if (extra) ability.extra = extra
@@ -282,8 +304,6 @@ function sanitizeAbility(v: unknown, slot: AbilitySlot, warn: Warn): AbilityReco
     }
     if (blocks.length > 0) ability.blocks = blocks
   }
-  const icon = sanitizeImage(raw.icon, warn, `${label} icon`)
-  if (icon) ability.icon = icon
   return ability
 }
 
@@ -352,7 +372,10 @@ function sanitizeDesktop(v: unknown, warn: Warn): DesktopSection | undefined {
       builds.push({ id, name: text(b.name, 60, warn, 'Build name') ?? `Build ${builds.length + 1}`, items })
     }
   }
-  const section: DesktopSection = { base_stats, builds }
+  const abilitiesRaw: Obj = isObj(v.abilities) ? v.abilities : {}
+  const abilities = {} as DesktopSection['abilities']
+  for (const slot of SLOTS) abilities[slot] = sanitizeAbilityDetails(abilitiesRaw[slot], slot, warn)
+  const section: DesktopSection = { base_stats, builds, abilities }
   if (typeof v.active_build_id === 'string' && builds.some(b => b.id === v.active_build_id)) {
     section.active_build_id = v.active_build_id
   }
@@ -374,8 +397,8 @@ export function sanitizeRecord(raw: unknown, includeDesktop: boolean, warnFile: 
   if (!concept_updated_at) { warnFile(`Skipped ${who}: it has no valid date`); return undefined }
 
   const abilitiesRaw: Obj = isObj(raw.abilities) ? raw.abilities : {}
-  const abilities = {} as Record<AbilitySlot, AbilityRecord>
-  for (const slot of SLOTS) abilities[slot] = sanitizeAbility(abilitiesRaw[slot], slot, warn)
+  const abilities = {} as Record<AbilitySlot, AbilityText>
+  for (const slot of SLOTS) abilities[slot] = sanitizeAbilityText(abilitiesRaw[slot], slot, warn)
 
   const tags = stringList(raw.tags, LIMITS.tags, LIMITS.short, warn, 'Tag') ?? []
 
@@ -411,7 +434,7 @@ function fromLegacy(raw: unknown): unknown {
     tags: meta.tags,
     identity: keptIdentity,
     abilities: raw.abilities,
-    desktop: { base_stats: raw.base_stats, builds: raw.builds, active_build_id: raw.active_build_id },
+    desktop: { base_stats: raw.base_stats, builds: raw.builds, active_build_id: raw.active_build_id, abilities: raw.abilities },
   }
 }
 

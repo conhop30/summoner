@@ -39,7 +39,7 @@ describe('concept_updated_at', () => {
     expect(tagged.metadata.concept_updated_at).not.toBe(edited.metadata.concept_updated_at)
   })
 
-  it('stays put when only stats, builds, the favorite flag or theme audio change', async () => {
+  it('stays put when only stats, builds, ability numbers, the favorite flag or theme audio change', async () => {
     const c = createChampion(db, 'Kai')
     const stamp = c.metadata.concept_updated_at
 
@@ -48,7 +48,8 @@ describe('concept_updated_at', () => {
     const starred = updateChampion(db, c.metadata.id, { is_favorite: true })!
     const scored = updateChampion(db, c.metadata.id, { identity: { theme_audio: { name: 'a.mp3', src: 'app-asset://a' } } })!
     const untouched = updateChampion(db, c.metadata.id, { identity: { name: 'Kai' } })!
-    for (const result of [statted, starred, scored, untouched]) expect(result.metadata.concept_updated_at).toBe(stamp)
+    const numbers = updateChampion(db, c.metadata.id, { abilities: { q: { max_rank: 5, cooldown: [9, 9, 9, 9, 9], cost: [10, 10, 10, 10, 10], effects: [{ type: 'heal' }] } } as never })!
+    for (const result of [statted, starred, scored, untouched, numbers]) expect(result.metadata.concept_updated_at).toBe(stamp)
     // ...while the record itself did save.
     expect(getChampion(db, c.metadata.id)!.base_stats.health).toBe(700)
     expect(getChampion(db, c.metadata.id)!.metadata.updated_at).not.toBe(c.metadata.updated_at)
@@ -61,7 +62,7 @@ describe('importing into a real database', () => {
     return {
       id, created_at: '2026-01-01T00:00:00.000Z', concept_updated_at: '2999-01-01T00:00:00.000Z', tags: ['phone'],
       identity: { name: 'Phone Champion', lore: 'Made on a train.' },
-      abilities: { passive: { max_rank: 1 }, q: { max_rank: 5, name: 'Tap' }, w: { max_rank: 5 }, e: { max_rank: 5 }, r: { max_rank: 3 } },
+      abilities: { passive: {}, q: { name: 'Tap', description: 'Tap the screen.' }, w: {}, e: {}, r: {} },
       ...over,
     }
   }
@@ -73,15 +74,21 @@ describe('importing into a real database', () => {
     const saved = getChampion(db, record.id)!
     expect(saved.identity.name).toBe('Phone Champion')
     expect(saved.abilities.q.name).toBe('Tap')
+    expect(saved.abilities.q.max_rank).toBe(5)
+    expect(saved.abilities.r.max_rank).toBe(3)
     expect(saved.base_stats.attack_range).toEqual([0])
     expect(saved.builds).toHaveLength(1)
     // Importing the same file again is a no-op.
     expect(classify(saved, record)).toBe('unchanged')
   })
 
-  it('updates an existing champion without touching its stats, builds, audio or favorite', () => {
+  it('updates an existing champion without touching its stats, builds, ability numbers, audio or favorite', () => {
     const c = createChampion(db, 'Kai', { base_stats: { health: 640, attack_speed: 0.7 } })
-    updateChampion(db, c.metadata.id, { is_favorite: true, identity: { theme_audio: { name: 't.mp3', src: 'app-asset://t' } } })
+    updateChampion(db, c.metadata.id, {
+      is_favorite: true,
+      identity: { theme_audio: { name: 't.mp3', src: 'app-asset://t' } },
+      abilities: { q: { max_rank: 5, name: 'Old Q', cooldown: [8, 7, 6, 5, 4], effects: [{ type: 'damage', base: [60, 90, 120, 150, 180] }], journal: { tabs: [{ id: 'tab-1', name: 'n', content: 'scrapped', created_at: '2026-01-01T00:00:00.000Z' }] } } } as never,
+    })
     const before = getChampion(db, c.metadata.id)!
 
     const record = mobileRecord(c.metadata.id)
@@ -91,6 +98,11 @@ describe('importing into a real database', () => {
     const after = getChampion(db, c.metadata.id)!
     expect(after.identity.name).toBe('Phone Champion')
     expect(after.identity.lore).toBe('Made on a train.')
+    expect(after.abilities.q.name).toBe('Tap')
+    expect(after.abilities.q.description).toBe('Tap the screen.')
+    expect(after.abilities.q.cooldown).toEqual([8, 7, 6, 5, 4])
+    expect(after.abilities.q.effects).toEqual(before.abilities.q.effects)
+    expect(after.abilities.q.journal).toEqual(before.abilities.q.journal)
     expect(after.base_stats).toEqual(before.base_stats)
     expect(after.builds).toEqual(before.builds)
     expect(after.active_build_id).toBe(before.active_build_id)

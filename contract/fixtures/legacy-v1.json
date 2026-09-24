@@ -26,6 +26,13 @@
         "q": {
           "max_rank": 5,
           "name": "Old Q",
+          "cooldown": [
+            9,
+            8,
+            7,
+            6,
+            5
+          ],
           "icon_path": "app-asset://C%3A%5Cicon.png"
         }
       },

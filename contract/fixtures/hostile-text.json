@@ -105,45 +105,14 @@
       },
       "abilities": {
         "q": {
-          "max_rank": 99,
-          "name": "Q",
-          "cooldown": [
-            1e+30,
-            "12",
-            null,
-            5,
-            6,
-            7,
-            8,
-            9
-          ],
-          "cost": "free",
-          "effects": [
-            {
-              "type": "damage",
-              "damage_type": "Fire",
-              "base": [
-                10,
-                20
-              ]
-            },
-            "nonsense",
-            {
-              "notes": "no type"
-            }
-          ]
+          "name": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ",
+          "description": "Line\nbreak and \u0001 control"
         },
         "w": {
-          "max_rank": 2,
-          "cooldown": [
-            10,
-            9,
-            8,
-            7
-          ]
-        },
-        "e": {
-          "max_rank": "many"
+          "name": 12,
+          "description": {
+            "not": "text"
+          }
         }
       }
     }

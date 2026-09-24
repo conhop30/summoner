@@ -12,7 +12,7 @@ const STATUS_LABEL: Record<ImportStatus, string> = {
 
 const CHOICES: { value: LocalNewerChoice; label: string; hint: string }[] = [
   { value: 'keep-mine', label: 'Keep mine', hint: 'Leave these champions as they are.' },
-  { value: 'take-theirs', label: "Use the file's", hint: 'Replace their story and abilities with the file’s.' },
+  { value: 'take-theirs', label: "Use the file's", hint: 'Replace their story and ability text with the file’s.' },
   { value: 'keep-both', label: 'Keep both', hint: 'Add the file’s version as a separate copy.' },
 ]
 
@@ -70,11 +70,11 @@ export default function ImportPanel({ plan, onDone, onCancel, onError }: Props) 
     <div className="import-panel">
       <div className="import-panel-head">
         <span className="import-file">{plan.fileName}</span>
-        <span className="import-scope">{plan.scope === 'concept' ? 'Stories and abilities' : 'Full backup'}</span>
+        <span className="import-scope">{plan.scope === 'concept' ? 'Story and ability text' : 'Full backup'}</span>
       </div>
       {plan.scope === 'concept' && (
         <p className="import-note">
-          This file only carries stories, identity and abilities. Your stats, builds and theme audio stay exactly as they are.
+          This file only carries story, identity and ability names, descriptions and icons. Your stats, builds, ability numbers and theme audio stay exactly as they are.
         </p>
       )}
 

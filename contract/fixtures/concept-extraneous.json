@@ -1,0 +1,84 @@
+{
+  "format": "summoner-export",
+  "version": 2,
+  "scope": "concept",
+  "exported_at": "2026-09-24T12:00:00.000Z",
+  "source": {
+    "app": "contract-fixtures",
+    "app_version": "0"
+  },
+  "champions": [
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "created_at": "2026-09-01T10:00:00.000Z",
+      "concept_updated_at": "2026-09-01T10:00:00.000Z",
+      "tags": [],
+      "identity": {
+        "name": "Overpacked"
+      },
+      "abilities": {
+        "q": {
+          "name": "Bolt",
+          "description": "Text stays.",
+          "max_rank": 5,
+          "cooldown": [
+            8,
+            7,
+            6,
+            5,
+            4
+          ],
+          "cost": [
+            50,
+            55,
+            60,
+            65,
+            70
+          ],
+          "cost_type": "Mana",
+          "effects": [
+            {
+              "type": "damage",
+              "base": [
+                60,
+                90,
+                120,
+                150,
+                180
+              ]
+            }
+          ],
+          "blocks": [
+            {
+              "kind": "alternate_form",
+              "name": "Other form"
+            }
+          ],
+          "journal": {
+            "tabs": [
+              {
+                "id": "tab-one",
+                "name": "Notes",
+                "content": "x",
+                "created_at": "2026-09-01T10:00:00.000Z"
+              }
+            ]
+          },
+          "extra": {
+            "recast": {
+              "max_recasts": 1,
+              "recast_window": 3
+            }
+          }
+        }
+      },
+      "desktop": {
+        "base_stats": {
+          "health": 999
+        },
+        "builds": [],
+        "abilities": {}
+      }
+    }
+  ]
+}

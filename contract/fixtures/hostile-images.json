@@ -23,26 +23,22 @@
       },
       "abilities": {
         "q": {
-          "max_rank": 5,
           "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
           "icon_path": "file:///C:/secret.png"
         },
         "w": {
-          "max_rank": 5,
           "icon": {
             "mime": "image/svg+xml",
             "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
           }
         },
         "e": {
-          "max_rank": 5,
           "icon": {
             "mime": "image/png",
             "data": "not base64!!"
           }
         },
         "r": {
-          "max_rank": 3,
           "icon": {
             "mime": "image/png",
             "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="

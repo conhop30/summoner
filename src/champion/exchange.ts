@@ -2,14 +2,15 @@
 // Pure (no files, no database): the Electron main process supplies image bytes and writes results.
 //
 // The rule behind all of it: an import UPDATES, it never overwrites. A 'concept' file can only
-// touch a champion's concept fields (identity, abilities, tags). Base stats, builds, theme audio
-// and favorites are desktop-owned and stay exactly as they are.
+// touch a champion's concept fields: identity, tags, and each ability's name, description and icon.
+// Base stats, builds, ability numbers/blocks/notes, theme audio and favorites are desktop-owned and
+// stay exactly as they are.
 
 import type { Champion, Abilities, Ability, BaseStats, Identity, NamedBuild } from './types'
-import type { AbilitySlot, ChampionRecord, ImageRef, Scope } from '../interchange/types'
+import type { AbilityDetails, AbilitySlot, AbilityText, ChampionRecord, ImageRef, Scope } from '../interchange/types'
 import { SLOTS } from '../interchange/types'
 import { sanitizeRecord } from '../interchange/sanitize'
-import { defaultBaseStats, generateId, nowISO } from './utils'
+import { defaultAbilities, defaultBaseStats, generateId, nowISO } from './utils'
 import { defaultBuilds } from '../item/buildLogic'
 import { SCHEMA_VERSION } from '../db/schema'
 
@@ -29,11 +30,17 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value) ?? 'null'
 }
 
-// The parts of a champion that belong to the concept side. Theme audio is excluded on purpose.
+// The parts of a champion that belong to the concept side. Theme audio is excluded on purpose, and
+// of each ability only its name, description and icon count: a cooldown tweak is not a concept edit.
 export function conceptSnapshot(champion: Champion): string {
   const identity: Partial<Identity> = { ...champion.identity }
   delete identity.theme_audio
-  return stableStringify({ identity, abilities: champion.abilities, tags: champion.metadata.tags })
+  const abilities: Record<string, unknown> = {}
+  for (const slot of SLOTS) {
+    const a = champion.abilities[slot]
+    abilities[slot] = { name: a.name, description: a.description, icon_path: a.icon_path }
+  }
+  return stableStringify({ identity, abilities, tags: champion.metadata.tags })
 }
 
 export function conceptStamp(champion: Champion): string {
@@ -50,10 +57,12 @@ export function championToRecord(champion: Champion, scope: Scope, imageOf: Imag
   if (splash) identity.splash = splash
 
   const abilities: Record<string, unknown> = {}
+  const details: Record<string, unknown> = {}
   for (const slot of SLOTS) {
-    const { icon_path, ...rest } = champion.abilities[slot]
+    const { icon_path, name, description, ...rest } = champion.abilities[slot]
     const icon = icon_path ? imageOf(icon_path, 'icon') : undefined
-    abilities[slot] = icon ? { ...rest, icon } : { ...rest }
+    abilities[slot] = { name, description, ...(icon ? { icon } : {}) }
+    details[slot] = rest
   }
 
   const raw: Record<string, unknown> = {
@@ -69,6 +78,7 @@ export function championToRecord(champion: Champion, scope: Scope, imageOf: Imag
       base_stats: champion.base_stats,
       builds: champion.builds,
       active_build_id: champion.active_build_id,
+      abilities: details,
     }
   }
   // Same whitelist an importer applies: what we write is exactly what the format allows.
@@ -122,24 +132,29 @@ export function recordToChampion(
   // Theme audio is a local file that never travels; keep whatever this machine already has.
   if (existing?.identity.theme_audio && !options.asCopy) identity.theme_audio = existing.identity.theme_audio
 
-  const abilities = {} as Abilities
-  for (const slot of SLOTS) {
-    const { icon: _icon, ...rest } = record.abilities[slot]
-    void _icon
-    const ability = { ...rest } as Ability
-    const iconPath = assets.icons[slot]
-    if (iconPath) ability.icon_path = iconPath
-    abilities[slot] = ability
-  }
-
   const keep = options.asCopy ? null : existing
   let base_stats: BaseStats = keep?.base_stats ?? (defaultBaseStats() as BaseStats)
   let builds: NamedBuild[] = keep?.builds ?? defaultBuilds()
   let active_build_id = keep?.active_build_id
+  const base = defaultAbilities() as Abilities
+  // Each ability starts from what is already here (numbers, blocks, notes), then the file's text goes on top.
+  const abilities = {} as Abilities
+  for (const slot of SLOTS) abilities[slot] = { ...(keep?.abilities[slot] ?? base[slot]) }
   if (record.desktop) {
     base_stats = { ...(defaultBaseStats() as BaseStats), ...(record.desktop.base_stats as unknown as Partial<BaseStats>) }
     if (record.desktop.builds.length > 0) builds = record.desktop.builds
     active_build_id = record.desktop.active_build_id
+    for (const slot of SLOTS) abilities[slot] = { ...(record.desktop.abilities[slot] as AbilityDetails as Ability) }
+  }
+  for (const slot of SLOTS) {
+    const text: AbilityText = record.abilities[slot]
+    const ability = abilities[slot]
+    delete ability.name
+    delete ability.description
+    delete ability.icon_path
+    if (text.name) ability.name = text.name
+    if (text.description) ability.description = text.description
+    if (assets.icons[slot]) ability.icon_path = assets.icons[slot]
   }
   if (!active_build_id || !builds.some(b => b.id === active_build_id)) active_build_id = builds[0].id
 
