@@ -19,9 +19,22 @@ function formatTime(seconds: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
+// A hextech-gold diamond endcap marking the start or end of the song. It lights up as the mist
+// reaches it: the start once playback has begun, the end as the song runs out.
+function MistCap({ side, glow }: { side: 'start' | 'end'; glow: number }) {
+  return (
+    <svg className={`mist-cap ${side}`} viewBox="0 0 20 28" width="20" height="28" aria-hidden="true" style={{ '--glow': glow } as React.CSSProperties}>
+      <path className="mist-cap-stub" d="M15 14h4" />
+      <path className="mist-cap-frame" d="M8 2.5 14 14 8 25.5 2 14z" />
+      <path className="mist-cap-gem" d="M8 8.5 11 14 8 19.5 5 14z" />
+    </svg>
+  )
+}
+
 // The champion theme's player, used in the editor: outlined play/pause, a seekable progress
-// bar drawn as hextech mist (no bar at all: drifting mist fills the played part, and hovering
-// turns it gold and marks where a click will land), and elapsed / total time. Playback itself lives in ThemePlayer at the
+// bar drawn as hextech mist between two gold endcaps (no bar at all: drifting mist fills the
+// played part, and a gold slice follows the pointer to show where a click will land), and
+// elapsed / total time. Playback itself lives in ThemePlayer at the
 // app root, so a theme keeps going if you navigate; this just drives and displays it.
 export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove }: Props) {
   const isLoaded = useChampionTheme(s => s.playing?.championId === owner && s.playing.src === src)
@@ -135,6 +148,8 @@ export default function ThemeAudioPlayer({ owner, name, src, onReplace, onRemove
           onPointerCancel={() => { dragging.current = false; setHover(null) }}
           onPointerLeave={() => { if (!dragging.current) setHover(null) }}
         >
+          <MistCap side="start" glow={fraction > 0 ? 1 : 0} />
+          <MistCap side="end" glow={Math.max(0, Math.min(1, (fraction - 0.85) / 0.15))} />
           <MistCanvas fraction={fraction} active={isPlaying} hover={hover} />
         </div>
         {/* While hovering, the readout shows the time a click would jump to. */}
