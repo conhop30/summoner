@@ -132,6 +132,10 @@ export interface Identity {
   resource_type?: ResourceType;
   image_path?: string;
   image_position?: { x: number; y: number };
+  // Optional "champion theme": an audio file copied into the app's data folder (same storage
+  // idea as splash art) and referenced by an app-asset:// URL. Playing it replaces the
+  // background music until it ends or is stopped.
+  theme_audio?: { name: string; src: string };
 }
 
 // ─── Base Stats ──────────────────────────────────────────────────────────────

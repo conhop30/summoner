@@ -63,6 +63,12 @@ contextBridge.exposeInMainWorld('summoner', {
 
     saveImage: (sourcePath: string, championId: string): Promise<string> =>
       ipcRenderer.invoke('champion:saveImage', sourcePath, championId),
+
+    pickTheme: (championId: string): Promise<{ name: string; src: string } | null> =>
+      ipcRenderer.invoke('champion:pickTheme', championId),
+
+    removeTheme: (src: string): Promise<void> =>
+      ipcRenderer.invoke('champion:removeTheme', src),
   },
 
   item: {

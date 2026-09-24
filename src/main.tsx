@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router/index'
 import MusicPlayer from './settings/MusicPlayer'
+import ThemePlayer from './audio/ThemePlayer'
 import AppHeader from './shared/AppHeader'
 import UpdateBanner from './updater/UpdateBanner'
 import './styles/tokens.css'
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AppHeader />
     <MusicPlayer />
+    <ThemePlayer />
     <RouterProvider router={router} />
     <UpdateBanner />
   </React.StrictMode>

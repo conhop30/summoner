@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Champion, AbilitySlot } from '../champion/types'
+import { useChampionTheme } from '../audio/useChampionTheme'
 import './ViewPage.css'
 
 const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
@@ -266,6 +267,11 @@ export default function ViewPage() {
   const [downloading, setDownloading] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<AbilitySlot | null>(null)
   const [hoveredSlot, setHoveredSlot] = useState<AbilitySlot | null>(null)
+  const themePlaying = useChampionTheme(s => !!id && s.playing?.championId === id)
+  const playTheme = useChampionTheme(s => s.play)
+  const stopTheme = useChampionTheme(s => s.stop)
+  // The theme belongs to this page: leaving the champion's showcase ends it.
+  useEffect(() => () => { if (id) stopTheme(id) }, [id, stopTheme])
 
   useEffect(() => {
     if (!id) return
@@ -331,6 +337,17 @@ export default function ViewPage() {
         <button className="view-back-btn" onClick={() => navigate('/')}>← Gallery</button>
 
         <div className="view-hero-actions">
+          {identity.theme_audio && (
+            <button
+              className="view-action-btn"
+              onClick={() => (themePlaying
+                ? stopTheme(id)
+                : playTheme({ championId: id!, name: identity.theme_audio!.name, src: identity.theme_audio!.src }))}
+              title={themePlaying ? 'Stop the theme' : 'Play the champion theme (pauses the background music)'}
+            >
+              {themePlaying ? '■ Stop theme' : '▶ Play theme'}
+            </button>
+          )}
           <button className="view-action-btn" onClick={() => navigate(`/edit/${id}`)}>Edit champion</button>
           <button className="view-action-btn primary" onClick={handleDownload} disabled={downloading}>
             {downloading ? 'Generating...' : 'Download poster'}

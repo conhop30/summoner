@@ -53,6 +53,8 @@ declare global {
 
         delete: (id: string) => Promise<boolean>
         saveImage: (sourcePath: string, championId: string) => Promise<string>
+        pickTheme: (championId: string) => Promise<{ name: string; src: string } | null>
+        removeTheme: (src: string) => Promise<void>
       }
 
       item: {

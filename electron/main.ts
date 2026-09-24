@@ -119,13 +119,15 @@ function registerIpcHandlers() {
     const deleted = deleteChampion(db, id)
     if (deleted && id) {
       // Splash art and ability icons are saved as `<championId>*` — drop them with the champion.
-      const imageDir = path.join(app.getPath('userData'), 'images')
-      try {
-        for (const f of fs.readdirSync(imageDir)) {
-          if (f.startsWith(id)) fs.unlinkSync(path.join(imageDir, f))
+      for (const dirName of ['images', 'champion-audio']) {
+        const dir = path.join(app.getPath('userData'), dirName)
+        try {
+          for (const f of fs.readdirSync(dir)) {
+            if (f.startsWith(id)) fs.unlinkSync(path.join(dir, f))
+          }
+        } catch {
+          // Folder doesn't exist, or a file is locked — leftover files are harmless.
         }
-      } catch {
-        // No images folder, or a file is locked — leftover files are harmless.
       }
     }
     return deleted
@@ -224,6 +226,36 @@ function registerIpcHandlers() {
       music_custom_tracks: current.music_custom_tracks.filter(t => t.id !== id),
       music_track: current.music_track === id ? '' : current.music_track,
     })
+  })
+
+  // ── Champion theme audio ──
+  // Same idea as splash art: the picked file is copied into userData so it survives the
+  // original moving. Files are named `<championId>_<stamp>` so deleting a champion can sweep them.
+  const themeDir = () => path.join(app.getPath('userData'), 'champion-audio')
+
+  ipcMain.handle('champion:pickTheme', async (_event, championId: string) => {
+    if (!win) return null
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Choose a champion theme',
+      properties: ['openFile'],
+      filters: [{ name: 'Audio', extensions: AUDIO_EXTS.map(e => e.slice(1)) }],
+    })
+    if (canceled || !filePaths[0]) return null
+    fs.mkdirSync(themeDir(), { recursive: true })
+    const ext = path.extname(filePaths[0])
+    const dest = path.join(themeDir(), `${championId || 'temp'}_${Date.now()}${ext}`)
+    fs.copyFileSync(filePaths[0], dest)
+    return { name: path.basename(filePaths[0], ext), src: `app-asset://${encodeURIComponent(dest)}` }
+  })
+
+  // Only ever deletes inside the theme folder, whatever URL the renderer sends.
+  ipcMain.handle('champion:removeTheme', (_event, src: string) => {
+    try {
+      const file = path.resolve(decodeURIComponent(String(src).replace('app-asset://', '')))
+      if (path.dirname(file) === path.resolve(themeDir())) fs.unlinkSync(file)
+    } catch {
+      // Already gone — nothing to do.
+    }
   })
 
   ipcMain.handle('window:isFrameless', () => {

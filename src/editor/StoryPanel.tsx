@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Champion, ChampionClass, ChampionRole } from '../champion/types'
 import { setClass, removeClass, setRole, removeRole, setAttackType, removeAttackType } from '../champion/disclosure'
+import { useChampionTheme } from '../audio/useChampionTheme'
 import './StoryPanel.css'
 
 interface Props {
@@ -79,6 +80,35 @@ export default function StoryPanel({ champion, onChange }: Props) {
 
   function update(partial: Partial<typeof identity>) {
     onChange({ ...champion, identity: { ...identity, ...partial } })
+  }
+
+  // ── Champion theme ──
+  const theme = identity.theme_audio
+  const themeOwner = champion.metadata.id || 'unsaved'
+  const previewing = useChampionTheme(s => !!theme && s.playing?.championId === themeOwner && s.playing.src === theme.src)
+  const playTheme = useChampionTheme(s => s.play)
+  const stopTheme = useChampionTheme(s => s.stop)
+  // A preview started here shouldn't keep playing once you leave the editor.
+  useEffect(() => () => stopTheme(themeOwner), [themeOwner, stopTheme])
+
+  async function pickTheme() {
+    const picked = await window.summoner.champion.pickTheme(champion.metadata.id)
+    if (!picked) return
+    if (theme) { stopTheme(themeOwner); window.summoner.champion.removeTheme(theme.src) }
+    update({ theme_audio: picked })
+  }
+
+  function removeTheme() {
+    if (!theme) return
+    stopTheme(themeOwner)
+    window.summoner.champion.removeTheme(theme.src)
+    update({ theme_audio: undefined })
+  }
+
+  function togglePreview() {
+    if (!theme) return
+    if (previewing) stopTheme(themeOwner)
+    else playTheme({ championId: themeOwner, name: theme.name, src: theme.src })
   }
 
   const playstyle: string[] = (identity as any).playstyle ?? []
@@ -196,6 +226,27 @@ export default function StoryPanel({ champion, onChange }: Props) {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="story-field-group">
+        <div className="story-field-label">Champion theme</div>
+        {theme ? (
+          <div className="story-theme-row">
+            <button
+              className={`story-theme-play${previewing ? ' playing' : ''}`}
+              onClick={togglePreview}
+              title={previewing ? 'Stop the theme' : 'Preview the theme (pauses the background music)'}
+              aria-label={previewing ? 'Stop the theme' : 'Preview the theme'}
+            >
+              {previewing ? '■' : '▶'}
+            </button>
+            <span className="story-theme-name" title={theme.name}>{theme.name}</span>
+            <button className="story-theme-action" onClick={pickTheme}>Replace</button>
+            <button className="story-theme-remove" onClick={removeTheme} title="Remove the theme" aria-label="Remove the theme">×</button>
+          </div>
+        ) : (
+          <button className="story-theme-add" onClick={pickTheme}>+ Add theme audio</button>
+        )}
       </div>
 
       <div className="story-field-group">
