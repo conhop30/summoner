@@ -1,0 +1,31 @@
+.workbench {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Centered, directly under the stats. The gold underline is plain CSS — no shared-layout morph. */
+.workbench-switcher {
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.workbench-tab {
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  padding: 10px var(--space-6);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+.workbench-tab:hover { color: var(--text-body); }
+.workbench-tab.active {
+  color: var(--text-accent-gold);
+  border-bottom-color: var(--accent-gold);
+}

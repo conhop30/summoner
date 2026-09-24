@@ -5,7 +5,9 @@ import type { Champion, AbilitySlot } from '../champion/types'
 import { defaultAbilities, defaultBaseStats } from '../champion/utils'
 import { defaultBuilds } from '../item/buildLogic'
 import { SCHEMA_VERSION } from '../db/schema'
-import StoryPanel from './StoryPanel'
+import NameTitle from './NameTitle'
+import type { WorkbenchView } from './Workbench'
+import { useChampionTheme } from '../audio/useChampionTheme'
 import StatsPanel from './StatsPanel'
 import StatBlock from './StatBlock'
 import AbilitiesSection from './AbilitiesSection'
@@ -104,7 +106,7 @@ export default function EditorPage({ mode }: Props) {
   const navigate = useNavigate()
   const [champion, setChampion] = useState<Champion | null>(null)
   const [rightTab, setRightTab] = useState<RightTab>('stats')
-  const [storyOpen, setStoryOpen] = useState(true)
+  const [workbench, setWorkbench] = useState<WorkbenchView>('story')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const isNew = useRef(mode === 'create')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -167,6 +169,12 @@ export default function EditorPage({ mode }: Props) {
     }, 600)
   }, [save])
 
+  // A theme preview started in the editor shouldn't keep playing once you leave it. This lives here,
+  // not in the Story panel, so switching the workbench to Items or Identity doesn't cut the music.
+  const stopTheme = useChampionTheme(s => s.stop)
+  const themeOwner = champion?.metadata.id || 'unsaved'
+  useEffect(() => () => stopTheme(themeOwner), [themeOwner, stopTheme])
+
   // Leaving the page (back arrow, header logo, …) inside the debounce window would otherwise
   // drop the last edit, so flush it on unmount.
   useEffect(() => () => {
@@ -204,9 +212,12 @@ export default function EditorPage({ mode }: Props) {
           ] as const).map(item => (
             <button
               key={item.key}
-              className={`spine-nav-btn${rightTab === item.key || (item.key === 'story') ? '' : ''}${item.pct === 100 ? ' done' : ''}`}
-              onClick={() => item.key !== 'story' && setRightTab(item.key as RightTab)}
-              style={{ cursor: item.key === 'story' ? 'default' : 'pointer' }}
+              className={`spine-nav-btn${item.pct === 100 ? ' done' : ''}`}
+              onClick={() => {
+                // Story lives in the Stats tab's workbench, so it means "Stats tab, Story panel".
+                if (item.key === 'story') { setRightTab('stats'); setWorkbench('story') }
+                else setRightTab(item.key)
+              }}
             >
               <div className="spine-nav-ring">
                 <SpineWheel pct={item.pct} color={item.pct === 100 ? '#0bc4e3' : '#c89b3c'} />
@@ -240,21 +251,8 @@ export default function EditorPage({ mode }: Props) {
       </div>
 
       <div className="editor-body">
-        <div className={`editor-left${storyOpen ? '' : ' collapsed'}`}>
-          <button
-            className="editor-left-toggle"
-            onClick={() => setStoryOpen(o => !o)}
-            title={storyOpen ? 'Collapse story panel' : 'Expand story panel'}
-          >
-            {storyOpen ? '‹' : '›'}
-          </button>
-          {!storyOpen && <div className="editor-left-collapsed-label">Story</div>}
-          <div className="editor-left-inner">
-            <StoryPanel champion={champion} onChange={handleChange} />
-          </div>
-        </div>
-
         <div className="editor-right">
+          <NameTitle champion={champion} onChange={handleChange} />
           <div className="editor-right-tabs">
             <button
               className={`editor-right-tab${rightTab === 'stats' ? ' active' : ''}`}
@@ -287,7 +285,7 @@ export default function EditorPage({ mode }: Props) {
                     exit={{ opacity: 0 }}
                     transition={CONTENT_TRANSITION}
                   >
-                    <StatsPanel champion={champion} onChange={handleChange} />
+                    <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} />
                   </motion.div>
                 ) : (
                   <motion.div

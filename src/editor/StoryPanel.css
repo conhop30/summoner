@@ -1,41 +1,26 @@
+/* Story: splash art and theme audio on the left, lore filling the rest. */
 .story-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
 }
 
-.story-name-input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border-default);
-  color: var(--text-primary);
-  font-size: var(--font-size-xl);
-  font-weight: 500;
-  letter-spacing: var(--tracking-tight);
-  outline: none;
-  width: 100%;
-  padding: 3px 0 var(--space-2);
-  font-family: var(--font-sans);
-  transition: border-color var(--transition-fast);
-}
-.story-name-input::placeholder { color: var(--text-placeholder); }
-.story-name-input:focus { border-bottom-color: var(--border-focus); }
+.story-media { display: flex; flex-direction: column; gap: var(--space-4); }
 
-.story-title-input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  outline: none;
-  width: 100%;
-  padding: 2px 0;
-  font-family: var(--font-sans);
-  margin-top: -12px;
-  transition: border-color var(--transition-fast);
+/* Identity: the classification chips, two groups wide. */
+.identity-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5) var(--space-6);
+  align-items: start;
 }
-.story-title-input::placeholder { color: var(--text-placeholder); }
-.story-title-input:focus { border-bottom-color: var(--border-default); }
+
+/* Same breakpoint as the stat grid: stack when the pane is narrow. */
+@container (max-width: 759px) {
+  .story-panel,
+  .identity-panel { grid-template-columns: 1fr; }
+}
 
 /* ── Splash ── */
 

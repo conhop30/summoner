@@ -1,6 +1,6 @@
 import type { Champion, BaseStats } from '../champion/types'
 import { BASE_STATS, HIDDEN_STATS, type StatFieldDef } from './statFields'
-import ItemLoadoutPanel from './ItemLoadoutPanel'
+import Workbench, { type WorkbenchView } from './Workbench'
 import StatSuggestions from './StatSuggestions'
 import StatLookup from './StatLookup'
 import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
@@ -9,6 +9,8 @@ import './StatsPanel.css'
 interface Props {
   champion: Champion
   onChange: (c: Champion) => void
+  workbench: WorkbenchView
+  onWorkbench: (v: WorkbenchView) => void
 }
 
 interface StatFieldProps extends StatFieldDef {
@@ -42,7 +44,7 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
   )
 }
 
-export default function StatsPanel({ champion, onChange }: Props) {
+export default function StatsPanel({ champion, onChange, workbench, onWorkbench }: Props) {
   const stats = champion.base_stats
   // One shared roster for the suggestions pop-up and the lookup, so syncing in one updates both.
   const catalogState = useChampionCatalog()
@@ -90,10 +92,7 @@ export default function StatsPanel({ champion, onChange }: Props) {
         </div>
       </div>
 
-      <div className="sp-group">
-        <div className="sp-group-title">Item build</div>
-        <ItemLoadoutPanel champion={champion} onChange={onChange} />
-      </div>
+      <Workbench champion={champion} onChange={onChange} view={workbench} onView={onWorkbench} />
     </div>
   )
 }
