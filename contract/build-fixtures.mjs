@@ -99,8 +99,9 @@ write('full-with-stats.json', file('full', [
       abilities: {
         q: {
           max_rank: 5, name: 'ignored', cooldown: [8, 7.5, 7, 6.5, 6], cost: [50, 55, 60, 65, 70], cost_type: 'Mana',
+          template: 'Deals {Hit} magic damage.',
           effects: [{
-            type: 'damage', damage_type: 'Magic', base: [60, 90, 120, 150, 180], notes: 'On hit',
+            type: 'damage', name: 'Hit', damage_type: 'Magic', base: [60, 90, 120, 150, 180], notes: 'On hit',
             ratios: [{ stat: 'AP', values: [0.4, 0.45, 0.5, 0.55, 0.6] }, { stat: 'ad', part: 'bonus', values: [0.1, 0.1, 0.1, 0.1, 0.1] }, { stat: 'armor', part: 'bonus', per: 80, values: [1, 1, 1, 1, 1] }, { stat: 'stacks', assumed: 3, values: [5, 5, 5, 5, 5] }],
           }],
           blocks: [
@@ -202,8 +203,9 @@ write('hostile-full-numbers.json', file('full', [{
     builds: [{ id: 'build-x1', name: 'X', items: [{ item_id: '../../etc', count: 5 }, { item_id: '3078', count: 500 }, 'not an id!', '1001'] }],
     abilities: {
       q: {
+        template: 12345,
         max_rank: 99, cooldown: [1e30, '12', null, 5, 6, 7, 8, 9], cost: 'free',
-        effects: [{ type: 'damage', damage_type: 'Fire', base: [10, 20] }, 'nonsense', { notes: 'no type' }, { type: 'sleep', family: 'bogus', unit: 'gallons', base: [1], ratios: [{ stat: 'ad', part: 'sideways', per: -5, assumed: 'lots', values: [1] }] }],
+        effects: [{ type: 'damage', name: 42, damage_type: 'Fire', base: [10, 20] }, 'nonsense', { notes: 'no type' }, { type: 'sleep', family: 'bogus', unit: 'gallons', base: [1], ratios: [{ stat: 'ad', part: 'sideways', per: -5, assumed: 'lots', values: [1] }] }],
       },
       w: { max_rank: 2, cooldown: [10, 9, 8, 7] },
       e: { max_rank: 'many' },

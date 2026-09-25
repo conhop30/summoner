@@ -299,9 +299,27 @@
 
 .effect-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
+.effect-name-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.effect-name-input { width: 140px; text-transform: none; }
+
+/* Under a description: the token picker and how the text reads with the numbers in. */
+.ability-desc-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-2); }
+.ability-desc-insert { max-width: 240px; }
+.ability-desc-preview { flex: 1 1 100%; font-size: var(--font-size-sm); line-height: 1.5; color: var(--text-secondary); }
+.ability-desc-preview span { margin-right: var(--space-1); font-size: var(--font-size-xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted); }
+.ability-desc-warning { flex: 1 1 100%; font-size: var(--font-size-xs); color: var(--text-danger); }
 
 .effect-subfield {
   display: flex;
@@ -405,6 +423,14 @@
   cursor: pointer;
 }
 .effect-summary:hover .effect-summary-text { color: var(--text-bright); }
+.effect-summary-token {
+  flex: none;
+  margin-left: auto;
+  padding-left: var(--space-3);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
 .effect-summary-caret { flex: none; width: 12px; color: var(--accent-gold); font-size: var(--font-size-xs); }
 .effect-summary-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

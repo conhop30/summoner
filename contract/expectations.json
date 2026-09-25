@@ -145,6 +145,8 @@
         80,
         80
       ],
+      "records.0.desktop.abilities.q.template": "Deals {Hit} magic damage.",
+      "records.0.desktop.abilities.q.effects.0.name": "Hit",
       "records.0.desktop.abilities.q.effects.0.ratios.1.stat": "ad",
       "records.0.desktop.abilities.q.effects.0.ratios.1.part": "bonus",
       "records.0.desktop.abilities.q.effects.0.ratios.2.per": 80,
@@ -399,6 +401,8 @@
       "records.0.desktop.abilities.q.cost",
       "records.0.desktop.abilities.q.effects.0.damage_type",
       "records.0.desktop.abilities.q.effects.2",
+      "records.0.desktop.abilities.q.template",
+      "records.0.desktop.abilities.q.effects.0.name",
       "records.0.desktop.abilities.q.effects.1.ratios.0.part",
       "records.0.desktop.abilities.q.effects.1.ratios.0.per",
       "records.0.desktop.abilities.q.effects.1.ratios.0.assumed",

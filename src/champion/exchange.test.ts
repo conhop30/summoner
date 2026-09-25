@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Abilities, Champion } from './types'
+import type { Abilities, Champion, Effect } from './types'
 import type { ChampionRecord, ImageRef } from '../interchange/types'
 import { FORMAT, VERSION } from '../interchange/types'
 import { parseInterchange } from '../interchange/sanitize'
@@ -285,5 +285,80 @@ describe('the mobile round trip', () => {
     expect(merged.abilities.q.effects).toEqual(desktop.abilities.q.effects)
     expect(merged.base_stats.health).toBe(615)
     expect(merged.builds).toEqual(desktop.builds)
+  })
+})
+
+describe('description tokens in files', () => {
+  const dmg: Effect = { type: 'damage', damage_type: 'Magic', base: [40, 65, 90, 115, 140], ratios: [{ stat: 'ap', values: [0.45, 0.45, 0.45, 0.45, 0.45] }] }
+  function tokened(): Champion {
+    const c = champion()
+    c.abilities.q = {
+      ...c.abilities.q, name: 'Bolt', description: 'Deals {Damage} magic damage.', effects: [dmg],
+      blocks: [{ id: 'blk-tok-01', kind: 'alternate_form', name: 'Form', description: 'Also deals {Hit}.', effects: [{ type: 'damage', name: 'Hit', base: [5, 5, 5, 5, 5] }] }],
+    }
+    return c
+  }
+  const RESOLVED = 'Deals 40/65/90/115/140 (+45% AP) magic damage.'
+
+  it('sends the phone the numbers, not the tokens, for abilities and blocks', () => {
+    const concept = toRecord(tokened(), 'concept')
+    expect(concept.abilities.q.description).toBe(RESOLVED)
+    expect(concept.abilities.q.blocks![0].description).toBe('Also deals 5.')
+    expect(JSON.stringify(concept)).not.toContain('{Damage}')
+    expect(JSON.stringify(concept)).not.toContain('{Hit}')
+  })
+
+  it('leaves the change snapshot on the tokens as written, so renaming one counts as an edit', () => {
+    const a = tokened()
+    const b = tokened()
+    b.abilities.q = { ...b.abilities.q, description: 'Deals {Damage} magic damage!' }
+    expect(conceptSnapshot(a)).toContain('{Damage}')
+    expect(conceptSnapshot(a)).not.toBe(conceptSnapshot(b))
+  })
+
+  it('a full file carries the template, and another desktop puts the tokens back', () => {
+    const full = toRecord(tokened(), 'full')
+    expect(full.abilities.q.description).toBe(RESOLVED)
+    expect(full.desktop!.abilities.q.template).toBe('Deals {Damage} magic damage.')
+    const onAnotherMachine = recordToChampion(JSON.parse(JSON.stringify(full)), null, { icons: {} })
+    expect(onAnotherMachine.abilities.q.description).toBe('Deals {Damage} magic damage.')
+    expect(onAnotherMachine.abilities.q.blocks![0].description).toBe('Also deals {Hit}.')
+    expect(JSON.stringify(onAnotherMachine)).not.toContain('template')
+  })
+
+  it('does not adopt a template whose text no longer matches the file', () => {
+    const full = JSON.parse(JSON.stringify(toRecord(tokened(), 'full'))) as ChampionRecord
+    full.abilities.q.description = 'Someone rewrote this.'
+    const imported = recordToChampion(full, null, { icons: {} })
+    expect(imported.abilities.q.description).toBe('Someone rewrote this.')
+  })
+
+  it('a phone round trip that did not touch the text keeps the tokens', () => {
+    const desktop = tokened()
+    const edited: ChampionRecord = JSON.parse(JSON.stringify(toRecord(desktop)))
+    edited.abilities.q = { ...edited.abilities.q, name: 'Renamed on the bus' }
+    edited.concept_updated_at = T3
+    const merged = recordToChampion(edited, desktop, { icons: {} })
+    expect(merged.abilities.q.name).toBe('Renamed on the bus')
+    expect(merged.abilities.q.description).toBe('Deals {Damage} magic damage.')
+    expect(merged.abilities.q.blocks![0].description).toBe('Also deals {Hit}.')
+  })
+
+  it('a phone edit of the text replaces the tokens, as the newer text should', () => {
+    const desktop = tokened()
+    const edited: ChampionRecord = JSON.parse(JSON.stringify(toRecord(desktop)))
+    edited.abilities.q = { ...edited.abilities.q, description: 'Now it just hurts.' }
+    edited.abilities.q.blocks = [{ ...edited.abilities.q.blocks![0], description: 'And this.' }]
+    edited.concept_updated_at = T3
+    const merged = recordToChampion(edited, desktop, { icons: {} })
+    expect(merged.abilities.q.description).toBe('Now it just hurts.')
+    expect(merged.abilities.q.blocks![0].description).toBe('And this.')
+    expect(merged.abilities.q.effects).toEqual(desktop.abilities.q.effects)
+  })
+
+  it('keeps an effect\'s name through a full round trip', () => {
+    const full = toRecord(tokened(), 'full')
+    const back = recordToChampion(JSON.parse(JSON.stringify(full)), null, { icons: {} })
+    expect(back.abilities.q.blocks![0].effects![0].name).toBe('Hit')
   })
 })

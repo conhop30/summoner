@@ -94,6 +94,14 @@ A block with no valid id, or a second block with an id already seen, is skipped 
 
 Text limits everywhere: control characters are stripped, over-long text is cut and reported.
 
+### Description tokens
+
+The desktop app lets a description say `{Damage}` where a number belongs and fills it in from the effect of that name in the same ability or block ("dealing 40/65/90 (+45% AP) physical damage"). A token is `{` text `}`; names are matched ignoring case and spacing, and an effect with no `name` answers to its type's name ("Damage", "Slow"), with " 2", " 3" added where two would collide. Nothing outside the desktop app can fill a token in, so:
+
+- **Every description in `abilities` (and every block's) is written with its tokens already replaced by the numbers they stand for.** A phone never sees a token.
+- A `full` file also carries the description as written in the `desktop` section, as `template` on the ability and on each block. A desktop that reads the file uses a `template` only if filling its tokens in from the same file's effects gives exactly the description the file says; if it doesn't (someone edited the text), the description wins and the tokens are dropped.
+- A description that comes back from a phone is plain text. A desktop keeps the tokens it already has for an ability when the incoming text is exactly what those tokens produce now (the phone didn't touch the description); if the text differs, it was edited and replaces the tokens.
+
 ### desktop (scope `full` only)
 
 `{ base_stats, builds, active_build_id, abilities }`. Summoner Mobile does not read this section.
@@ -107,9 +115,10 @@ Text limits everywhere: control characters are stripped, over-long text is cut a
 | `max_rank` | integer 1-6. Defaults to 5 (3 for `r`) |
 | `cooldown`, `cost` | number[]; always exactly `max_rank` long after parsing (shorter arrays are padded with their last value, longer are cut) |
 | `cost_type` | string, 40 |
-| `effects` | up to 20 of `{type, family?, unit?, damage_type?, base?, ratios?, duration?, notes?}`. `type` is required (40 chars) and is either a built-in (`damage`, `heal`, `shield`, `slow`, `stun`, `knock_up`, `knock_back`, `charm`, `fear`, `silence`, `speed_boost`, `armor_modifier`, `magic_resistance_modifier`, `dash`) or any custom label. `family` (`damage`/`hard_control`/`soft_control`/`sustain`/`utility`) says what a custom effect behaves like, and `unit` (`seconds`/`percent`/`flat`) what its `base` measures; either is dropped if it isn't one of those, and a built-in type ignores both. `damage_type` is `Physical`/`Magic`/`True` or dropped; `ratios` up to 10 of `{stat, part?, per?, assumed?, values[]}`, where `stat` is text (the desktop app writes ids such as `ad`, `ap`, `armor`, `magic_resist`, `health`, `resource`, `attack_speed`, `crit_chance`, `lethality`, and reads older free text such as "Bonus AD") and `part` (`base`/`bonus`/`total`) says which part of the stat counts, or is dropped. `per` (a number above 0) makes the ratio "per N": each N of the stat adds `values`, continuously, in the effect's own unit, instead of `values` being a fraction of the stat. A `stat` that is none of the known ids is a value the author named ("stacks"); `assumed` is the number to assume for it when estimating |
+| `effects` | up to 20 of `{type, name?, family?, unit?, damage_type?, base?, ratios?, duration?, notes?}`. `type` is required (40 chars); `name` (40 chars) is what a description calls the effect (`{Name}`, see "Description tokens"), and is the type's name when absent and is either a built-in (`damage`, `heal`, `shield`, `slow`, `stun`, `knock_up`, `knock_back`, `charm`, `fear`, `silence`, `speed_boost`, `armor_modifier`, `magic_resistance_modifier`, `dash`) or any custom label. `family` (`damage`/`hard_control`/`soft_control`/`sustain`/`utility`) says what a custom effect behaves like, and `unit` (`seconds`/`percent`/`flat`) what its `base` measures; either is dropped if it isn't one of those, and a built-in type ignores both. `damage_type` is `Physical`/`Magic`/`True` or dropped; `ratios` up to 10 of `{stat, part?, per?, assumed?, values[]}`, where `stat` is text (the desktop app writes ids such as `ad`, `ap`, `armor`, `magic_resist`, `health`, `resource`, `attack_speed`, `crit_chance`, `lethality`, and reads older free text such as "Bonus AD") and `part` (`base`/`bonus`/`total`) says which part of the stat counts, or is dropped. `per` (a number above 0) makes the ratio "per N": each N of the stat adds `values`, continuously, in the effect's own unit, instead of `values` being a fraction of the stat. A `stat` that is none of the known ids is a value the author named ("stacks"); `assumed` is the number to assume for it when estimating |
+| `template` | the ability's description as written, with `{Name}` tokens still in it (4000 chars); see "Description tokens" |
 | `extra` | `{recast?, ...}` up to 20 keys with string/number/boolean values |
-| `blocks` | up to 20 of `{id, cooldown?, cost?, cost_type?, effects?, recast?: {max_recasts, recast_window, recast_static_cooldown?}}`, each matched to a concept block **by `id`** |
+| `blocks` | up to 20 of `{id, template?, cooldown?, cost?, cost_type?, effects?, recast?: {max_recasts, recast_window, recast_static_cooldown?}}`, each matched to a concept block **by `id`** |
 
 Numbers must be real JSON numbers (strings like `"12"` are dropped) and are clamped to +-1,000,000.
 

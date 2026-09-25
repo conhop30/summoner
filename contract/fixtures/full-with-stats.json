@@ -100,9 +100,11 @@
               70
             ],
             "cost_type": "Mana",
+            "template": "Deals {Hit} magic damage.",
             "effects": [
               {
                 "type": "damage",
+                "name": "Hit",
                 "damage_type": "Magic",
                 "base": [
                   60,

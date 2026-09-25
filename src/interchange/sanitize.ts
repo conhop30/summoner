@@ -172,6 +172,8 @@ function sanitizeEffect(v: unknown, maxRank: number, warn: Warn, label: string):
   const type = text(v.type, LIMITS.short, warn, `${label} effect type`)
   if (!type) return undefined
   const effect: Effect = { type }
+  const name = text(v.name, LIMITS.short, warn, `${label} effect name`)
+  if (name) effect.name = name
   if ((EFFECT_FAMILIES as readonly unknown[]).includes(v.family)) effect.family = v.family as Effect['family']
   if ((EFFECT_UNITS as readonly unknown[]).includes(v.unit)) effect.unit = v.unit as Effect['unit']
   if ((DAMAGE_TYPES as readonly unknown[]).includes(v.damage_type)) effect.damage_type = v.damage_type as Effect['damage_type']
@@ -290,6 +292,8 @@ function sanitizeBlockDetails(v: unknown, maxRank: number, seen: Set<string>, wa
   delete body.name
   delete body.description
   const block: BlockDetails = { id: v.id, ...body }
+  const template = text(v.template, LIMITS.description, warn, `${label} description template`)
+  if (template) block.template = template
   if (isObj(v.recast)) {
     const recast: RecastNumbers = {
       max_recasts: int(v.recast.max_recasts, 0, 99) ?? 1,
@@ -340,6 +344,8 @@ function sanitizeAbilityDetails(v: unknown, slot: AbilitySlot, warn: Warn): Abil
   delete body.name
   delete body.description
   const ability: AbilityDetails = { max_rank: maxRank, ...body }
+  const template = text(raw.template, LIMITS.description, warn, `${label} description template`)
+  if (template) ability.template = template
 
   const extra = sanitizeExtra(raw.extra, warn, label)
   if (extra) ability.extra = extra

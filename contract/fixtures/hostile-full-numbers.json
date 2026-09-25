@@ -49,6 +49,7 @@
         ],
         "abilities": {
           "q": {
+            "template": 12345,
             "max_rank": 99,
             "cooldown": [
               1e+30,
@@ -64,6 +65,7 @@
             "effects": [
               {
                 "type": "damage",
+                "name": 42,
                 "damage_type": "Fire",
                 "base": [
                   10,

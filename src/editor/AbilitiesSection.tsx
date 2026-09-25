@@ -3,6 +3,8 @@ import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal } from '../champion/types'
 import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, unitSuffix } from '../champion/effects'
+import DescriptionField from './DescriptionField'
+import { effectTokenNames, renamesBetween, retargetTokens } from '../champion/descriptionTokens'
 import { PART_LABELS, PER_DEFAULT, RATIO_STATS, assumedUnits, ratioStatDef, resolveRatio } from '../champion/ratios'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
@@ -77,6 +79,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   showNameDescription?: boolean
 }) {
   const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
+  const tokenNames = effectTokenNames(body.effects)
   // Effects are one tidy line each until opened; a freshly added one opens so it can be filled in.
   const [openEffects, setOpenEffects] = useState<Set<number>>(() => new Set())
   // The effect whose custom name is being typed. Its name field stays until the user leaves it, even
@@ -100,16 +103,23 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     onUpdate({ [key]: updated })
   }
 
+  // Every change to the list of effects goes through here, so the {tokens} in the description
+  // follow an effect when its name (or the name its type gives it) changes.
+  function commitEffects(next: Effect[], removedIndex?: number) {
+    const description = retargetTokens(body.description, renamesBetween(body.effects, next, removedIndex))
+    onUpdate(description !== body.description ? { effects: next, description } : { effects: next })
+  }
+
   function addEffect() {
     const index = (body.effects ?? []).length
-    onUpdate({ effects: [...(body.effects ?? []), { type: 'damage' } as Effect] })
+    commitEffects([...(body.effects ?? []), { type: 'damage' } as Effect])
     setOpenEffects(prev => new Set(prev).add(index))
   }
 
   function updateEffect(index: number, partial: Partial<Effect>) {
     const effects = [...(body.effects ?? [])]
     effects[index] = { ...effects[index], ...partial }
-    onUpdate({ effects })
+    commitEffects(effects)
   }
 
   // Picking a built-in type clears any family and unit left over from a custom label, since a
@@ -119,7 +129,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   }
 
   function removeEffect(index: number) {
-    onUpdate({ effects: (body.effects ?? []).filter((_, i) => i !== index) })
+    commitEffects((body.effects ?? []).filter((_, i) => i !== index), index)
     // Later effects move up one place, and their open/closed state goes with them.
     setOpenEffects(prev => new Set([...prev].filter(i => i !== index).map(i => (i > index ? i - 1 : i))))
     setTypingName(null)
@@ -210,12 +220,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
           </div>
 
           <div className="ability-desc-row">
-            <textarea
-              className="ability-desc"
-              placeholder="Describe what this ability does..."
-              value={body.description ?? ''}
-              onChange={e => onUpdate({ description: e.target.value })}
-            />
+            <DescriptionField value={body.description} effects={body.effects} onChange={description => onUpdate({ description })} />
           </div>
         </>
       )}
@@ -278,6 +283,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                 <button className="effect-summary" aria-expanded={isOpen} onClick={() => toggleEffect(i)}>
                   <span className="effect-summary-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
                   <span className="effect-summary-text">{describeEffect(effect)}</span>
+                  <span className="effect-summary-token" title="Write this in the description to put this effect's numbers there">{`{${tokenNames[i]}}`}</span>
                 </button>
                 <button className="remove-effect-btn" onClick={() => removeEffect(i)} aria-label="Remove effect">×</button>
               </div>
@@ -321,6 +327,16 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                         {['Physical', 'Magic', 'True'].map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     )}
+                    <label className="effect-name-field" title="What the description calls this effect: write {Name} there, or use Insert value">
+                      Name
+                      <input
+                        className="rank-input effect-name-input"
+                        placeholder={tokenNames[i]}
+                        value={effect.name ?? ''}
+                        onChange={e => updateEffect(i, { name: e.target.value || undefined })}
+                        aria-label="Name in the description"
+                      />
+                    </label>
                     <input
                       className="rank-input"
                       placeholder="Notes"
@@ -615,12 +631,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
           </div>
 
           <div className="ability-desc-row">
-            <textarea
-              className="ability-desc"
-              placeholder="Describe what this ability does..."
-              value={ability.description ?? ''}
-              onChange={e => updateAbility({ description: e.target.value })}
-            />
+            <DescriptionField value={ability.description} effects={ability.effects} onChange={description => updateAbility({ description })} />
           </div>
 
           {mode === 'simple' && (

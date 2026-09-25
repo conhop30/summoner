@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Champion, AbilitySlot } from '../champion/types'
 import { useChampionTheme } from '../audio/useChampionTheme'
+import { resolveTokens } from '../champion/descriptionTokens'
 import { formatStat, formatGrowth, statAtLevel } from '../champion/statSpec'
 import type { BaseStats } from '../champion/types'
 import './ViewPage.css'
@@ -135,7 +136,8 @@ async function drawChampionCard(champion: Champion): Promise<Blob> {
     const abilityBlocks = filledSlots.map(slot => {
       const ability = champion.abilities[slot]!
       const textX = PAD + 16 + (icons.has(slot) ? POSTER_ICON_SIZE + 14 : 0)
-      const lines = ability.description ? wrapLines(measure, ability.description, W - PAD - textX - 44, 3) : []
+      const description = resolveTokens(ability.description, ability.effects)
+      const lines = description ? wrapLines(measure, description, W - PAD - textX - 44, 3) : []
       return { slot, ability, lines, textX }
     })
 
@@ -408,7 +410,7 @@ export default function ViewPage() {
                     <div className="ability-spotlight-type">{SLOT_TYPE_LABEL[displaySlot!]}</div>
                     <div className="ability-spotlight-name">{displayAbility.name}</div>
                     {displayAbility.description && (
-                      <div className="ability-spotlight-desc">{displayAbility.description}</div>
+                      <div className="ability-spotlight-desc">{resolveTokens(displayAbility.description, displayAbility.effects)}</div>
                     )}
                     {(displayAbility.effects ?? []).length > 0 && (
                       <div className="ability-spotlight-effects">

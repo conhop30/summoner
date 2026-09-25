@@ -41,6 +41,8 @@ export const EFFECT_UNITS: readonly EffectUnit[] = ['seconds', 'percent', 'flat'
 
 export interface Effect {
   type: string
+  // What a description calls this effect ({Name}); unset, the type's name.
+  name?: string
   family?: EffectFamily
   unit?: EffectUnit
   damage_type?: 'Physical' | 'Magic' | 'True'
@@ -100,12 +102,16 @@ export interface RecastNumbers {
 // The numbers of one block, matched to its BlockText by id.
 export interface BlockDetails extends Omit<AbilityBody, 'name' | 'description'> {
   id: string
+  // The description as written, with {Name} tokens still in it; see the spec.
+  template?: string
   recast?: RecastNumbers
 }
 
 // Everything else about an ability. Desktop-owned; travels only in a 'full' file.
 export interface AbilityDetails extends Omit<AbilityBody, 'name' | 'description'> {
   max_rank: number
+  // The description as written, with {Name} tokens still in it; see the spec.
+  template?: string
   extra?: { recast?: RecastStruct; [key: string]: string | number | boolean | RecastStruct | undefined }
   blocks?: BlockDetails[]
 }

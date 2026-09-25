@@ -8,6 +8,7 @@
 
 import type { Champion, Abilities, Ability, AbilityBlock, BaseStats, Identity, NamedBuild } from './types'
 import type { AbilityDetails, AbilitySlot, AbilityText, BlockDetails, BlockText, ChampionRecord, Effect, ImageRef, Scope } from '../interchange/types'
+import { adoptTemplate, hasTokens, keepTokens, resolveTokens } from './descriptionTokens'
 import { SLOTS } from '../interchange/types'
 import { sanitizeRecord } from '../interchange/sanitize'
 import { blockFallbackId, defaultAbilities, defaultBaseStats, generateId, nowISO } from './utils'
@@ -35,20 +36,24 @@ function stableStringify(value: unknown): string {
 // Blocks saved before they had ids get a stable stand-in from their position.
 const blockIdOf = (block: AbilityBlock, slot: AbilitySlot, index: number) => block.id ?? blockFallbackId(slot, index)
 
-function blockConcept(block: AbilityBlock, slot: AbilitySlot, index: number): BlockText {
+// A description's {Name} tokens are replaced by their numbers when it leaves the app (the phone
+// can't fill them in), so `resolve` is on for a file and off for the local change snapshot.
+function blockConcept(block: AbilityBlock, slot: AbilitySlot, index: number, resolve = false): BlockText {
   return {
     id: blockIdOf(block, slot, index),
     kind: block.kind,
     name: block.name,
-    description: block.description,
+    description: resolve ? resolveTokens(block.description, block.effects) || undefined : block.description,
     condition: block.kind === 'recast' ? block.recast?.recast_extends_on : undefined,
   }
 }
 
 function blockDetails(block: AbilityBlock, slot: AbilitySlot, index: number): BlockDetails {
-  const { kind: _kind, name: _name, description: _description, recast, id: _id, ...numbers } = block
-  void _kind; void _name; void _description; void _id
+  const { kind: _kind, name: _name, description, recast, id: _id, ...numbers } = block
+  void _kind; void _name; void _id
   const details: BlockDetails = { ...numbers, id: blockIdOf(block, slot, index) }
+  // Keep the description as written, tokens and all, so another desktop can put the tokens back.
+  if (hasTokens(description)) details.template = description
   if (recast) {
     details.recast = { max_recasts: recast.max_recasts, recast_window: recast.recast_window, recast_static_cooldown: recast.recast_static_cooldown }
   }
@@ -57,6 +62,7 @@ function blockDetails(block: AbilityBlock, slot: AbilitySlot, index: number): Bl
 
 interface Numbers {
   id?: string
+  template?: string
   cooldown?: number[]
   cost?: number[]
   cost_type?: string
@@ -66,13 +72,19 @@ interface Numbers {
 
 // Rebuilds an ability's blocks: the list, order, kind and text come from the file; each block's
 // numbers come from the same-id block in `source` (the file's desktop section, or what is here).
-function buildBlocks(texts: BlockText[] | undefined, source: Numbers[] | undefined): AbilityBlock[] | undefined {
+//
+// A block's description comes back as plain text (its tokens were replaced on the way out). If the
+// file carries the template, or what is already here still produces exactly that text, the tokens are kept.
+function buildBlocks(texts: BlockText[] | undefined, source: Numbers[] | undefined, fromFile: boolean): AbilityBlock[] | undefined {
   if (!texts || texts.length === 0) return undefined
   return texts.map(t => {
     const n = source?.find(candidate => candidate.id === t.id)
     const block: AbilityBlock = { id: t.id, kind: t.kind }
     if (t.name) block.name = t.name
-    if (t.description) block.description = t.description
+    const description = fromFile
+      ? adoptTemplate(t.description, n?.template, n?.effects)
+      : keepTokens(t.description, (n as AbilityBlock | undefined)?.description, n?.effects)
+    if (description) block.description = description
     if (n?.cooldown) block.cooldown = n.cooldown
     if (n?.cost) block.cost = n.cost
     if (n?.cost_type) block.cost_type = n.cost_type
@@ -125,10 +137,14 @@ export function championToRecord(champion: Champion, scope: Scope, imageOf: Imag
     const { icon_path, name, description, journal, blocks, ...rest } = champion.abilities[slot]
     const icon = icon_path ? imageOf(icon_path, 'icon') : undefined
     abilities[slot] = {
-      name, description, journal, ...(icon ? { icon } : {}),
-      ...(blocks?.length ? { blocks: blocks.map((b, i) => blockConcept(b, slot, i)) } : {}),
+      name, description: resolveTokens(description, rest.effects) || undefined, journal, ...(icon ? { icon } : {}),
+      ...(blocks?.length ? { blocks: blocks.map((b, i) => blockConcept(b, slot, i, true)) } : {}),
     }
-    details[slot] = { ...rest, ...(blocks?.length ? { blocks: blocks.map((b, i) => blockDetails(b, slot, i)) } : {}) }
+    details[slot] = {
+      ...rest,
+      ...(hasTokens(description) ? { template: description } : {}),
+      ...(blocks?.length ? { blocks: blocks.map((b, i) => blockDetails(b, slot, i)) } : {}),
+    }
   }
 
   const raw: Record<string, unknown> = {
@@ -208,6 +224,7 @@ export function recordToChampion(
   for (const slot of SLOTS) abilities[slot] = { ...(keep?.abilities[slot] ?? base[slot]) }
   // Where each block's numbers come from: the file's desktop section if it has one, else what is here.
   const numberSource = {} as Record<AbilitySlot, Numbers[] | undefined>
+  const templates = {} as Record<AbilitySlot, string | undefined>
   for (const slot of SLOTS) numberSource[slot] = keep?.abilities[slot].blocks as Numbers[] | undefined
   if (record.desktop) {
     base_stats = { ...(defaultBaseStats() as BaseStats), ...(record.desktop.base_stats as unknown as Partial<BaseStats>) }
@@ -217,21 +234,29 @@ export function recordToChampion(
       const details: AbilityDetails = record.desktop.abilities[slot]
       abilities[slot] = { ...(details as unknown as Ability) }
       numberSource[slot] = details.blocks
+      templates[slot] = details.template
     }
   }
   for (const slot of SLOTS) {
     const text: AbilityText = record.abilities[slot]
     const ability = abilities[slot]
+    const previous = keep?.abilities[slot]
     delete ability.name
     delete ability.description
     delete ability.icon_path
     delete ability.journal
     delete ability.blocks
+    delete (ability as { template?: string }).template
     if (text.name) ability.name = text.name
-    if (text.description) ability.description = text.description
+    // The text comes back with its tokens already replaced by numbers. Put the tokens back if the
+    // file carries them, or if what is here still produces exactly this text.
+    const description = record.desktop
+      ? adoptTemplate(text.description, templates[slot], ability.effects)
+      : keepTokens(text.description, previous?.description, previous?.effects)
+    if (description) ability.description = description
     if (assets.icons[slot]) ability.icon_path = assets.icons[slot]
     if (text.journal) ability.journal = text.journal
-    const blocks = buildBlocks(text.blocks, numberSource[slot])
+    const blocks = buildBlocks(text.blocks, numberSource[slot], !!record.desktop)
     if (blocks) ability.blocks = blocks
   }
   if (!active_build_id || !builds.some(b => b.id === active_build_id)) active_build_id = builds[0].id

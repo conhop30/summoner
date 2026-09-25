@@ -42,6 +42,9 @@ export type EffectUnit = 'seconds' | 'percent' | 'flat';
 
 export interface Effect {
   type: EffectType;
+  // What a description calls this effect: {Name}. Unset, it is the type's name ("Damage"); see
+  // descriptionTokens.ts.
+  name?: string;
   family?: EffectFamily;
   unit?: EffectUnit;
   damage_type?: DamageType;
