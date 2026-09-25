@@ -145,6 +145,8 @@
         80,
         80
       ],
+      "records.0.desktop.abilities.q.effects.0.ratios.1.stat": "ad",
+      "records.0.desktop.abilities.q.effects.0.ratios.1.part": "bonus",
       "records.0.desktop.abilities.w.effects.1.type": "taunt",
       "records.0.desktop.abilities.w.effects.1.family": "hard_control",
       "records.0.desktop.abilities.w.effects.1.unit": "seconds",
@@ -380,6 +382,7 @@
         20
       ],
       "records.0.desktop.abilities.q.effects.1.type": "sleep",
+      "records.0.desktop.abilities.q.effects.1.ratios.0.stat": "ad",
       "records.0.desktop.abilities.w.cooldown": [
         10,
         9
@@ -393,6 +396,7 @@
       "records.0.desktop.abilities.q.cost",
       "records.0.desktop.abilities.q.effects.0.damage_type",
       "records.0.desktop.abilities.q.effects.2",
+      "records.0.desktop.abilities.q.effects.1.ratios.0.part",
       "records.0.desktop.abilities.q.effects.1.family",
       "records.0.desktop.abilities.q.effects.1.unit"
     ]

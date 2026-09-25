@@ -7,9 +7,9 @@
 
 import type {
   AbilityBody, AbilityDetails, AbilitySlot, AbilityText, BlockDetails, BlockText, ChampionRecord, DesktopSection, Effect,
-  IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RecastNumbers, RecastStruct, Scope,
+  IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RatioEntry, RecastNumbers, RecastStruct, Scope,
 } from './types'
-import { EFFECT_FAMILIES, EFFECT_UNITS, FORMAT, SLOTS, VERSION } from './types'
+import { EFFECT_FAMILIES, EFFECT_UNITS, FORMAT, RATIO_PARTS, SLOTS, VERSION } from './types'
 
 export const LIMITS = {
   fileBytes: 100 * 1024 * 1024,
@@ -182,11 +182,14 @@ function sanitizeEffect(v: unknown, maxRank: number, warn: Warn, label: string):
   const notes = text(v.notes, LIMITS.notes, warn, `${label} effect notes`)
   if (notes) effect.notes = notes
   if (Array.isArray(v.ratios)) {
-    const ratios = []
+    const ratios: RatioEntry[] = []
     for (const r of v.ratios.slice(0, LIMITS.ratios)) {
       if (!isObj(r)) continue
       const stat = text(r.stat, LIMITS.short, warn, `${label} ratio stat`)
-      if (stat) ratios.push({ stat, values: rankArray(r.values, maxRank) ?? Array(maxRank).fill(0) })
+      if (!stat) continue
+      const ratio: RatioEntry = { stat, values: rankArray(r.values, maxRank) ?? Array(maxRank).fill(0) }
+      if ((RATIO_PARTS as readonly unknown[]).includes(r.part)) ratio.part = r.part as RatioEntry['part']
+      ratios.push(ratio)
     }
     if (ratios.length > 0) effect.ratios = ratios
   }

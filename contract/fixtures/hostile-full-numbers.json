@@ -80,6 +80,15 @@
                 "unit": "gallons",
                 "base": [
                   1
+                ],
+                "ratios": [
+                  {
+                    "stat": "ad",
+                    "part": "sideways",
+                    "values": [
+                      1
+                    ]
+                  }
                 ]
               }
             ]

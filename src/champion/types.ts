@@ -19,8 +19,14 @@ export type EffectType =
 
 export type DamageType = 'Physical' | 'Magic' | 'True';
 
+// Which part of a stat a ratio scales with: what the champion has on its own, what items and
+// effects add, or both together. See ratios.ts.
+export type RatioPart = 'base' | 'bonus' | 'total';
+
 export interface RatioEntry {
+  // A stat id from ratios.ts ("ad", "armor"...), or free text from before the picker existed.
   stat: string;
+  part?: RatioPart;
   values: number[];
 }
 

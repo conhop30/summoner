@@ -13,9 +13,16 @@ const DEFAULT_CRIT_MULTIPLIER = 1.75
 /** What a champion can do at the reference moment. */
 export interface Combatant {
   health: number
-  /** Health and attack damage before items, for the ratios that scale off "bonus" amounts. */
+  /** The same stats before items: what a ratio on "base" means, and what "bonus" is measured from. */
   baseHealth: number
   baseAttackDamage: number
+  baseArmor: number
+  baseMagicResist: number
+  baseResource: number
+  baseAttackSpeed: number
+  baseMoveSpeed: number
+  /** Health regeneration per 5 seconds. Items' regen isn't read, so this is the champion's own. */
+  healthRegen: number
   armor: number
   magicResist: number
   attackDamage: number
@@ -44,12 +51,21 @@ export function combatantAt(base: Partial<BaseStats>, level: number, bonus: Item
   const attackSpeed = at(base, 'attack_speed', 'attack_speed_growth', level)
   const baseHealth = at(base, 'health', 'health_growth', level)
   const baseAttackDamage = at(base, 'attack_damage', 'attack_damage_growth', level)
+  const baseArmor = at(base, 'armor', 'armor_growth', level)
+  const baseMagicResist = at(base, 'magic_resistance', 'magic_resistance_growth', level)
+  const baseResource = at(base, 'resource', 'resource_growth', level)
   return {
     health: baseHealth + bonus.health,
     baseHealth,
     baseAttackDamage,
-    armor: at(base, 'armor', 'armor_growth', level) + bonus.armor,
-    magicResist: at(base, 'magic_resistance', 'magic_resistance_growth', level) + bonus.magicResist,
+    baseArmor,
+    baseMagicResist,
+    baseResource,
+    baseAttackSpeed: attackSpeed,
+    baseMoveSpeed: num(base.movement_speed),
+    healthRegen: at(base, 'health_regen', 'health_regen_growth', level),
+    armor: baseArmor + bonus.armor,
+    magicResist: baseMagicResist + bonus.magicResist,
     attackDamage: baseAttackDamage + bonus.attackDamage,
     attackSpeed: attackSpeed * (1 + bonus.attackSpeed),
     attackRange: num(base.attack_range?.[0]),
@@ -58,7 +74,7 @@ export function combatantAt(base: Partial<BaseStats>, level: number, bonus: Item
     critChance: Math.min(1, bonus.critChance),
     critMultiplier: num(base.crit_damage_multiplier) || DEFAULT_CRIT_MULTIPLIER,
     abilityHaste: bonus.abilityHaste,
-    resource: at(base, 'resource', 'resource_growth', level) + bonus.mana,
+    resource: baseResource + bonus.mana,
     resourceRegen: at(base, 'resource_regen', 'resource_regen_growth', level),
   }
 }

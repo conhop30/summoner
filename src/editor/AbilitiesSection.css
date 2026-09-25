@@ -350,16 +350,38 @@
 
 .ratio-row {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border-default);
+}
+.ratio-row-head { display: flex; align-items: center; gap: var(--space-2); }
+.ratio-row-head .remove-effect-btn { margin-left: auto; }
+
+.ratio-stat-select { width: 168px; flex-shrink: 0; }
+.ratio-part-select { width: 86px; flex-shrink: 0; }
+
+/* Each effect is one line until opened: what it does, in the words of an ability tooltip. */
+.effect-summary-row { display: flex; align-items: center; gap: var(--space-2); }
+.effect-card:not(.open) { padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.effect-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  padding: 2px 0;
+  background: transparent;
+  border: none;
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  text-align: left;
+  cursor: pointer;
 }
-
-.ratio-stat-input {
-  width: 96px;
-  flex-shrink: 0;
-  text-transform: none;
-}
+.effect-summary:hover .effect-summary-text { color: var(--text-bright); }
+.effect-summary-caret { flex: none; width: 12px; color: var(--accent-gold); font-size: var(--font-size-xs); }
+.effect-summary-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Ability Blocks ── */
 

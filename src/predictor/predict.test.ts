@@ -265,6 +265,42 @@ describe('custom effects', () => {
   })
 })
 
+describe('structured ratios in the model', () => {
+  const geared = combatantAt(MAGE_STATS, REFERENCE_LEVEL, { ...emptyBonuses(), attackDamage: 100, armor: 60, health: 500 })
+  function damageOf(ratio: { stat: string; part?: 'base' | 'bonus' | 'total' }): number {
+    const k = mageKit()
+    k.q = ability({ cooldown: [8, 8, 8, 8, 8], effects: [{ type: 'damage', damage_type: 'True', base: [0, 0, 0, 0, 0], ratios: [{ ...ratio, values: [1, 1, 1, 1, 1] }] }] })
+    return evaluateKit(champion({}, k), geared).slots.find(s => s.slot === 'q')!.damagePerCast
+  }
+
+  it('tells base, bonus and total apart', () => {
+    expect(damageOf({ stat: 'ad', part: 'bonus' })).toBeCloseTo(100)
+    expect(damageOf({ stat: 'ad', part: 'base' })).toBeCloseTo(geared.baseAttackDamage)
+    expect(damageOf({ stat: 'ad', part: 'total' })).toBeCloseTo(geared.baseAttackDamage + 100)
+    expect(damageOf({ stat: 'armor', part: 'bonus' })).toBeCloseTo(60)
+    expect(damageOf({ stat: 'armor', part: 'base' })).toBeCloseTo(geared.baseArmor)
+    expect(damageOf({ stat: 'health', part: 'bonus' })).toBeCloseTo(500)
+  })
+
+  it('prices old free-text ratios exactly like their structured form', () => {
+    expect(damageOf({ stat: 'Bonus AD' })).toBeCloseTo(damageOf({ stat: 'ad', part: 'bonus' }))
+    expect(damageOf({ stat: 'Bonus Health' })).toBeCloseTo(damageOf({ stat: 'health', part: 'bonus' }))
+    expect(damageOf({ stat: 'Max Health' })).toBeCloseTo(damageOf({ stat: 'health', part: 'total' }))
+    expect(damageOf({ stat: 'Magic Resist' })).toBeCloseTo(damageOf({ stat: 'magic_resist', part: 'total' }))
+  })
+
+  it('counts a stat it cannot place, and the ones the items do not grant yet, for nothing', () => {
+    expect(damageOf({ stat: 'Stacks' })).toBe(0)
+    expect(damageOf({ stat: 'lethality' })).toBe(0)
+  })
+
+  it('scales on the other stats too', () => {
+    expect(damageOf({ stat: 'ability_haste' })).toBe(0)
+    expect(damageOf({ stat: 'move_speed', part: 'total' })).toBeCloseTo(geared.moveSpeed)
+    expect(damageOf({ stat: 'resource', part: 'base' })).toBeCloseTo(geared.baseResource)
+  })
+})
+
 describe('build totals', () => {
   it('sums what the items grant and what they cost', () => {
     const t = totalsForBuild([APPLY(NLR), APPLY(HP, 2)], CATALOG)

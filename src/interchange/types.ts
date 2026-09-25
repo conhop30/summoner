@@ -25,7 +25,11 @@ export interface ImageRef {
 export type AbilitySlot = 'passive' | 'q' | 'w' | 'e' | 'r'
 export const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
 
-export interface RatioEntry { stat: string; values: number[] }
+// Which part of a stat a ratio scales with: what the champion has, what items add, or both.
+export type RatioPart = 'base' | 'bonus' | 'total'
+export const RATIO_PARTS: readonly RatioPart[] = ['base', 'bonus', 'total']
+
+export interface RatioEntry { stat: string; part?: RatioPart; values: number[] }
 
 // What a custom effect behaves like and what its base number measures (see the spec).
 export type EffectFamily = 'damage' | 'hard_control' | 'soft_control' | 'sustain' | 'utility'

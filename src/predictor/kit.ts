@@ -1,5 +1,6 @@
-import type { AbilityBody, AbilitySlot, Champion, Effect } from '../champion/types'
+import type { AbilityBody, AbilitySlot, Champion, Effect, RatioEntry, RatioPart } from '../champion/types'
 import { effectKind } from '../champion/effects'
+import { ratioFraction, resolveRatio, type RatioStatId } from '../champion/ratios'
 import type { Combatant } from './combatant'
 
 // Turns a champion's five abilities into rates of "damage-equivalent" value per second at the
@@ -74,33 +75,43 @@ function valueAt(values: number[] | undefined, rankIndex: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : 0
 }
 
-// A ratio is a fraction of a stat (0.6 for 60% AP). Anyone typing 60 means the same, and no real
-// ratio is above 5, so a bigger number is read as a percentage.
-function ratioFraction(v: number): number {
-  return Math.abs(v) > 5 ? v / 100 : v
+/** What one part of a stat comes to, in the units a ratio is quoted in (percentage points for the percentage stats). */
+function statValue(stat: RatioStatId, part: RatioPart, c: Combatant): number {
+  const pick = (base: number, total: number) => (part === 'base' ? base : part === 'bonus' ? Math.max(0, total - base) : total)
+  switch (stat) {
+    case 'ad': return pick(c.baseAttackDamage, c.attackDamage)
+    case 'ap': return c.abilityPower
+    case 'armor': return pick(c.baseArmor, c.armor)
+    case 'magic_resist': return pick(c.baseMagicResist, c.magicResist)
+    case 'health': return pick(c.baseHealth, c.health)
+    // An ability that scales with missing health is used when the target is hurt: call it 40%.
+    case 'missing_health': return c.health * 0.4
+    case 'resource': return pick(c.baseResource, c.resource)
+    case 'health_regen': return pick(c.healthRegen, c.healthRegen)
+    case 'resource_regen': return pick(c.resourceRegen, c.resourceRegen)
+    case 'attack_speed': return pick(c.baseAttackSpeed * 100, c.attackSpeed * 100)
+    case 'move_speed': return pick(c.baseMoveSpeed, c.moveSpeed)
+    case 'crit_chance': return c.critChance * 100
+    case 'ability_haste': return c.abilityHaste
+    // Items don't grant these in the data the app reads yet, so they count for nothing.
+    case 'lethality':
+    case 'armor_pen':
+    case 'magic_pen':
+      return 0
+  }
 }
 
-function statForRatio(name: string, c: Combatant): number {
-  switch (name.trim().toLowerCase()) {
-    case 'ap': case 'ability power': return c.abilityPower
-    case 'bonus ad': case 'bonus attack damage': return Math.max(0, c.attackDamage - c.baseAttackDamage)
-    case 'total ad': case 'ad': case 'attack damage': return c.attackDamage
-    case 'max health': case 'maximum health': case 'health': return c.health
-    case 'bonus health': return Math.max(0, c.health - c.baseHealth)
-    // An ability that scales with missing health is used when the target is hurt: call it 40%.
-    case 'missing health': return c.health * 0.4
-    case 'armor': case 'bonus armor': return c.armor
-    case 'magic resist': case 'magic resistance': case 'mr': return c.magicResist
-    case 'move speed': return c.moveSpeed
-    default: return 0
-  }
+/** What a ratio scales with, at this moment. A ratio that can't be placed counts for nothing. */
+function statForRatio(ratio: RatioEntry, c: Combatant): number {
+  const resolved = resolveRatio(ratio)
+  return resolved ? statValue(resolved.stat, resolved.part, c) : 0
 }
 
 function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant): Parts {
   const parts: Parts = { damage: 0, utility: 0, sustain: 0 }
   const base = valueAt(effect.base, rankIndex)
   const amount = base + (effect.ratios ?? []).reduce(
-    (sum, r) => sum + ratioFraction(valueAt(r.values, rankIndex)) * statForRatio(r.stat, c), 0)
+    (sum, r) => sum + ratioFraction(valueAt(r.values, rankIndex)) * statForRatio(r, c), 0)
   const type = effect.type
   const { family, unit } = effectKind(effect)
   const explicit = valueAt(effect.duration, rankIndex)

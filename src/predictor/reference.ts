@@ -1,4 +1,5 @@
 import type { Champion } from '../champion/types'
+import { resolveRatio } from '../champion/ratios'
 import { emptyBonuses, GOLD_PER, type ItemBonuses } from './gold'
 import { REFERENCE_GOLD, type OffenseStat } from './combatant'
 
@@ -83,9 +84,9 @@ export function dominantOffense(champion: Champion, classes: string[]): OffenseS
       for (const effect of body?.effects ?? []) {
         for (const ratio of effect.ratios ?? []) {
           const size = Math.max(0, ...(ratio.values ?? []).map(v => Math.abs(v)))
-          const stat = ratio.stat.trim().toLowerCase()
-          if (stat === 'ap' || stat === 'ability power') ap += size
-          else if (stat.includes('ad') || stat.includes('attack damage')) ad += size
+          const stat = resolveRatio(ratio)?.stat
+          if (stat === 'ap') ap += size
+          else if (stat === 'ad') ad += size
         }
       }
     }

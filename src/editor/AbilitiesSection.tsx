@@ -1,13 +1,12 @@
 import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
-import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RecastStruct, AbilityJournal } from '../champion/types'
-import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, effectKind, isBuiltInEffect, unitSuffix } from '../champion/effects'
+import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal } from '../champion/types'
+import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, isBuiltInEffect, unitSuffix } from '../champion/effects'
+import { PART_LABELS, RATIO_STATS, ratioStatDef, resolveRatio } from '../champion/ratios'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
 import './AbilitiesSection.css'
-
-const RATIO_STAT_OPTIONS = ['AP', 'Bonus AD', 'Total AD', 'Max Health', 'Missing Health', 'Bonus Health', 'Armor', 'Magic Resist']
 
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
 
@@ -73,6 +72,16 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   showNameDescription?: boolean
 }) {
   const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
+  // Effects are one tidy line each until opened; a freshly added one opens so it can be filled in.
+  const [openEffects, setOpenEffects] = useState<Set<number>>(() => new Set())
+
+  function toggleEffect(index: number) {
+    setOpenEffects(prev => {
+      const next = new Set(prev)
+      if (!next.delete(index)) next.add(index)
+      return next
+    })
+  }
 
   function updateRankArray(key: 'cooldown' | 'cost', index: number, raw: string) {
     const current = body[key] ?? Array(maxRank).fill(0)
@@ -82,7 +91,9 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   }
 
   function addEffect() {
+    const index = (body.effects ?? []).length
     onUpdate({ effects: [...(body.effects ?? []), { type: 'damage' } as Effect] })
+    setOpenEffects(prev => new Set(prev).add(index))
   }
 
   function updateEffect(index: number, partial: Partial<Effect>) {
@@ -99,6 +110,8 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
 
   function removeEffect(index: number) {
     onUpdate({ effects: (body.effects ?? []).filter((_, i) => i !== index) })
+    // Later effects move up one place, and their open/closed state goes with them.
+    setOpenEffects(prev => new Set([...prev].filter(i => i !== index).map(i => (i > index ? i - 1 : i))))
   }
 
   function updateEffectBase(effectIndex: number, rankIndex: number, raw: string) {
@@ -120,18 +133,25 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   function addRatio(effectIndex: number) {
     const effects = [...(body.effects ?? [])]
     const effect = effects[effectIndex]
-    const ratios = [...(effect.ratios ?? []), { stat: 'AP', values: Array(maxRank).fill(0) } as RatioEntry]
+    const ratios = [...(effect.ratios ?? []), { stat: 'ap', part: 'total', values: Array(maxRank).fill(0) } as RatioEntry]
     effects[effectIndex] = { ...effect, ratios }
     onUpdate({ effects })
   }
 
-  function updateRatioStat(effectIndex: number, ratioIndex: number, stat: string) {
+  function updateRatio(effectIndex: number, ratioIndex: number, partial: Partial<RatioEntry>) {
     const effects = [...(body.effects ?? [])]
     const effect = effects[effectIndex]
     const ratios = [...(effect.ratios ?? [])]
-    ratios[ratioIndex] = { ...ratios[ratioIndex], stat }
+    ratios[ratioIndex] = { ...ratios[ratioIndex], ...partial }
     effects[effectIndex] = { ...effect, ratios }
     onUpdate({ effects })
+  }
+
+  // Changing the stat keeps the chosen part if the new stat has it, and falls back to the total if not.
+  function changeRatioStat(effectIndex: number, ratioIndex: number, stat: string) {
+    const current = resolveRatio((body.effects ?? [])[effectIndex].ratios![ratioIndex])
+    const parts = ratioStatDef(stat)?.parts ?? ['total']
+    updateRatio(effectIndex, ratioIndex, { stat, part: current && parts.includes(current.part) ? current.part : 'total' })
   }
 
   function updateRatioValue(effectIndex: number, ratioIndex: number, rankIndex: number, raw: string) {
@@ -239,95 +259,124 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
         {(body.effects ?? []).map((effect, i) => {
           const kind = effectKind(effect)
           const isCustom = !isBuiltInEffect(effect.type) && effect.type.trim() !== ''
+          const isOpen = openEffects.has(i)
           return (
-            <div key={i} className="effect-card">
-              <div className="effect-row">
-                <input
-                  className="effect-type-select effect-type-input"
-                  list="effect-type-options"
-                  placeholder="Effect, e.g. taunt"
-                  value={effect.type}
-                  onChange={e => changeEffectType(i, e.target.value)}
-                  onBlur={e => { if (!e.target.value.trim()) changeEffectType(i, 'damage') }}
-                />
-                {kind.family === 'damage' && (
-                  <select
-                    className="effect-type-select"
-                    value={effect.damage_type ?? 'Physical'}
-                    onChange={e => updateEffect(i, { damage_type: e.target.value as DamageType })}
-                  >
-                    {['Physical', 'Magic', 'True'].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                )}
-                <input
-                  className="rank-input"
-                  placeholder="Notes"
-                  value={effect.notes ?? ''}
-                  onChange={e => updateEffect(i, { notes: e.target.value })}
-                  style={{ flex: 1 }}
-                />
-                <button className="remove-effect-btn" onClick={() => removeEffect(i)}>×</button>
+            <div key={i} className={`effect-card${isOpen ? ' open' : ''}`}>
+              <div className="effect-summary-row">
+                <button className="effect-summary" aria-expanded={isOpen} onClick={() => toggleEffect(i)}>
+                  <span className="effect-summary-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
+                  <span className="effect-summary-text">{describeEffect(effect)}</span>
+                </button>
+                <button className="remove-effect-btn" onClick={() => removeEffect(i)} aria-label="Remove effect">×</button>
               </div>
 
-              {isCustom && (
-                <div className="effect-custom-row">
-                  <label className="effect-custom-field">
-                    <span>Behaves like</span>
-                    <select
-                      className="effect-type-select"
-                      value={kind.family}
-                      onChange={e => updateEffect(i, { family: e.target.value as EffectFamily, unit: undefined })}
-                    >
-                      {FAMILY_OPTIONS.map(o => <option key={o.value} value={o.value} title={o.hint}>{o.label}</option>)}
-                    </select>
-                  </label>
-                  <label className="effect-custom-field">
-                    <span>Base is</span>
-                    <select
-                      className="effect-type-select"
-                      value={kind.unit}
-                      onChange={e => updateEffect(i, { unit: e.target.value as EffectUnit })}
-                    >
-                      {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </label>
-                </div>
-              )}
-
-              <div className="effect-subfield">
-                <span className="effect-subfield-label">Base per rank{unitSuffix(kind.unit)}</span>
-                <RankValueField
-                  values={effect.base}
-                  maxRank={maxRank}
-                  onChange={(rankIndex, raw) => updateEffectBase(i, rankIndex, raw)}
-                  onBulkChange={values => updateEffectBaseAll(i, values)}
-                />
-              </div>
-
-              <div className="effect-subfield">
-                <div className="effect-subfield-header">
-                  <span className="effect-subfield-label">Ratios</span>
-                  <button className="add-effect-btn" onClick={() => addRatio(i)}>+ Add Ratio</button>
-                </div>
-                {(effect.ratios ?? []).map((ratio, ri) => (
-                  <div key={ri} className="ratio-row">
+              {isOpen && (
+                <>
+                  <div className="effect-row">
                     <input
-                      className="rank-input ratio-stat-input"
-                      list="ratio-stat-options"
-                      placeholder="e.g. AP"
-                      value={ratio.stat}
-                      onChange={e => updateRatioStat(i, ri, e.target.value)}
+                      className="effect-type-select effect-type-input"
+                      list="effect-type-options"
+                      placeholder="Effect, e.g. taunt"
+                      value={effect.type}
+                      onChange={e => changeEffectType(i, e.target.value)}
+                      onBlur={e => { if (!e.target.value.trim()) changeEffectType(i, 'damage') }}
                     />
-                    <RankValueField
-                      values={ratio.values}
-                      maxRank={maxRank}
-                      onChange={(rankIndex, raw) => updateRatioValue(i, ri, rankIndex, raw)}
-                      onBulkChange={values => updateRatioValuesAll(i, ri, values)}
+                    {kind.family === 'damage' && (
+                      <select
+                        className="effect-type-select"
+                        value={effect.damage_type ?? 'Physical'}
+                        onChange={e => updateEffect(i, { damage_type: e.target.value as DamageType })}
+                      >
+                        {['Physical', 'Magic', 'True'].map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    )}
+                    <input
+                      className="rank-input"
+                      placeholder="Notes"
+                      value={effect.notes ?? ''}
+                      onChange={e => updateEffect(i, { notes: e.target.value })}
+                      style={{ flex: 1 }}
                     />
-                    <button className="remove-effect-btn" onClick={() => removeRatio(i, ri)}>×</button>
                   </div>
-                ))}
-              </div>
+
+                  {isCustom && (
+                    <div className="effect-custom-row">
+                      <label className="effect-custom-field">
+                        <span>Behaves like</span>
+                        <select
+                          className="effect-type-select"
+                          value={kind.family}
+                          onChange={e => updateEffect(i, { family: e.target.value as EffectFamily, unit: undefined })}
+                        >
+                          {FAMILY_OPTIONS.map(o => <option key={o.value} value={o.value} title={o.hint}>{o.label}</option>)}
+                        </select>
+                      </label>
+                      <label className="effect-custom-field">
+                        <span>Base is</span>
+                        <select
+                          className="effect-type-select"
+                          value={kind.unit}
+                          onChange={e => updateEffect(i, { unit: e.target.value as EffectUnit })}
+                        >
+                          {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="effect-subfield">
+                    <span className="effect-subfield-label">Base per rank{unitSuffix(kind.unit)}</span>
+                    <RankValueField
+                      values={effect.base}
+                      maxRank={maxRank}
+                      onChange={(rankIndex, raw) => updateEffectBase(i, rankIndex, raw)}
+                      onBulkChange={values => updateEffectBaseAll(i, values)}
+                    />
+                  </div>
+
+                  <div className="effect-subfield">
+                    <div className="effect-subfield-header">
+                      <span className="effect-subfield-label">Ratios</span>
+                      <button className="add-effect-btn" onClick={() => addRatio(i)}>+ Add Ratio</button>
+                    </div>
+                    {(effect.ratios ?? []).map((ratio, ri) => {
+                      const resolved = resolveRatio(ratio)
+                      const parts: RatioPart[] = resolved ? ratioStatDef(resolved.stat)!.parts : ['total']
+                      return (
+                        <div key={ri} className="ratio-row">
+                          <div className="ratio-row-head">
+                            <select
+                              className="effect-type-select ratio-stat-select"
+                              value={resolved ? resolved.stat : ratio.stat}
+                              onChange={e => changeRatioStat(i, ri, e.target.value)}
+                            >
+                              {/* A ratio typed before the picker existed that can't be placed keeps its own text. */}
+                              {!resolved && <option value={ratio.stat}>{ratio.stat || 'Choose a stat'}</option>}
+                              {RATIO_STATS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                            </select>
+                            {parts.length > 1 && (
+                              <select
+                                className="effect-type-select ratio-part-select"
+                                value={resolved?.part ?? 'total'}
+                                onChange={e => updateRatio(i, ri, { part: e.target.value as RatioPart })}
+                              >
+                                {parts.map(pt => <option key={pt} value={pt}>{PART_LABELS[pt]}</option>)}
+                              </select>
+                            )}
+                            <button className="remove-effect-btn" onClick={() => removeRatio(i, ri)}>×</button>
+                          </div>
+                          <RankValueField
+                            values={ratio.values}
+                            maxRank={maxRank}
+                            onChange={(rankIndex, raw) => updateRatioValue(i, ri, rankIndex, raw)}
+                            onBulkChange={values => updateRatioValuesAll(i, ri, values)}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )
         })}
@@ -569,9 +618,6 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
 
               <datalist id="effect-type-options">
                 {BUILT_IN_EFFECT_TYPES.map(t => <option key={t} value={t} />)}
-              </datalist>
-              <datalist id="ratio-stat-options">
-                {RATIO_STAT_OPTIONS.map(s => <option key={s} value={s} />)}
               </datalist>
             </div>
           )}
