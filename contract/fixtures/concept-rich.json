@@ -55,7 +55,37 @@
           "icon": {
             "mime": "image/png",
             "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-          }
+          },
+          "journal": {
+            "tabs": [
+              {
+                "id": "tab-one",
+                "name": "Scrapped",
+                "content": "It used to stun.",
+                "created_at": "2026-09-01T10:00:00.000Z"
+              }
+            ]
+          },
+          "blocks": [
+            {
+              "id": "blk-mega-01",
+              "kind": "alternate_form",
+              "name": "Mega Bolt",
+              "description": "Bigger and slower."
+            },
+            {
+              "id": "blk-recall-01",
+              "kind": "recast",
+              "name": "Lantern Recall",
+              "description": "Pull the lantern back.",
+              "condition": "after Q hits an enemy"
+            },
+            {
+              "id": "blk-glow-01",
+              "kind": "passive",
+              "name": "Afterglow"
+            }
+          ]
         },
         "w": {
           "name": "Ward"

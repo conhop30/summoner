@@ -1,21 +1,47 @@
 {
   "_about": "What a conforming parser must do with each file in fixtures/. 'ok' false means the whole file is refused with an error containing 'error'. 'checks' are exact values at dotted paths into the parsed file ('records.0.identity.name'); 'absent' paths must not exist; 'counts' are array lengths; 'warnings' is the exact number of warnings. 'mobile' repeats a file parsed with includeDesktop=false. Both apps run every entry.",
   "concept-minimal.json": {
-    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 0,
-    "checks": { "records.0.identity.name": "Ahri" },
-    "absent": ["records.0.desktop", "records.0.identity.splash", "records.0.abilities.q.name"]
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 1,
+    "warnings": 0,
+    "checks": {
+      "records.0.identity.name": "Ahri"
+    },
+    "absent": [
+      "records.0.desktop",
+      "records.0.identity.splash",
+      "records.0.abilities.q.name"
+    ]
   },
   "concept-rich.json": {
-    "ok": true, "scope": "concept", "version": 2, "records": 2, "warnings": 0,
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 2,
+    "warnings": 0,
     "checks": {
       "records.0.identity.name": "Nyxara",
       "records.0.identity.title": "The Hollow Lantern",
       "records.0.identity.lore": "Line one.\nLine two.",
-      "records.0.identity.class": ["Mage", "Support"],
-      "records.0.identity.playstyle": ["Poke", "Custom idea"],
-      "records.0.identity.image_position": { "x": 62.5, "y": 18 },
+      "records.0.identity.class": [
+        "Mage",
+        "Support"
+      ],
+      "records.0.identity.playstyle": [
+        "Poke",
+        "Custom idea"
+      ],
+      "records.0.identity.image_position": {
+        "x": 62.5,
+        "y": 18
+      },
       "records.0.identity.splash.mime": "image/png",
-      "records.0.tags": ["fox", "mage"],
+      "records.0.tags": [
+        "fox",
+        "mage"
+      ],
       "records.0.concept_updated_at": "2026-09-10T18:30:00.000Z",
       "records.0.abilities.passive.name": "Glow",
       "records.0.abilities.q.name": "Lantern Bolt",
@@ -23,137 +49,383 @@
       "records.0.abilities.q.icon.mime": "image/png",
       "records.0.abilities.w.name": "Ward",
       "records.0.abilities.r.description": "The lantern goes out.",
-      "records.1.identity.name": "Brakk"
+      "records.1.identity.name": "Brakk",
+      "records.0.abilities.q.journal.tabs.0.name": "Scrapped",
+      "records.0.abilities.q.blocks.0.id": "blk-mega-01",
+      "records.0.abilities.q.blocks.0.kind": "alternate_form",
+      "records.0.abilities.q.blocks.0.name": "Mega Bolt",
+      "records.0.abilities.q.blocks.0.description": "Bigger and slower.",
+      "records.0.abilities.q.blocks.1.kind": "recast",
+      "records.0.abilities.q.blocks.1.condition": "after Q hits an enemy",
+      "records.0.abilities.q.blocks.2.name": "Afterglow"
     },
-    "absent": ["records.0.abilities.e.name", "records.0.abilities.w.description", "records.0.desktop"]
+    "absent": [
+      "records.0.abilities.e.name",
+      "records.0.abilities.w.description",
+      "records.0.desktop"
+    ],
+    "counts": {
+      "records.0.abilities.q.blocks": 3
+    }
   },
   "concept-extraneous.json": {
-    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 0,
-    "checks": { "records.0.abilities.q.name": "Bolt", "records.0.abilities.q.description": "Text stays." },
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 1,
+    "warnings": 0,
+    "checks": {
+      "records.0.abilities.q.name": "Bolt",
+      "records.0.abilities.q.description": "Text stays.",
+      "records.0.abilities.q.blocks.0.id": "blk-extra-01",
+      "records.0.abilities.q.blocks.0.name": "Other form",
+      "records.0.abilities.q.blocks.0.condition": "when it hits",
+      "records.0.abilities.q.journal.tabs.0.name": "Notes"
+    },
     "absent": [
       "records.0.desktop",
-      "records.0.abilities.q.max_rank", "records.0.abilities.q.cooldown", "records.0.abilities.q.cost",
-      "records.0.abilities.q.cost_type", "records.0.abilities.q.effects", "records.0.abilities.q.blocks",
-      "records.0.abilities.q.journal", "records.0.abilities.q.extra"
+      "records.0.abilities.q.max_rank",
+      "records.0.abilities.q.cooldown",
+      "records.0.abilities.q.cost",
+      "records.0.abilities.q.cost_type",
+      "records.0.abilities.q.effects",
+      "records.0.abilities.q.extra",
+      "records.0.abilities.q.blocks.0.cooldown",
+      "records.0.abilities.q.blocks.0.effects",
+      "records.0.abilities.q.blocks.0.recast"
     ]
   },
   "full-with-stats.json": {
-    "ok": true, "scope": "full", "version": 2, "records": 1, "warnings": 0,
+    "ok": true,
+    "scope": "full",
+    "version": 2,
+    "records": 1,
+    "warnings": 0,
     "checks": {
       "records.0.abilities.q.name": "Lantern Bolt",
       "records.0.desktop.base_stats.health": 620,
       "records.0.desktop.base_stats.attack_speed_growth": 2.5,
-      "records.0.desktop.base_stats.attack_range": [175],
+      "records.0.desktop.base_stats.attack_range": [
+        175
+      ],
       "records.0.desktop.builds.0.items.1.count": 2,
       "records.0.desktop.active_build_id": "build-0001",
       "records.0.desktop.abilities.q.max_rank": 5,
-      "records.0.desktop.abilities.q.cooldown": [8, 7.5, 7, 6.5, 6],
+      "records.0.desktop.abilities.q.cooldown": [
+        8,
+        7.5,
+        7,
+        6.5,
+        6
+      ],
       "records.0.desktop.abilities.q.cost_type": "Mana",
       "records.0.desktop.abilities.q.effects.0.type": "damage",
       "records.0.desktop.abilities.q.effects.0.damage_type": "Magic",
-      "records.0.desktop.abilities.q.effects.0.ratios.0.values": [0.4, 0.45, 0.5, 0.55, 0.6],
-      "records.0.desktop.abilities.q.journal.tabs.0.name": "Scrapped",
-      "records.0.desktop.abilities.q.blocks.0.kind": "alternate_form",
+      "records.0.desktop.abilities.q.effects.0.ratios.0.values": [
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6
+      ],
       "records.0.desktop.abilities.q.blocks.1.recast.max_recasts": 2,
-      "records.0.desktop.abilities.q.blocks.1.recast.recast_extends_on": "after Q hits",
       "records.0.desktop.abilities.q.extra.recast.recast_window": 3,
       "records.0.desktop.abilities.q.extra.flavour": "note",
-      "records.0.desktop.abilities.w.cooldown": [14, 13, 12, 12, 12],
-      "records.0.desktop.abilities.w.effects.0.base": [50, 80, 80, 80, 80],
+      "records.0.desktop.abilities.w.cooldown": [
+        14,
+        13,
+        12,
+        12,
+        12
+      ],
+      "records.0.desktop.abilities.w.effects.0.base": [
+        50,
+        80,
+        80,
+        80,
+        80
+      ],
       "records.0.desktop.abilities.r.max_rank": 3,
-      "records.0.desktop.abilities.passive.max_rank": 5
+      "records.0.desktop.abilities.passive.max_rank": 5,
+      "records.0.abilities.q.journal.tabs.0.name": "Scrapped",
+      "records.0.abilities.q.blocks.0.name": "Empowered Bolt",
+      "records.0.abilities.q.blocks.1.condition": "after Q hits",
+      "records.0.desktop.abilities.q.blocks.0.id": "blk-a-000001",
+      "records.0.desktop.abilities.q.blocks.0.cooldown": [
+        9,
+        9,
+        9,
+        9,
+        9
+      ],
+      "records.0.desktop.abilities.q.blocks.1.recast.recast_window": 4
     },
-    "absent": ["records.0.desktop.abilities.q.name", "records.0.abilities.q.cooldown"],
+    "absent": [
+      "records.0.desktop.abilities.q.name",
+      "records.0.abilities.q.cooldown",
+      "records.0.desktop.abilities.q.journal",
+      "records.0.desktop.abilities.q.blocks.0.name",
+      "records.0.desktop.abilities.q.blocks.1.recast.recast_extends_on"
+    ],
     "mobile": {
-      "absent": ["records.0.desktop"],
-      "checks": { "records.0.identity.name": "Ironwall", "records.0.abilities.q.name": "Lantern Bolt" }
+      "absent": [
+        "records.0.desktop"
+      ],
+      "checks": {
+        "records.0.identity.name": "Ironwall",
+        "records.0.abilities.q.name": "Lantern Bolt"
+      }
     }
   },
   "legacy-v1.json": {
-    "ok": true, "scope": "full", "version": 1, "records": 1, "warnings": 1,
-    "warningsContain": ["older export file"],
+    "ok": true,
+    "scope": "full",
+    "version": 1,
+    "records": 1,
+    "warnings": 1,
+    "warningsContain": [
+      "older export file"
+    ],
     "checks": {
       "records.0.id": "00000000-0000-4000-8000-000000000005",
       "records.0.identity.name": "Old Timer",
       "records.0.abilities.q.name": "Old Q",
       "records.0.concept_updated_at": "2026-09-10T18:30:00.000Z",
-      "records.0.tags": ["legacy"],
+      "records.0.tags": [
+        "legacy"
+      ],
       "records.0.desktop.base_stats.health": 600,
       "records.0.desktop.builds.0.id": "build-0002",
-      "records.0.desktop.abilities.q.cooldown": [9, 8, 7, 6, 5]
+      "records.0.desktop.abilities.q.cooldown": [
+        9,
+        8,
+        7,
+        6,
+        5
+      ],
+      "records.0.abilities.q.journal.tabs.0.name": "Old note",
+      "records.0.abilities.q.blocks.0.id": "legacy-q-1",
+      "records.0.abilities.q.blocks.0.kind": "recast",
+      "records.0.abilities.q.blocks.0.name": "Legacy recast",
+      "records.0.abilities.q.blocks.0.condition": "after a hit",
+      "records.0.desktop.abilities.q.blocks.0.id": "legacy-q-1",
+      "records.0.desktop.abilities.q.blocks.0.cooldown": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "records.0.desktop.abilities.q.blocks.0.recast.max_recasts": 2
     },
     "absent": [
-      "records.0.identity.image_path", "records.0.identity.theme_audio", "records.0.identity.splash",
-      "records.0.abilities.q.icon", "records.0.abilities.q.icon_path", "records.0.desktop.abilities.q.name"
+      "records.0.identity.image_path",
+      "records.0.identity.theme_audio",
+      "records.0.identity.splash",
+      "records.0.abilities.q.icon",
+      "records.0.abilities.q.icon_path",
+      "records.0.desktop.abilities.q.name",
+      "records.0.desktop.abilities.q.journal",
+      "records.0.desktop.abilities.q.blocks.0.recast.recast_extends_on"
     ]
   },
   "legacy-bare-array.json": {
-    "ok": true, "scope": "full", "version": 1, "records": 1, "warnings": 0,
-    "checks": { "records.0.identity.name": "Bare Array" }
+    "ok": true,
+    "scope": "full",
+    "version": 1,
+    "records": 1,
+    "warnings": 0,
+    "checks": {
+      "records.0.identity.name": "Bare Array"
+    }
   },
-  "bad-not-json.json": { "ok": false, "error": "not valid JSON" },
-  "bad-other-format.json": { "ok": false, "error": "not a Summoner export" },
-  "bad-not-an-export.json": { "ok": false, "error": "not a Summoner export" },
-  "bad-future-version.json": { "ok": false, "error": "newer version" },
-  "bad-no-scope.json": { "ok": false, "error": "does not say what it contains" },
-  "bad-no-champions.json": { "ok": false, "error": "champions list" },
+  "bad-not-json.json": {
+    "ok": false,
+    "error": "not valid JSON"
+  },
+  "bad-other-format.json": {
+    "ok": false,
+    "error": "not a Summoner export"
+  },
+  "bad-not-an-export.json": {
+    "ok": false,
+    "error": "not a Summoner export"
+  },
+  "bad-future-version.json": {
+    "ok": false,
+    "error": "newer version"
+  },
+  "bad-no-scope.json": {
+    "ok": false,
+    "error": "does not say what it contains"
+  },
+  "bad-no-champions.json": {
+    "ok": false,
+    "error": "champions list"
+  },
   "hostile-prototype.json": {
-    "ok": true, "scope": "full", "version": 2, "records": 1, "warnings": 0,
+    "ok": true,
+    "scope": "full",
+    "version": 2,
+    "records": 1,
+    "warnings": 0,
     "checks": {
       "records.0.identity.name": "Proto",
-      "records.0.tags": ["__proto__"],
+      "records.0.tags": [
+        "__proto__"
+      ],
       "records.0.abilities.q.name": "Bolt",
       "records.0.desktop.abilities.q.extra.kept": "yes"
     },
     "absent": [
       "records.0.identity.constructor",
-      "records.0.desktop.abilities.q.extra.constructor", "records.0.desktop.abilities.q.extra.prototype"
+      "records.0.desktop.abilities.q.extra.constructor",
+      "records.0.desktop.abilities.q.extra.prototype"
     ],
     "noPollution": true
   },
   "hostile-images.json": {
-    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 4,
-    "warningsContain": ["Splash art was dropped", "Q icon was dropped", "W icon was dropped", "E icon was dropped"],
-    "checks": { "records.0.identity.name": "Bad Pictures", "records.0.abilities.r.icon.mime": "image/png" },
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 1,
+    "warnings": 4,
+    "warningsContain": [
+      "Splash art was dropped",
+      "Q icon was dropped",
+      "W icon was dropped",
+      "E icon was dropped"
+    ],
+    "checks": {
+      "records.0.identity.name": "Bad Pictures",
+      "records.0.abilities.r.icon.mime": "image/png"
+    },
     "absent": [
-      "records.0.identity.splash", "records.0.identity.image_path",
-      "records.0.abilities.q.icon", "records.0.abilities.q.icon_path",
-      "records.0.abilities.w.icon", "records.0.abilities.e.icon"
+      "records.0.identity.splash",
+      "records.0.identity.image_path",
+      "records.0.abilities.q.icon",
+      "records.0.abilities.q.icon_path",
+      "records.0.abilities.w.icon",
+      "records.0.abilities.e.icon"
     ]
   },
   "hostile-text.json": {
-    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 2,
-    "warningsContain": ["Name was longer than 80 characters", "Q name was longer than 80 characters"],
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 1,
+    "warnings": 2,
+    "warningsContain": [
+      "Name was longer than 80 characters",
+      "Q name was longer than 80 characters"
+    ],
     "checks": {
       "records.0.identity.name": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
       "records.0.identity.title": "Tab\tandnullbell",
-      "records.0.identity.image_position": { "x": 100, "y": 0 },
+      "records.0.identity.image_position": {
+        "x": 100,
+        "y": 0
+      },
       "records.0.abilities.q.name": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ",
       "records.0.abilities.q.description": "Line\nbreak and  control"
     },
-    "absent": ["records.0.abilities.w.name", "records.0.abilities.w.description"],
-    "counts": { "records.0.tags": 50 }
+    "absent": [
+      "records.0.abilities.w.name",
+      "records.0.abilities.w.description"
+    ],
+    "counts": {
+      "records.0.tags": 50
+    }
   },
   "hostile-full-numbers.json": {
-    "ok": true, "scope": "full", "version": 2, "records": 1, "warnings": 0,
+    "ok": true,
+    "scope": "full",
+    "version": 2,
+    "records": 1,
+    "warnings": 0,
     "checks": {
       "records.0.desktop.base_stats.health": 1000000,
-      "records.0.desktop.base_stats.attack_range": [175, 550],
-      "records.0.desktop.builds.0.items": [{ "item_id": "3078", "count": 99 }, { "item_id": "1001", "count": 1 }],
+      "records.0.desktop.base_stats.attack_range": [
+        175,
+        550
+      ],
+      "records.0.desktop.builds.0.items": [
+        {
+          "item_id": "3078",
+          "count": 99
+        },
+        {
+          "item_id": "1001",
+          "count": 1
+        }
+      ],
       "records.0.desktop.abilities.q.max_rank": 6,
-      "records.0.desktop.abilities.q.cooldown": [1000000, 0, 0, 5, 6, 7],
-      "records.0.desktop.abilities.q.effects.0.base": [10, 20, 20, 20, 20, 20],
-      "records.0.desktop.abilities.w.cooldown": [10, 9],
+      "records.0.desktop.abilities.q.cooldown": [
+        1000000,
+        0,
+        0,
+        5,
+        6,
+        7
+      ],
+      "records.0.desktop.abilities.q.effects.0.base": [
+        10,
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "records.0.desktop.abilities.w.cooldown": [
+        10,
+        9
+      ],
       "records.0.desktop.abilities.e.max_rank": 5
     },
     "absent": [
-      "records.0.desktop.base_stats.attack_speed", "records.0.desktop.base_stats.armor", "records.0.desktop.base_stats.bogus_stat",
-      "records.0.desktop.abilities.q.cost", "records.0.desktop.abilities.q.effects.0.damage_type", "records.0.desktop.abilities.q.effects.1"
+      "records.0.desktop.base_stats.attack_speed",
+      "records.0.desktop.base_stats.armor",
+      "records.0.desktop.base_stats.bogus_stat",
+      "records.0.desktop.abilities.q.cost",
+      "records.0.desktop.abilities.q.effects.0.damage_type",
+      "records.0.desktop.abilities.q.effects.1"
     ]
   },
+  "hostile-blocks.json": {
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 1,
+    "warnings": 3,
+    "warningsContain": [
+      "block of an unknown kind",
+      "block without a valid id",
+      "second block with the same id"
+    ],
+    "checks": {
+      "records.0.abilities.q.blocks.0.id": "blk-good-001",
+      "records.0.abilities.q.blocks.0.name": "Good"
+    },
+    "counts": {
+      "records.0.abilities.q.blocks": 1,
+      "records.0.abilities.w.blocks": 20
+    }
+  },
   "hostile-records.json": {
-    "ok": true, "scope": "concept", "version": 2, "records": 1, "warnings": 6,
-    "warningsContain": ["it has no name", "no valid id", "no valid date", "second copy", "not a champion"],
-    "checks": { "records.0.identity.name": "Fine" }
+    "ok": true,
+    "scope": "concept",
+    "version": 2,
+    "records": 1,
+    "warnings": 6,
+    "warningsContain": [
+      "it has no name",
+      "no valid id",
+      "no valid date",
+      "second copy",
+      "not a champion"
+    ],
+    "checks": {
+      "records.0.identity.name": "Fine"
+    }
   }
 }

@@ -74,7 +74,7 @@ export default function ImportPanel({ plan, onDone, onCancel, onError }: Props) 
       </div>
       {plan.scope === 'concept' && (
         <p className="import-note">
-          This file only carries story, identity and ability names, descriptions and icons. Your stats, builds, ability numbers and theme audio stay exactly as they are.
+          This file only carries story, identity and ability text, notes and blocks. Your stats, builds, ability numbers and theme audio stay exactly as they are.
         </p>
       )}
 

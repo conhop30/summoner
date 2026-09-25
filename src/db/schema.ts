@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import { ensureBlockIds } from '../champion/utils';
 
 export const SCHEMA_VERSION = '1.0';
 
@@ -85,6 +86,19 @@ export function initializeSchema(db: Database): void {
   if (!championColumns.has('concept_updated_at')) {
     db.exec(`ALTER TABLE champions ADD COLUMN concept_updated_at TEXT`);
     db.exec(`UPDATE champions SET concept_updated_at = updated_at`);
+  }
+
+  // Ability blocks used to have no id. Give the old ones a stable id so the phone app and the desktop
+  // can match them up. Leaves updated_at alone: this is bookkeeping, not an edit.
+  const withBlocks = db
+    .prepare(`SELECT id, abilities FROM champions WHERE abilities LIKE '%"blocks"%'`)
+    .all() as { id: string; abilities: string }[];
+  for (const row of withBlocks) {
+    const abilities = JSON.parse(row.abilities);
+    const fixed = ensureBlockIds(abilities);
+    if (fixed !== abilities) {
+      db.prepare(`UPDATE champions SET abilities = ? WHERE id = ?`).run(JSON.stringify(fixed), row.id);
+    }
   }
 
   const existing = db

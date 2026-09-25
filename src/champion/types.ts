@@ -78,6 +78,9 @@ export interface Ability extends AbilityBody {
 export type AbilityBlockKind = 'passive' | 'alternate_form' | 'recast';
 
 export interface AbilityBlock extends AbilityBody {
+  // Stable identity, so the phone app and the desktop can tell which block is which. Older
+  // saved blocks have none; they are given one when the database opens.
+  id?: string;
   kind: AbilityBlockKind;
   // Trigger/window for this block, when kind === 'recast'. Reuses the same struct as
   // AbilityExtra.recast (a lighter-weight "this ability recasts itself" flag) since

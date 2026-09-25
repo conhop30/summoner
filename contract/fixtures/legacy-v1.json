@@ -33,7 +33,36 @@
             6,
             5
           ],
-          "icon_path": "app-asset://C%3A%5Cicon.png"
+          "icon_path": "app-asset://C%3A%5Cicon.png",
+          "journal": {
+            "tabs": [
+              {
+                "id": "tab-one",
+                "name": "Old note",
+                "content": "kept",
+                "created_at": "2026-09-01T10:00:00.000Z"
+              }
+            ]
+          },
+          "blocks": [
+            {
+              "kind": "recast",
+              "name": "Legacy recast",
+              "description": "From v1.",
+              "cooldown": [
+                3,
+                3,
+                3,
+                3,
+                3
+              ],
+              "recast": {
+                "max_recasts": 2,
+                "recast_window": 4,
+                "recast_extends_on": "after a hit"
+              }
+            }
+          ]
         }
       },
       "builds": [

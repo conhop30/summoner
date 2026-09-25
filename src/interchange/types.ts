@@ -5,10 +5,12 @@
 export const FORMAT = 'summoner-export'
 export const VERSION = 2
 
-// 'concept'  — what a champion IS: identity, lore, splash art, and each ability's name, description
-//              and icon. Both apps read and write it.
+// 'concept'  — what a champion IS: identity, lore, splash art, and for each ability its name,
+//              description, icon, journal notes, and its extra parts (blocks: alternate forms, extra
+//              passives, recasts) as kind + name + description. Both apps read and write it.
 // 'full'     — concept plus the desktop-owned part: base stats, item builds, and every ability's
-//              numbers, blocks and notes. Only desktop writes it.
+//              numbers (cooldown, cost, effects, ranks, and the same numbers for each block).
+//              Only desktop writes it.
 export type Scope = 'concept' | 'full'
 
 export type ImageMime = 'image/jpeg' | 'image/png' | 'image/webp'
@@ -52,26 +54,46 @@ export interface AbilityBody {
 
 export type BlockKind = 'passive' | 'alternate_form' | 'recast'
 
-export interface AbilityBlock extends AbilityBody {
-  kind: BlockKind
-  recast?: RecastStruct
-}
-
 export interface JournalTab { id: string; name: string; content: string; created_at: string }
+
+// A block is an extra part under an ability key: an extra passive, an alternate form (Gnar's Mega
+// spells, Jayce's cannon and hammer), or a recast. Its id is what lets two apps agree which block
+// is which after either has added, renamed, reordered or removed some.
+export interface BlockText {
+  id: string
+  kind: BlockKind
+  name?: string
+  description?: string
+  // For a recast: when it unlocks ("after Q hits an enemy").
+  condition?: string
+}
 
 // The conceptual face of an ability: what the phone shows and edits.
 export interface AbilityText {
   name?: string
   description?: string
   icon?: ImageRef
+  journal?: { tabs: JournalTab[] }
+  blocks?: BlockText[]
+}
+
+export interface RecastNumbers {
+  max_recasts: number
+  recast_window: number
+  recast_static_cooldown?: number
+}
+
+// The numbers of one block, matched to its BlockText by id.
+export interface BlockDetails extends Omit<AbilityBody, 'name' | 'description'> {
+  id: string
+  recast?: RecastNumbers
 }
 
 // Everything else about an ability. Desktop-owned; travels only in a 'full' file.
-export interface AbilityDetails extends AbilityBody {
+export interface AbilityDetails extends Omit<AbilityBody, 'name' | 'description'> {
   max_rank: number
   extra?: { recast?: RecastStruct; [key: string]: string | number | boolean | RecastStruct | undefined }
-  journal?: { tabs: JournalTab[] }
-  blocks?: AbilityBlock[]
+  blocks?: BlockDetails[]
 }
 
 export interface IdentityRecord {
@@ -98,7 +120,7 @@ export interface DesktopSection {
 export interface ChampionRecord {
   id: string
   created_at: string
-  // When the concept content (identity, ability names/descriptions/icons, tags) last changed. Decides who is newer on
+  // When the concept content (identity, ability text, journals, blocks, tags) last changed. Decides who is newer on
   // import. Editing only desktop-owned data (stats, builds) does not move it.
   concept_updated_at: string
   tags: string[]

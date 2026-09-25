@@ -43,7 +43,15 @@ write('concept-rich.json', file('concept', [
     },
     abilities: {
       passive: { name: 'Glow', description: 'Passive text.' },
-      q: { name: 'Lantern Bolt', description: 'Fires a bolt.', icon: { mime: 'image/png', data: PNG } },
+      q: {
+        name: 'Lantern Bolt', description: 'Fires a bolt.', icon: { mime: 'image/png', data: PNG },
+        journal: { tabs: [{ id: 'tab-one', name: 'Scrapped', content: 'It used to stun.', created_at: T1 }] },
+        blocks: [
+          { id: 'blk-mega-01', kind: 'alternate_form', name: 'Mega Bolt', description: 'Bigger and slower.' },
+          { id: 'blk-recall-01', kind: 'recast', name: 'Lantern Recall', description: 'Pull the lantern back.', condition: 'after Q hits an enemy' },
+          { id: 'blk-glow-01', kind: 'passive', name: 'Afterglow' },
+        ],
+      },
       w: { name: 'Ward' },
       e: {},
       r: { name: 'Eclipse', description: 'The lantern goes out.' },
@@ -60,7 +68,7 @@ write('concept-extraneous.json', file('concept', [{
     q: {
       name: 'Bolt', description: 'Text stays.', max_rank: 5, cooldown: [8, 7, 6, 5, 4], cost: [50, 55, 60, 65, 70], cost_type: 'Mana',
       effects: [{ type: 'damage', base: [60, 90, 120, 150, 180] }],
-      blocks: [{ kind: 'alternate_form', name: 'Other form' }],
+      blocks: [{ id: 'blk-extra-01', kind: 'recast', name: 'Other form', condition: 'when it hits', cooldown: [3, 3, 3], effects: [{ type: 'heal' }], recast: { max_recasts: 9, recast_window: 30 } }],
       journal: { tabs: [{ id: 'tab-one', name: 'Notes', content: 'x', created_at: T1 }] },
       extra: { recast: { max_recasts: 1, recast_window: 3 } },
     },
@@ -73,7 +81,17 @@ write('full-with-stats.json', file('full', [
   {
     id: ID(4), created_at: T1, concept_updated_at: T2, tags: [],
     identity: { name: 'Ironwall', class: ['Tank'] },
-    abilities: { q: { name: 'Lantern Bolt', description: 'Fires a bolt.' }, r: { name: 'Eclipse' } },
+    abilities: {
+      q: {
+        name: 'Lantern Bolt', description: 'Fires a bolt.',
+        journal: { tabs: [{ id: 'tab-one', name: 'Scrapped', content: 'It used to stun.', created_at: T1 }] },
+        blocks: [
+          { id: 'blk-a-000001', kind: 'alternate_form', name: 'Empowered Bolt', description: 'Bigger.' },
+          { id: 'blk-b-000002', kind: 'recast', name: 'Recast', condition: 'after Q hits' },
+        ],
+      },
+      r: { name: 'Eclipse' },
+    },
     desktop: {
       base_stats: { health: 620, health_growth: 95, attack_damage: 60, attack_speed: 0.65, attack_speed_growth: 2.5, attack_range: [175], crit_damage_multiplier: 1.75 },
       builds: [{ id: 'build-0001', name: 'Standard', items: [{ item_id: '3078', count: 1 }, { item_id: '1001', count: 2 }] }],
@@ -85,10 +103,9 @@ write('full-with-stats.json', file('full', [
             type: 'damage', damage_type: 'Magic', base: [60, 90, 120, 150, 180], notes: 'On hit',
             ratios: [{ stat: 'AP', values: [0.4, 0.45, 0.5, 0.55, 0.6] }],
           }],
-          journal: { tabs: [{ id: 'tab-one', name: 'Scrapped', content: 'It used to stun.', created_at: T1 }] },
           blocks: [
-            { kind: 'alternate_form', name: 'Empowered Bolt', description: 'Bigger.', cooldown: [9, 9, 9, 9, 9] },
-            { kind: 'recast', name: 'Recast', recast: { max_recasts: 2, recast_window: 4, recast_extends_on: 'after Q hits' } },
+            { id: 'blk-a-000001', name: 'ignored', cooldown: [9, 9, 9, 9, 9] },
+            { id: 'blk-b-000002', recast: { max_recasts: 2, recast_window: 4, recast_extends_on: 'ignored' } },
           ],
           extra: { recast: { max_recasts: 1, recast_window: 3 }, flavour: 'note' },
         },
@@ -108,7 +125,7 @@ write('legacy-v1.json', {
       theme_audio: { name: 'theme.mp3', src: 'app-asset://C%3A%5Ctheme.mp3' }, class: ['Fighter'],
     },
     base_stats: { health: 600, attack_range: [125] },
-    abilities: { q: { max_rank: 5, name: 'Old Q', cooldown: [9, 8, 7, 6, 5], icon_path: 'app-asset://C%3A%5Cicon.png' } },
+    abilities: { q: { max_rank: 5, name: 'Old Q', cooldown: [9, 8, 7, 6, 5], icon_path: 'app-asset://C%3A%5Cicon.png', journal: { tabs: [{ id: 'tab-one', name: 'Old note', content: 'kept', created_at: T1 }] }, blocks: [{ kind: 'recast', name: 'Legacy recast', description: 'From v1.', cooldown: [3, 3, 3, 3, 3], recast: { max_recasts: 2, recast_window: 4, recast_extends_on: 'after a hit' } }] } },
     builds: [{ id: 'build-0002', name: 'Build 1', items: [{ item_id: '1055', count: 1 }] }],
     active_build_id: 'build-0002',
     metadata: { id: ID(5), created_at: T1, updated_at: T2, version: '1.0', is_favorite: true, tags: ['legacy'] },
@@ -191,6 +208,22 @@ write('hostile-full-numbers.json', file('full', [{
       w: { max_rank: 2, cooldown: [10, 9, 8, 7] },
       e: { max_rank: 'many' },
     },
+  },
+}]))
+
+write('hostile-blocks.json', file('concept', [{
+  id: ID(15), created_at: T1, concept_updated_at: T1, tags: [], identity: { name: 'Blocks' },
+  abilities: {
+    q: {
+      blocks: [
+        { id: 'blk-good-001', kind: 'passive', name: 'Good' },
+        { id: 'blk-bad-kind', kind: 'ultimate', name: 'Wrong kind' },
+        { kind: 'passive', name: 'No id' },
+        { id: 'blk-good-001', kind: 'recast', name: 'Same id again' },
+        'not a block',
+      ],
+    },
+    w: { blocks: Array.from({ length: 25 }, (_, i) => ({ id: `blk-many-${String(i).padStart(3, '0')}`, kind: 'passive', name: `Part ${i}` })) },
   },
 }]))
 

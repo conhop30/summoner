@@ -46,6 +46,21 @@ describe('initializeSchema', () => {
     expect((db.prepare(`SELECT identity FROM champions WHERE id = 'old'`).get() as { identity: string }).identity).toBe('{"name":"Old One"}')
   })
 
+  it('gives ability blocks saved before they had ids a stable id, without counting as an edit', () => {
+    const db = new Database(':memory:')
+    initializeSchema(db)
+    const abilities = { q: { max_rank: 5, blocks: [{ kind: 'passive', name: 'A' }, { id: 'keep-me-1234', kind: 'recast' }, { kind: 'alternate_form' }] }, w: { max_rank: 5 } }
+    db.prepare(`INSERT INTO champions (id, version, created_at, updated_at, concept_updated_at, identity, base_stats, abilities) VALUES ('c1', '1.0', 'x', '2026-02-02T00:00:00.000Z', '2026-02-02T00:00:00.000Z', '{"name":"C"}', '{}', ?)`).run(JSON.stringify(abilities))
+    initializeSchema(db)
+    const row = db.prepare(`SELECT abilities, updated_at FROM champions WHERE id = 'c1'`).get() as { abilities: string; updated_at: string }
+    const blocks = JSON.parse(row.abilities).q.blocks
+    expect(blocks.map((b: { id: string }) => b.id)).toEqual(['legacy-q-1', 'keep-me-1234', 'legacy-q-3'])
+    expect(row.updated_at).toBe('2026-02-02T00:00:00.000Z')
+    // Running it again changes nothing.
+    initializeSchema(db)
+    expect(JSON.parse((db.prepare(`SELECT abilities FROM champions WHERE id = 'c1'`).get() as { abilities: string }).abilities).q.blocks).toEqual(blocks)
+  })
+
   it('gives champions saved before the concept stamp existed a stamp equal to their updated_at', () => {
     const db = new Database(':memory:')
     db.exec(`

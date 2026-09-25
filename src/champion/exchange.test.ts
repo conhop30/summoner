@@ -51,12 +51,22 @@ describe('conceptSnapshot', () => {
     for (const changed of [renamed, edited, described, iconed, tagged]) expect(conceptSnapshot(changed)).not.toBe(conceptSnapshot(base))
   })
 
-  it('does not move when only stats, builds, ability numbers, blocks, notes or the favorite flag change', () => {
+  it('moves when a journal note or a block\'s kind, name, description or recast condition changes', () => {
+    const withBlock = champion()
+    withBlock.abilities.q = { ...withBlock.abilities.q, blocks: [{ id: 'blk-1', kind: 'recast', name: 'Recall', recast: { max_recasts: 1, recast_window: 3, recast_extends_on: 'after a hit' } }] }
+    const noted = champion({ abilities: { ...withBlock.abilities, w: { ...withBlock.abilities.w, journal: { tabs: [{ id: 'tab-1', name: 'n', content: 'idea', created_at: T1 }] } } } })
+    const renamed = champion({ abilities: { ...withBlock.abilities, q: { ...withBlock.abilities.q, blocks: [{ ...withBlock.abilities.q.blocks![0], name: 'Return' }] } } })
+    const reworded = champion({ abilities: { ...withBlock.abilities, q: { ...withBlock.abilities.q, blocks: [{ ...withBlock.abilities.q.blocks![0], recast: { max_recasts: 1, recast_window: 3, recast_extends_on: 'after a kill' } }] } } })
+    for (const changed of [champion(), noted, renamed, reworded]) expect(conceptSnapshot(changed)).not.toBe(conceptSnapshot(withBlock))
+  })
+
+  it('does not move when only stats, builds, ability or block numbers, or the favorite flag change', () => {
     const base = champion()
-    const statted = champion({ base_stats: { ...base.base_stats, health: 999 } })
-    const starred = champion({ metadata: { ...base.metadata, is_favorite: false } })
-    const tuned = champion({ abilities: { ...base.abilities, q: { ...base.abilities.q, cooldown: [9, 8, 7, 6, 5], cost: [1, 2, 3, 4, 5], effects: [{ type: 'stun' }], blocks: [{ kind: 'passive' }], journal: { tabs: [] }, max_rank: 4 } } })
-    for (const same of [statted, starred, tuned]) expect(conceptSnapshot(same)).toBe(conceptSnapshot(base))
+    base.abilities.q = { ...base.abilities.q, blocks: [{ id: 'blk-1', kind: 'recast', name: 'Recall', cooldown: [3, 3, 3, 3, 3], recast: { max_recasts: 1, recast_window: 3, recast_extends_on: 'after a hit' } }] }
+    const statted = champion({ base_stats: { ...base.base_stats, health: 999 }, abilities: base.abilities })
+    const starred = champion({ metadata: { ...base.metadata, is_favorite: false }, abilities: base.abilities })
+    const tuned = champion({ abilities: { ...base.abilities, q: { ...base.abilities.q, cooldown: [9, 8, 7, 6, 5], cost: [1, 2, 3, 4, 5], effects: [{ type: 'stun' }], max_rank: 4, blocks: [{ ...base.abilities.q.blocks![0], cooldown: [1, 1, 1, 1, 1], effects: [{ type: 'heal' }], recast: { max_recasts: 5, recast_window: 9, recast_extends_on: 'after a hit' } }] } } })
+    for (const same of [statted, starred, tuned]) expect(conceptSnapshot(same)).toBe(conceptSnapshot(champion({ abilities: base.abilities })))
   })
 })
 
@@ -150,11 +160,30 @@ describe('recordToChampion: updating, never overwriting', () => {
   it('keeps stats, builds, ability numbers, theme audio and favorite when a concept record updates a champion', () => {
     const local = champion({ identity: { name: 'Nyxara', theme_audio: { name: 'a.mp3', src: 'app-asset://x/a.mp3' } } })
     local.base_stats.health = 777
-    local.abilities.q = { ...local.abilities.q, name: 'Old Q', icon_path: 'app-asset://x/oldq.png', cooldown: [8, 7, 6, 5, 4], max_rank: 4, blocks: [{ kind: 'recast', recast: { max_recasts: 1, recast_window: 3 } }], journal: { tabs: [{ id: 'tab-1', name: 'n', content: 'c', created_at: T1 }] } }
+    local.abilities.q = {
+      ...local.abilities.q, name: 'Old Q', icon_path: 'app-asset://x/oldq.png', cooldown: [8, 7, 6, 5, 4], max_rank: 4,
+      journal: { tabs: [{ id: 'tab-1', name: 'n', content: 'c', created_at: T1 }] },
+      blocks: [
+        { id: 'blk-form-1', kind: 'alternate_form', name: 'Old form', description: 'Old.', cooldown: [9, 9, 9, 9], effects: [{ type: 'damage', base: [1, 2, 3, 4] }] },
+        { id: 'blk-recast', kind: 'recast', name: 'Recall', recast: { max_recasts: 3, recast_window: 5, recast_extends_on: 'old condition' } },
+        { id: 'blk-gone', kind: 'passive', name: 'Removed on the phone', cooldown: [1, 1, 1, 1] },
+      ],
+    }
     const record: ChampionRecord = {
       ...toRecord(champion()), concept_updated_at: T3, tags: ['fox', 'edited'],
       identity: { name: 'Nyxara, Renamed', lore: 'New lore' },
-      abilities: { ...toRecord(champion()).abilities, q: { name: 'New Q', description: 'Fresh text.' } },
+      abilities: {
+        ...toRecord(champion()).abilities,
+        q: {
+          name: 'New Q', description: 'Fresh text.',
+          journal: { tabs: [{ id: 'tab-9', name: 'Phone note', content: 'from the bus', created_at: T3 }] },
+          blocks: [
+            { id: 'blk-new-1', kind: 'passive', name: 'Added on the phone' },
+            { id: 'blk-recast', kind: 'recast', name: 'Recall', condition: 'new condition' },
+            { id: 'blk-form-1', kind: 'alternate_form', name: 'Renamed form', description: 'New.' },
+          ],
+        },
+      },
     }
     const merged = recordToChampion(record, local, noAssets)
     expect(merged.abilities.q.name).toBe('New Q')
@@ -162,8 +191,14 @@ describe('recordToChampion: updating, never overwriting', () => {
     expect(merged.abilities.q.icon_path).toBeUndefined() // the file has no icon, so it is removed
     expect(merged.abilities.q.cooldown).toEqual([8, 7, 6, 5, 4])
     expect(merged.abilities.q.max_rank).toBe(4)
-    expect(merged.abilities.q.blocks).toEqual(local.abilities.q.blocks)
-    expect(merged.abilities.q.journal).toEqual(local.abilities.q.journal)
+    // Blocks and notes are concept: the file's set, order and text win, and the phone's deletion sticks...
+    expect(merged.abilities.q.journal?.tabs[0].name).toBe('Phone note')
+    expect(merged.abilities.q.blocks?.map(b => b.id)).toEqual(['blk-new-1', 'blk-recast', 'blk-form-1'])
+    expect(merged.abilities.q.blocks?.[2]).toMatchObject({ name: 'Renamed form', description: 'New.' })
+    // ...while each block keeps its own numbers, matched by id.
+    expect(merged.abilities.q.blocks?.[2]).toMatchObject({ cooldown: [9, 9, 9, 9], effects: [{ type: 'damage', base: [1, 2, 3, 4] }] })
+    expect(merged.abilities.q.blocks?.[1].recast).toEqual({ max_recasts: 3, recast_window: 5, recast_extends_on: 'new condition' })
+    expect(merged.abilities.q.blocks?.[0].cooldown).toBeUndefined() // a block born on the phone has no numbers yet
     expect(merged.identity.name).toBe('Nyxara, Renamed')
     expect(merged.identity.lore).toBe('New lore')
     expect(merged.metadata.tags).toEqual(['fox', 'edited'])

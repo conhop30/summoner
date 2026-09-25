@@ -198,9 +198,9 @@ export default function SettingsPage() {
         <section className="settings-section">
           <div className="settings-section-title">Data</div>
           <div className="settings-section-desc">
-            A backup holds everything. The mobile export holds only what Summoner Mobile uses: story, identity, and
-            each ability's name, description and icon. Importing updates champions it recognises and never
-            replaces your stats, builds or ability numbers.
+            A backup holds everything. The mobile export holds only what Summoner Mobile uses: story, identity, and each
+            ability's icon, name, description, notes and blocks (without their numbers). Importing updates champions it
+            recognises and never replaces your stats, builds or ability numbers.
           </div>
           <div className="settings-btn-row">
             <button className="settings-secondary-btn" onClick={() => handleExport('full')}>Export backup…</button>

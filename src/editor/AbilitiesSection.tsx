@@ -3,6 +3,7 @@ import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, Effect, EffectType, RatioEntry, RecastStruct, AbilityJournal } from '../champion/types'
 import { normalizeRankArray } from '../champion/disclosure'
+import { generateId } from '../champion/utils'
 import './AbilitiesSection.css'
 
 const RATIO_STAT_OPTIONS = ['AP', 'Bonus AD', 'Total AD', 'Max Health', 'Missing Health', 'Bonus Health', 'Armor', 'Magic Resist']
@@ -374,7 +375,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
   }
 
   function addBlock() {
-    const blocks = [...(ability.blocks ?? []), { kind: 'passive' } as AbilityBlock]
+    const blocks = [...(ability.blocks ?? []), { id: generateId(), kind: 'passive' } as AbilityBlock]
     updateAbility({ blocks })
   }
 

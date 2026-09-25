@@ -56,6 +56,37 @@ describe('concept_updated_at', () => {
   })
 })
 
+describe('block ids', () => {
+  it('are filled in when a champion with id-less blocks is saved, and stay the same on the next save', () => {
+    const c = createChampion(db, 'Gnar')
+    const first = updateChampion(db, c.metadata.id, { abilities: { q: { max_rank: 5, blocks: [{ kind: 'alternate_form', name: 'Mega Boulder Toss' }] } } as never })!
+    const id = getChampion(db, c.metadata.id)!.abilities.q.blocks![0].id
+    expect(id).toBeTruthy()
+    expect(first.abilities.q.blocks![0].id ?? id).toBe(id)
+    const second = updateChampion(db, c.metadata.id, { abilities: { q: { ...getChampion(db, c.metadata.id)!.abilities.q, name: 'Boulder Toss' } } as never })!
+    expect(getChampion(db, c.metadata.id)!.abilities.q.blocks![0].id).toBe(id)
+    expect(second.abilities.q.name).toBe('Boulder Toss')
+  })
+
+  it('survive a full backup and restore, numbers and text matched by id', () => {
+    const c = createChampion(db, 'Jayce')
+    updateChampion(db, c.metadata.id, { abilities: { q: { max_rank: 5, name: 'Shock Blast', blocks: [
+      { id: 'blk-hammer-1', kind: 'alternate_form', name: 'To the Skies', description: 'Leap.', cooldown: [16, 14, 12, 10, 8], effects: [{ type: 'dash' }] },
+      { id: 'blk-recast-1', kind: 'recast', name: 'Recall', recast: { max_recasts: 2, recast_window: 4, recast_extends_on: 'within 4s' } },
+    ] } } as never })
+    const record = championToRecord(getChampion(db, c.metadata.id)!, 'full', () => undefined)!
+    expect(record.abilities.q.blocks).toEqual([
+      { id: 'blk-hammer-1', kind: 'alternate_form', name: 'To the Skies', description: 'Leap.' },
+      { id: 'blk-recast-1', kind: 'recast', name: 'Recall', condition: 'within 4s' },
+    ])
+    expect(record.desktop?.abilities.q.blocks?.[0]).toMatchObject({ id: 'blk-hammer-1', cooldown: [16, 14, 12, 10, 8] })
+    const fresh = new Database(':memory:')
+    initializeSchema(fresh)
+    upsertChampionRecord(fresh, recordToChampion(JSON.parse(JSON.stringify(record)), null, { icons: {} }))
+    expect(getChampion(fresh, c.metadata.id)!.abilities.q.blocks).toEqual(getChampion(db, c.metadata.id)!.abilities.q.blocks)
+  })
+})
+
 describe('importing into a real database', () => {
   // A record as a phone would send it: story and abilities, no stats.
   function mobileRecord(id: string, over: Partial<ChampionRecord> = {}): ChampionRecord {
@@ -102,7 +133,7 @@ describe('importing into a real database', () => {
     expect(after.abilities.q.description).toBe('Tap the screen.')
     expect(after.abilities.q.cooldown).toEqual([8, 7, 6, 5, 4])
     expect(after.abilities.q.effects).toEqual(before.abilities.q.effects)
-    expect(after.abilities.q.journal).toEqual(before.abilities.q.journal)
+    expect(after.abilities.q.journal).toBeUndefined() // notes are concept: this file had none, so they are cleared
     expect(after.base_stats).toEqual(before.base_stats)
     expect(after.builds).toEqual(before.builds)
     expect(after.active_build_id).toBe(before.active_build_id)

@@ -50,8 +50,24 @@
           ],
           "blocks": [
             {
-              "kind": "alternate_form",
-              "name": "Other form"
+              "id": "blk-extra-01",
+              "kind": "recast",
+              "name": "Other form",
+              "condition": "when it hits",
+              "cooldown": [
+                3,
+                3,
+                3
+              ],
+              "effects": [
+                {
+                  "type": "heal"
+                }
+              ],
+              "recast": {
+                "max_recasts": 9,
+                "recast_window": 30
+              }
             }
           ],
           "journal": {

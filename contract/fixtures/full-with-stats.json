@@ -22,7 +22,31 @@
       "abilities": {
         "q": {
           "name": "Lantern Bolt",
-          "description": "Fires a bolt."
+          "description": "Fires a bolt.",
+          "journal": {
+            "tabs": [
+              {
+                "id": "tab-one",
+                "name": "Scrapped",
+                "content": "It used to stun.",
+                "created_at": "2026-09-01T10:00:00.000Z"
+              }
+            ]
+          },
+          "blocks": [
+            {
+              "id": "blk-a-000001",
+              "kind": "alternate_form",
+              "name": "Empowered Bolt",
+              "description": "Bigger."
+            },
+            {
+              "id": "blk-b-000002",
+              "kind": "recast",
+              "name": "Recast",
+              "condition": "after Q hits"
+            }
+          ]
         },
         "r": {
           "name": "Eclipse"
@@ -102,21 +126,10 @@
                 ]
               }
             ],
-            "journal": {
-              "tabs": [
-                {
-                  "id": "tab-one",
-                  "name": "Scrapped",
-                  "content": "It used to stun.",
-                  "created_at": "2026-09-01T10:00:00.000Z"
-                }
-              ]
-            },
             "blocks": [
               {
-                "kind": "alternate_form",
-                "name": "Empowered Bolt",
-                "description": "Bigger.",
+                "id": "blk-a-000001",
+                "name": "ignored",
                 "cooldown": [
                   9,
                   9,
@@ -126,12 +139,11 @@
                 ]
               },
               {
-                "kind": "recast",
-                "name": "Recast",
+                "id": "blk-b-000002",
                 "recast": {
                   "max_recasts": 2,
                   "recast_window": 4,
-                  "recast_extends_on": "after Q hits"
+                  "recast_extends_on": "ignored"
                 }
               }
             ],

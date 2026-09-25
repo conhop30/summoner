@@ -6,8 +6,8 @@
 // reported as warnings; only a file that isn't a Summoner export at all is refused outright.
 
 import type {
-  AbilityBlock, AbilityBody, AbilityDetails, AbilitySlot, AbilityText, ChampionRecord, DesktopSection, Effect,
-  IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RecastStruct, Scope,
+  AbilityBody, AbilityDetails, AbilitySlot, AbilityText, BlockDetails, BlockText, ChampionRecord, DesktopSection, Effect,
+  IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RecastNumbers, RecastStruct, Scope,
 } from './types'
 import { FORMAT, SLOTS, VERSION } from './types'
 
@@ -237,7 +237,7 @@ function sanitizeExtra(v: unknown, warn: Warn, label: string): AbilityDetails['e
   return count > 0 ? extra : undefined
 }
 
-function sanitizeJournal(v: unknown, warn: Warn, label: string): AbilityDetails['journal'] {
+function sanitizeJournal(v: unknown, warn: Warn, label: string): AbilityText['journal'] {
   if (!isObj(v) || !Array.isArray(v.tabs)) return undefined
   const tabs: JournalTab[] = []
   const seen = new Set<string>()
@@ -256,11 +256,40 @@ function sanitizeJournal(v: unknown, warn: Warn, label: string): AbilityDetails[
   return tabs.length > 0 ? { tabs } : undefined
 }
 
-function sanitizeBlock(v: unknown, maxRank: number, warn: Warn, label: string): AbilityBlock | undefined {
+// The text side of a block: which kind it is, what it's called and what it does.
+function sanitizeBlockText(v: unknown, seen: Set<string>, warn: Warn, label: string): BlockText | undefined {
   if (!isObj(v)) return undefined
-  if (!(BLOCK_KINDS as readonly unknown[]).includes(v.kind)) return undefined
-  const block: AbilityBlock = { kind: v.kind as AbilityBlock['kind'], ...sanitizeBody(v, maxRank, warn, label) }
-  if (block.kind === 'recast') block.recast = sanitizeRecast(v.recast, warn, label) ?? { max_recasts: 1, recast_window: 3 }
+  if (!(BLOCK_KINDS as readonly unknown[]).includes(v.kind)) { warn(`${label}: a block of an unknown kind was skipped`); return undefined }
+  if (typeof v.id !== 'string' || !ID_PATTERN.test(v.id)) { warn(`${label}: a block without a valid id was skipped`); return undefined }
+  if (seen.has(v.id)) { warn(`${label}: a second block with the same id was skipped`); return undefined }
+  seen.add(v.id)
+  const block: BlockText = { id: v.id, kind: v.kind as BlockText['kind'] }
+  const name = text(v.name, LIMITS.abilityName, warn, `${label} block name`)
+  if (name) block.name = name
+  const description = text(v.description, LIMITS.description, warn, `${label} block description`)
+  if (description) block.description = description
+  const condition = text(v.condition, 200, warn, `${label} block condition`)
+  if (condition) block.condition = condition
+  return block
+}
+
+// The numbers side of a block, matched to its text by id.
+function sanitizeBlockDetails(v: unknown, maxRank: number, seen: Set<string>, warn: Warn, label: string): BlockDetails | undefined {
+  if (!isObj(v) || typeof v.id !== 'string' || !ID_PATTERN.test(v.id) || seen.has(v.id)) return undefined
+  seen.add(v.id)
+  const body = sanitizeBody(v, maxRank, warn, label)
+  delete body.name
+  delete body.description
+  const block: BlockDetails = { id: v.id, ...body }
+  if (isObj(v.recast)) {
+    const recast: RecastNumbers = {
+      max_recasts: int(v.recast.max_recasts, 0, 99) ?? 1,
+      recast_window: Math.max(0, Math.min(3600, num(v.recast.recast_window) ?? 3)),
+    }
+    const staticCd = num(v.recast.recast_static_cooldown)
+    if (staticCd !== undefined) recast.recast_static_cooldown = Math.max(0, staticCd)
+    block.recast = recast
+  }
   return block
 }
 
@@ -268,7 +297,7 @@ function slotLabel(slot: AbilitySlot) {
   return slot === 'passive' ? 'Passive' : slot.toUpperCase()
 }
 
-// What the phone sees of an ability: a name, a description and an icon. Nothing else.
+// What the phone sees of an ability: its icon, name, description, journal and extra parts (blocks).
 function sanitizeAbilityText(v: unknown, slot: AbilitySlot, warn: Warn): AbilityText {
   const label = slotLabel(slot)
   const raw: Obj = isObj(v) ? v : {}
@@ -279,10 +308,21 @@ function sanitizeAbilityText(v: unknown, slot: AbilitySlot, warn: Warn): Ability
   if (description) ability.description = description
   const icon = sanitizeImage(raw.icon, warn, `${label} icon`)
   if (icon) ability.icon = icon
+  const journal = sanitizeJournal(raw.journal, warn, label)
+  if (journal) ability.journal = journal
+  if (Array.isArray(raw.blocks)) {
+    const seen = new Set<string>()
+    const blocks: BlockText[] = []
+    for (const b of raw.blocks.slice(0, LIMITS.blocks)) {
+      const clean = sanitizeBlockText(b, seen, warn, label)
+      if (clean) blocks.push(clean)
+    }
+    if (blocks.length > 0) ability.blocks = blocks
+  }
   return ability
 }
 
-// Numbers, blocks and notes: the desktop's part of an ability.
+// Numbers: the desktop's part of an ability, and of each of its blocks.
 function sanitizeAbilityDetails(v: unknown, slot: AbilitySlot, warn: Warn): AbilityDetails {
   const label = slotLabel(slot)
   const raw: Obj = isObj(v) ? v : {}
@@ -294,12 +334,11 @@ function sanitizeAbilityDetails(v: unknown, slot: AbilitySlot, warn: Warn): Abil
 
   const extra = sanitizeExtra(raw.extra, warn, label)
   if (extra) ability.extra = extra
-  const journal = sanitizeJournal(raw.journal, warn, label)
-  if (journal) ability.journal = journal
   if (Array.isArray(raw.blocks)) {
-    const blocks: AbilityBlock[] = []
+    const seen = new Set<string>()
+    const blocks: BlockDetails[] = []
     for (const b of raw.blocks.slice(0, LIMITS.blocks)) {
-      const clean = sanitizeBlock(b, maxRank, warn, `${label} block`)
+      const clean = sanitizeBlockDetails(b, maxRank, seen, warn, `${label} block`)
       if (clean) blocks.push(clean)
     }
     if (blocks.length > 0) ability.blocks = blocks
@@ -420,6 +459,26 @@ export function sanitizeRecord(raw: unknown, includeDesktop: boolean, warnFile: 
 // The original (version 1) export wrote raw desktop records with their machine-local image paths.
 // Lift those into the current shape; the paths and theme audio are dropped, since they point at
 // files on another computer.
+function legacyAbilities(raw: unknown): unknown {
+  if (!isObj(raw)) return raw
+  const out: Obj = { ...raw }
+  for (const slot of SLOTS) {
+    const ability = raw[slot]
+    if (!isObj(ability) || !Array.isArray(ability.blocks)) continue
+    // Old blocks had no id: give each a stable one, and lift the recast condition text out.
+    out[slot] = {
+      ...ability,
+      blocks: ability.blocks.map((b, i) => {
+        if (!isObj(b)) return b
+        const id = typeof b.id === 'string' && ID_PATTERN.test(b.id) ? b.id : `legacy-${slot}-${i + 1}`
+        const condition = isObj(b.recast) ? b.recast.recast_extends_on : undefined
+        return { ...b, id, condition }
+      }),
+    }
+  }
+  return out
+}
+
 function fromLegacy(raw: unknown): unknown {
   if (!isObj(raw)) return raw
   const meta = isObj(raw.metadata) ? raw.metadata : {}
@@ -433,8 +492,8 @@ function fromLegacy(raw: unknown): unknown {
     concept_updated_at: meta.updated_at,
     tags: meta.tags,
     identity: keptIdentity,
-    abilities: raw.abilities,
-    desktop: { base_stats: raw.base_stats, builds: raw.builds, active_build_id: raw.active_build_id, abilities: raw.abilities },
+    abilities: legacyAbilities(raw.abilities),
+    desktop: { base_stats: raw.base_stats, builds: raw.builds, active_build_id: raw.active_build_id, abilities: legacyAbilities(raw.abilities) },
   }
 }
 

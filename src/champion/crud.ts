@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import type { Champion, Identity, BaseStats, Abilities, BuildEntry, NamedBuild } from './types';
-import { generateId, nowISO, defaultAbilities, defaultBaseStats } from './utils';
+import { generateId, nowISO, defaultAbilities, defaultBaseStats, ensureBlockIds } from './utils';
 import { defaultBuilds } from '../item/buildLogic';
 import { SCHEMA_VERSION } from '../db/schema';
 import { conceptSnapshot } from './exchange';
@@ -50,7 +50,7 @@ function serialize(champion: Champion): Record<string, unknown> {
     tags: JSON.stringify(champion.metadata.tags),
     identity: JSON.stringify(champion.identity),
     base_stats: JSON.stringify(champion.base_stats),
-    abilities: JSON.stringify(champion.abilities),
+    abilities: JSON.stringify(ensureBlockIds(champion.abilities)),
     builds: JSON.stringify(champion.builds),
     active_build_id: champion.active_build_id,
   };
