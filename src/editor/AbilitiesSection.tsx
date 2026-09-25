@@ -2,11 +2,14 @@ import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal } from '../champion/types'
-import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, isBuiltInEffect, unitSuffix } from '../champion/effects'
+import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, unitSuffix } from '../champion/effects'
 import { PART_LABELS, RATIO_STATS, ratioStatDef, resolveRatio } from '../champion/ratios'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
 import './AbilitiesSection.css'
+
+// The dropdown's entry for an effect that isn't one of the built-in types.
+const CUSTOM_EFFECT = '__custom__'
 
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
 
@@ -74,6 +77,9 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
   // Effects are one tidy line each until opened; a freshly added one opens so it can be filled in.
   const [openEffects, setOpenEffects] = useState<Set<number>>(() => new Set())
+  // The effect whose custom name is being typed. Its name field stays until the user leaves it, even
+  // if what they have typed so far happens to match a built-in type (the start of "shield wall").
+  const [typingName, setTypingName] = useState<number | null>(null)
 
   function toggleEffect(index: number) {
     setOpenEffects(prev => {
@@ -112,6 +118,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     onUpdate({ effects: (body.effects ?? []).filter((_, i) => i !== index) })
     // Later effects move up one place, and their open/closed state goes with them.
     setOpenEffects(prev => new Set([...prev].filter(i => i !== index).map(i => (i > index ? i - 1 : i))))
+    setTypingName(null)
   }
 
   function updateEffectBase(effectIndex: number, rankIndex: number, raw: string) {
@@ -273,14 +280,32 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
               {isOpen && (
                 <>
                   <div className="effect-row">
-                    <input
-                      className="effect-type-select effect-type-input"
-                      list="effect-type-options"
-                      placeholder="Effect, e.g. taunt"
-                      value={effect.type}
-                      onChange={e => changeEffectType(i, e.target.value)}
-                      onBlur={e => { if (!e.target.value.trim()) changeEffectType(i, 'damage') }}
-                    />
+                    <select
+                      className="effect-type-select"
+                      value={isBuiltInEffect(effect.type) ? effect.type : CUSTOM_EFFECT}
+                      onChange={e => {
+                        const custom = e.target.value === CUSTOM_EFFECT
+                        setTypingName(custom ? i : null)
+                        changeEffectType(i, custom ? '' : e.target.value)
+                      }}
+                      aria-label="Effect type"
+                    >
+                      {BUILT_IN_EFFECT_TYPES.map(t => <option key={t} value={t}>{effectName(t)}</option>)}
+                      <option value={CUSTOM_EFFECT}>Custom…</option>
+                    </select>
+                    {(!isBuiltInEffect(effect.type) || typingName === i) && (
+                      <input
+                        className="effect-type-select effect-type-input"
+                        placeholder="Name it, e.g. taunt"
+                        value={effect.type}
+                        autoFocus={effect.type === ''}
+                        onChange={e => changeEffectType(i, e.target.value)}
+                        onBlur={e => {
+                          setTypingName(null)
+                          if (!e.target.value.trim()) changeEffectType(i, 'damage')
+                        }}
+                      />
+                    )}
                     {kind.family === 'damage' && (
                       <select
                         className="effect-type-select"
@@ -615,10 +640,6 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
                   </div>
                 ))}
               </div>
-
-              <datalist id="effect-type-options">
-                {BUILT_IN_EFFECT_TYPES.map(t => <option key={t} value={t} />)}
-              </datalist>
             </div>
           )}
 
