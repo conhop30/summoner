@@ -27,6 +27,11 @@ export interface RatioEntry {
   // A stat id from ratios.ts ("ad", "armor"...), or free text from before the picker existed.
   stat: string;
   part?: RatioPart;
+  // "Per N": each N of the stat adds `values` (in the effect's own unit), continuously, instead
+  // of `values` being a fraction of the stat. Unset means a plain ratio.
+  per?: number;
+  // For a custom value the app can't know (stacks, enemies hit): what to assume when estimating.
+  assumed?: number;
   values: number[];
 }
 

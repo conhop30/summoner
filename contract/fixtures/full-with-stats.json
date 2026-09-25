@@ -133,6 +133,29 @@
                       0.1,
                       0.1
                     ]
+                  },
+                  {
+                    "stat": "armor",
+                    "part": "bonus",
+                    "per": 80,
+                    "values": [
+                      1,
+                      1,
+                      1,
+                      1,
+                      1
+                    ]
+                  },
+                  {
+                    "stat": "stacks",
+                    "assumed": 3,
+                    "values": [
+                      5,
+                      5,
+                      5,
+                      5,
+                      5
+                    ]
                   }
                 ]
               }

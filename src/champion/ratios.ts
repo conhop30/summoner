@@ -1,10 +1,14 @@
-import type { RatioEntry, RatioPart } from './types'
+import type { EffectUnit, RatioEntry, RatioPart } from './types'
 
 // What an ability can scale with. A ratio names a stat and which part of it counts: its base value
 // (what the champion has on its own), its bonus (what items and effects add), or the total. Only
 // stats that have a base of their own offer all three; the rest (ability power, lethality,
 // penetration, crit chance, ability haste) are total-only, because the game gives a champion none
 // of them before items.
+//
+// A ratio can also scale "per N" of a stat (1% per 80 bonus armor), continuously: each N of the stat
+// adds that amount, in the effect's own unit. And a scaler can be a value the app can't know, such as
+// stacks or enemies hit: it has a name, and an assumed number for estimates.
 //
 // Ratios saved before this existed are free text ("Bonus AD", "Max Health"). resolveRatio reads
 // those too, so they keep working untouched and are rewritten in the new form the next time one is
@@ -14,6 +18,7 @@ export type RatioStatId =
   | 'ad' | 'ap' | 'armor' | 'magic_resist' | 'health' | 'missing_health' | 'resource'
   | 'health_regen' | 'resource_regen' | 'attack_speed' | 'move_speed'
   | 'crit_chance' | 'lethality' | 'armor_pen' | 'magic_pen' | 'ability_haste'
+  | 'target_max_health' | 'target_current_health' | 'target_missing_health'
 
 export interface RatioStatDef {
   id: RatioStatId
@@ -45,7 +50,13 @@ export const RATIO_STATS: RatioStatDef[] = [
   { id: 'armor_pen', label: 'Armor Penetration', short: 'armor pen', parts: TOTAL_ONLY },
   { id: 'magic_pen', label: 'Magic Penetration', short: 'magic pen', parts: TOTAL_ONLY },
   { id: 'ability_haste', label: 'Ability Haste', short: 'ability haste', parts: TOTAL_ONLY },
+  { id: 'target_max_health', label: "Target's Max Health", short: "target's max health", parts: TOTAL_ONLY },
+  { id: 'target_current_health', label: "Target's Current Health", short: "target's current health", parts: TOTAL_ONLY },
+  { id: 'target_missing_health', label: "Target's Missing Health", short: "target's missing health", parts: TOTAL_ONLY },
 ]
+
+/** What "per N" starts at when it is switched on. */
+export const PER_DEFAULT = 100
 
 export const PART_LABELS: Record<RatioPart, string> = { total: 'Total', bonus: 'Bonus', base: 'Base' }
 
@@ -80,6 +91,9 @@ const LEGACY_STATS: Record<string, RatioStatId> = {
   'armor penetration': 'armor_pen', 'armor pen': 'armor_pen',
   'magic penetration': 'magic_pen', 'magic pen': 'magic_pen',
   'ability haste': 'ability_haste',
+  "target's max health": 'target_max_health', 'target max health': 'target_max_health', 'enemy max health': 'target_max_health',
+  "target's current health": 'target_current_health', 'target current health': 'target_current_health', 'enemy current health': 'target_current_health',
+  "target's missing health": 'target_missing_health', 'target missing health': 'target_missing_health', 'enemy missing health': 'target_missing_health',
 }
 
 function parseLegacy(text: string): ResolvedRatio | null {
@@ -117,12 +131,26 @@ function trim(n: number): string {
   return String(Math.round(n * 10) / 10)
 }
 
+function trimAmount(n: number): string {
+  return String(Math.round(n * 100) / 100)
+}
+
 /** "45%" for a ratio that doesn't change with rank, "40–60%" for one that does. */
 function percentText(values: number[]): string {
   const percents = values.map(v => ratioFraction(v) * 100)
   const first = percents[0]
   const last = percents[percents.length - 1]
   return first === last ? `${trim(first)}%` : `${trim(first)}–${trim(last)}%`
+}
+
+/** Values across the ranks: "60" if they are all the same, otherwise "40/65/90". */
+export function rankList(values: number[]): string {
+  return values.every(v => v === values[0]) ? trimAmount(values[0]) : values.map(trimAmount).join('/')
+}
+
+/** How a unit trails a number: "%" or " s" (nothing for a flat amount). */
+export function unitAfter(unit: EffectUnit | undefined): string {
+  return unit === 'percent' ? '%' : unit === 'seconds' ? ' s' : ''
 }
 
 /** The stat as it reads in a sentence: "AP", "bonus AD", "armor". */
@@ -133,9 +161,26 @@ export function ratioStatText(entry: Pick<RatioEntry, 'stat' | 'part'>): string 
   return resolved.part === 'total' ? def.short : `${resolved.part} ${def.short}`
 }
 
-/** A ratio as a phrase, "45% AP" or "40–60% bonus AD", or null when it has no value yet. */
-export function describeRatio(entry: RatioEntry): string | null {
+/** True for a ratio that isn't one of the known stats: a value the user named themselves ("stacks"). */
+export function isCustomRatio(entry: Pick<RatioEntry, 'stat' | 'part'>): boolean {
+  return resolveRatio(entry) === null
+}
+
+/** How many units of a custom value to assume when estimating. One stack unless the user says otherwise. */
+export function assumedUnits(entry: Pick<RatioEntry, 'assumed'>): number {
+  return typeof entry.assumed === 'number' && Number.isFinite(entry.assumed) ? entry.assumed : 1
+}
+
+/**
+ * A ratio as a phrase, or null when it has no value yet. A plain ratio reads "45% AP"; a per-N one
+ * "1% per 80 bonus armor" (the amount is in the effect's unit); a custom value "20 per stacks".
+ */
+export function describeRatio(entry: RatioEntry, unit?: EffectUnit): string | null {
   const values = entry.values ?? []
   if (values.length === 0 || values.every(v => !v)) return null
-  return `${percentText(values)} ${ratioStatText(entry)}`
+  const name = ratioStatText(entry).trim() || 'value'
+  const per = typeof entry.per === 'number' && entry.per > 0 ? entry.per : 0
+  if (per) return `${rankList(values)}${unitAfter(unit)} per ${trimAmount(per)} ${name}`
+  if (isCustomRatio(entry)) return `${rankList(values)}${unitAfter(unit)} per ${name}`
+  return `${percentText(values)} ${name}`
 }

@@ -3,13 +3,15 @@ import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal } from '../champion/types'
 import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, unitSuffix } from '../champion/effects'
-import { PART_LABELS, RATIO_STATS, ratioStatDef, resolveRatio } from '../champion/ratios'
+import { PART_LABELS, PER_DEFAULT, RATIO_STATS, assumedUnits, ratioStatDef, resolveRatio } from '../champion/ratios'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
 import './AbilitiesSection.css'
 
 // The dropdown's entry for an effect that isn't one of the built-in types.
 const CUSTOM_EFFECT = '__custom__'
+// The same for a scaler that is a value the user names themselves (stacks) rather than a stat.
+const CUSTOM_RATIO = '__custom__'
 
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
 
@@ -80,6 +82,8 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   // The effect whose custom name is being typed. Its name field stays until the user leaves it, even
   // if what they have typed so far happens to match a built-in type (the start of "shield wall").
   const [typingName, setTypingName] = useState<number | null>(null)
+  // The same for a custom value's name in a scaler, as "effect:scaler".
+  const [typingValue, setTypingValue] = useState<string | null>(null)
 
   function toggleEffect(index: number) {
     setOpenEffects(prev => {
@@ -119,6 +123,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     // Later effects move up one place, and their open/closed state goes with them.
     setOpenEffects(prev => new Set([...prev].filter(i => i !== index).map(i => (i > index ? i - 1 : i))))
     setTypingName(null)
+    setTypingValue(null)
   }
 
   function updateEffectBase(effectIndex: number, rankIndex: number, raw: string) {
@@ -158,7 +163,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   function changeRatioStat(effectIndex: number, ratioIndex: number, stat: string) {
     const current = resolveRatio((body.effects ?? [])[effectIndex].ratios![ratioIndex])
     const parts = ratioStatDef(stat)?.parts ?? ['total']
-    updateRatio(effectIndex, ratioIndex, { stat, part: current && parts.includes(current.part) ? current.part : 'total' })
+    updateRatio(effectIndex, ratioIndex, { stat, part: current && parts.includes(current.part) ? current.part : 'total', assumed: undefined })
   }
 
   function updateRatioValue(effectIndex: number, ratioIndex: number, rankIndex: number, raw: string) {
@@ -299,6 +304,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                         placeholder="Name it, e.g. taunt"
                         value={effect.type}
                         autoFocus={effect.type === ''}
+                        onFocus={() => setTypingName(i)}
                         onChange={e => changeEffectType(i, e.target.value)}
                         onBlur={e => {
                           setTypingName(null)
@@ -366,27 +372,84 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                     </div>
                     {(effect.ratios ?? []).map((ratio, ri) => {
                       const resolved = resolveRatio(ratio)
-                      const parts: RatioPart[] = resolved ? ratioStatDef(resolved.stat)!.parts : ['total']
+                      const ratioKey = `${i}:${ri}`
+                      // A name that matches a known stat mid-typing keeps its name field until the user leaves it.
+                      const custom = !resolved || typingValue === ratioKey
+                      const parts: RatioPart[] = resolved && !custom ? ratioStatDef(resolved.stat)!.parts : ['total']
                       return (
                         <div key={ri} className="ratio-row">
                           <div className="ratio-row-head">
                             <select
                               className="effect-type-select ratio-stat-select"
-                              value={resolved ? resolved.stat : ratio.stat}
-                              onChange={e => changeRatioStat(i, ri, e.target.value)}
+                              value={custom ? CUSTOM_RATIO : resolved!.stat}
+                              onChange={e => {
+                                if (e.target.value === CUSTOM_RATIO) {
+                                  setTypingValue(ratioKey)
+                                  updateRatio(i, ri, { stat: '', part: undefined })
+                                } else {
+                                  setTypingValue(null)
+                                  changeRatioStat(i, ri, e.target.value)
+                                }
+                              }}
+                              aria-label="Scales with"
                             >
-                              {/* A ratio typed before the picker existed that can't be placed keeps its own text. */}
-                              {!resolved && <option value={ratio.stat}>{ratio.stat || 'Choose a stat'}</option>}
-                              {RATIO_STATS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                              {RATIO_STATS.filter(d => !d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                              <optgroup label="The target's">
+                                {RATIO_STATS.filter(d => d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                              </optgroup>
+                              <option value={CUSTOM_RATIO}>Custom value…</option>
                             </select>
                             {parts.length > 1 && (
                               <select
                                 className="effect-type-select ratio-part-select"
                                 value={resolved?.part ?? 'total'}
                                 onChange={e => updateRatio(i, ri, { part: e.target.value as RatioPart })}
+                                aria-label="Which part"
                               >
                                 {parts.map(pt => <option key={pt} value={pt}>{PART_LABELS[pt]}</option>)}
                               </select>
+                            )}
+                            {custom && (
+                              <>
+                                <input
+                                  className="effect-type-select ratio-name-input"
+                                  placeholder="Name it, e.g. stacks"
+                                  value={ratio.stat}
+                                  autoFocus={ratio.stat === ''}
+                                  onFocus={() => setTypingValue(ratioKey)}
+                                  onChange={e => updateRatio(i, ri, { stat: e.target.value, part: undefined })}
+                                  onBlur={e => {
+                                    setTypingValue(null)
+                                    if (!e.target.value.trim()) updateRatio(i, ri, { stat: 'ap', part: 'total', assumed: undefined })
+                                  }}
+                                />
+                                <label className="ratio-assume" title="How many of it to assume when the win rate is estimated">
+                                  assume
+                                  <input
+                                    className="rank-input ratio-assume-input"
+                                    type="number"
+                                    value={assumedUnits(ratio)}
+                                    onChange={e => updateRatio(i, ri, { assumed: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                                  />
+                                </label>
+                              </>
+                            )}
+                            {ratio.per === undefined ? (
+                              <button className="ratio-per-btn" onClick={() => updateRatio(i, ri, { per: PER_DEFAULT })} title="Add this amount for every N of the stat, instead of taking a share of it">
+                                per N
+                              </button>
+                            ) : (
+                              <span className="ratio-per">
+                                per
+                                <input
+                                  className="rank-input ratio-per-input"
+                                  type="number"
+                                  min={1}
+                                  value={ratio.per || ''}
+                                  onChange={e => updateRatio(i, ri, { per: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                                />
+                                <button className="ratio-per-off" onClick={() => updateRatio(i, ri, { per: undefined })} title="Back to a plain ratio" aria-label="Back to a plain ratio">↩</button>
+                              </span>
                             )}
                             <button className="remove-effect-btn" onClick={() => removeRatio(i, ri)}>×</button>
                           </div>

@@ -1,5 +1,5 @@
 import type { Effect, EffectFamily, EffectUnit } from './types'
-import { describeRatio } from './ratios'
+import { describeRatio, rankList, unitAfter } from './ratios'
 
 // What an effect IS, separately from what it is called. Built-in effect types (damage, stun, slow...)
 // each carry a fixed family and unit. A custom effect ("taunt", "sleep", anything typed) has only a
@@ -88,15 +88,6 @@ export function effectName(type: string): string {
   return text ? text[0].toUpperCase() + text.slice(1) : 'Effect'
 }
 
-function trimNumber(n: number): string {
-  return String(Math.round(n * 100) / 100)
-}
-
-/** Base values across the ranks: "60" if they are all the same, otherwise "40/65/90". */
-function rankList(values: number[]): string {
-  return values.every(v => v === values[0]) ? trimNumber(values[0]) : values.map(trimNumber).join('/')
-}
-
 /**
  * One line that says what an effect does, for the collapsed card: "Damage · Magic · 40/65/90 + 45% AP".
  * It reads the same however many scalers there are, so a busy effect stays one tidy line.
@@ -109,10 +100,10 @@ export function describeEffect(effect: Effect): string {
   const amounts: string[] = []
   const base = effect.base ?? []
   if (base.some(v => v)) {
-    amounts.push(rankList(base) + (kind.unit === 'seconds' ? ' s' : kind.unit === 'percent' ? '%' : ''))
+    amounts.push(rankList(base) + unitAfter(kind.unit))
   }
   for (const ratio of effect.ratios ?? []) {
-    const text = describeRatio(ratio)
+    const text = describeRatio(ratio, kind.unit)
     if (text) amounts.push(text)
   }
   return `${head.join(' · ')} · ${amounts.length ? amounts.join(' + ') : 'no numbers yet'}`

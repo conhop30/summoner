@@ -355,7 +355,32 @@
   padding-left: var(--space-3);
   border-left: 2px solid var(--border-default);
 }
-.ratio-row-head { display: flex; align-items: center; gap: var(--space-2); }
+.ratio-row-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.ratio-name-input { width: 150px; }
+.ratio-assume, .ratio-per {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ratio-assume-input, .ratio-per-input { width: 64px; }
+/* "per N" is a quiet option on a scaler: a text button until it is used. */
+.ratio-per-btn, .ratio-per-off {
+  padding: 2px var(--space-2);
+  background: transparent;
+  border: 1px dashed var(--border-default);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ratio-per-btn:hover, .ratio-per-off:hover { color: var(--text-accent-gold); border-color: var(--accent-gold); }
+.ratio-per-off { border-style: solid; }
 .ratio-row-head .remove-effect-btn { margin-left: auto; }
 
 .ratio-stat-select { width: 168px; flex-shrink: 0; }

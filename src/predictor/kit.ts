@@ -1,6 +1,6 @@
 import type { AbilityBody, AbilitySlot, Champion, Effect, RatioEntry, RatioPart } from '../champion/types'
 import { effectKind } from '../champion/effects'
-import { ratioFraction, resolveRatio, type RatioStatId } from '../champion/ratios'
+import { assumedUnits, ratioFraction, resolveRatio, type RatioStatId } from '../champion/ratios'
 import type { Combatant } from './combatant'
 
 // Turns a champion's five abilities into rates of "damage-equivalent" value per second at the
@@ -11,6 +11,10 @@ import type { Combatant } from './combatant'
 /** The enemy the damage is dealt to: a typical mid-game champion. */
 export const TARGET_ARMOR = 80
 export const TARGET_MAGIC_RESIST = 60
+/** The same enemy's health, for abilities that take a share of it. Damage aimed at a target is used when it is somewhat hurt. */
+export const TARGET_MAX_HEALTH = 2600
+const TARGET_CURRENT_SHARE = 0.6
+const TARGET_MISSING_SHARE = 0.4
 
 /** Ranks the abilities are read at: at level 13 the basics are about rank 4 and the ultimate rank 2. */
 const BASIC_RANK = 4
@@ -98,20 +102,31 @@ function statValue(stat: RatioStatId, part: RatioPart, c: Combatant): number {
     case 'armor_pen':
     case 'magic_pen':
       return 0
+    case 'target_max_health': return TARGET_MAX_HEALTH
+    case 'target_current_health': return TARGET_MAX_HEALTH * TARGET_CURRENT_SHARE
+    case 'target_missing_health': return TARGET_MAX_HEALTH * TARGET_MISSING_SHARE
   }
 }
 
-/** What a ratio scales with, at this moment. A ratio that can't be placed counts for nothing. */
-function statForRatio(ratio: RatioEntry, c: Combatant): number {
+/**
+ * What one scaler adds at a rank. A plain ratio is a fraction of its stat. A per-N one adds its
+ * value for every N of the stat, continuously (1 per 80 armor is 1.5 at 120 armor). A value the
+ * user named themselves (stacks) has no stat to read, so it uses the number they said to assume,
+ * one unit by default. The value of a per-N or custom scaler is in the effect's own unit.
+ */
+function ratioAmount(ratio: RatioEntry, rankIndex: number, c: Combatant): number {
+  const value = valueAt(ratio.values, rankIndex)
+  const per = typeof ratio.per === 'number' && ratio.per > 0 ? ratio.per : 0
   const resolved = resolveRatio(ratio)
-  return resolved ? statValue(resolved.stat, resolved.part, c) : 0
+  if (!resolved) return (value * assumedUnits(ratio)) / (per || 1)
+  const stat = statValue(resolved.stat, resolved.part, c)
+  return per ? (value * stat) / per : ratioFraction(value) * stat
 }
 
 function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant): Parts {
   const parts: Parts = { damage: 0, utility: 0, sustain: 0 }
   const base = valueAt(effect.base, rankIndex)
-  const amount = base + (effect.ratios ?? []).reduce(
-    (sum, r) => sum + ratioFraction(valueAt(r.values, rankIndex)) * statForRatio(r, c), 0)
+  const amount = base + (effect.ratios ?? []).reduce((sum, r) => sum + ratioAmount(r, rankIndex, c), 0)
   const type = effect.type
   const { family, unit } = effectKind(effect)
   const explicit = valueAt(effect.duration, rankIndex)
@@ -123,14 +138,14 @@ function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant): Parts 
   } else if (family === 'sustain') {
     parts.sustain = Math.max(0, amount) * (type === 'shield' ? SHIELD_WEIGHT : HEAL_WEIGHT)
   } else if (family === 'hard_control') {
-    // The editor has no duration field, so a hard control's base number is its length when its
-    // unit is seconds; otherwise it is priced at a default length for what it is.
-    const seconds = explicit || (unit === 'seconds' && base > 0 && base <= 5 ? base : DEFAULT_CC_SECONDS[type] ?? 1)
+    // The editor has no duration field, so a hard control's number (its base plus any scalers) is
+    // its length when its unit is seconds; otherwise it is priced at a default length for what it is.
+    const seconds = explicit || (unit === 'seconds' && amount > 0 && amount <= 5 ? amount : DEFAULT_CC_SECONDS[type] ?? 1)
     parts.utility = seconds * CC_VALUE_PER_SECOND * (CC_WEIGHT[type] ?? 1)
   } else if (family === 'soft_control') {
-    // A soft control's base number is its strength as a percentage, or its length if the unit is seconds.
-    const strength = unit === 'percent' ? (base > 1 ? Math.min(base, 100) / 100 : base > 0 ? base : SLOW_REFERENCE_STRENGTH) : SLOW_REFERENCE_STRENGTH
-    const seconds = explicit || (unit === 'seconds' && base > 0 && base <= 5 ? base : DEFAULT_CC_SECONDS[type] ?? DEFAULT_SOFT_SECONDS)
+    // A soft control's number is its strength as a percentage, or its length if the unit is seconds.
+    const strength = unit === 'percent' ? (amount > 1 ? Math.min(amount, 100) / 100 : amount > 0 ? amount : SLOW_REFERENCE_STRENGTH) : SLOW_REFERENCE_STRENGTH
+    const seconds = explicit || (unit === 'seconds' && amount > 0 && amount <= 5 ? amount : DEFAULT_CC_SECONDS[type] ?? DEFAULT_SOFT_SECONDS)
     parts.utility = seconds * CC_VALUE_PER_SECOND * (CC_WEIGHT[type] ?? CC_WEIGHT.slow) * (strength / SLOW_REFERENCE_STRENGTH)
   } else {
     parts.utility = FLAT_UTILITY_VALUE[type] ?? OTHER_UTILITY_VALUE

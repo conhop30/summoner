@@ -29,7 +29,9 @@ export const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
 export type RatioPart = 'base' | 'bonus' | 'total'
 export const RATIO_PARTS: readonly RatioPart[] = ['base', 'bonus', 'total']
 
-export interface RatioEntry { stat: string; part?: RatioPart; values: number[] }
+// per: each N of the stat adds `values` (in the effect's unit) instead of `values` being a fraction of
+// the stat. assumed: for a custom value the app can't know (stacks), the number to assume.
+export interface RatioEntry { stat: string; part?: RatioPart; per?: number; assumed?: number; values: number[] }
 
 // What a custom effect behaves like and what its base number measures (see the spec).
 export type EffectFamily = 'damage' | 'hard_control' | 'soft_control' | 'sustain' | 'utility'

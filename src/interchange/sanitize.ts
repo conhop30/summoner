@@ -189,6 +189,10 @@ function sanitizeEffect(v: unknown, maxRank: number, warn: Warn, label: string):
       if (!stat) continue
       const ratio: RatioEntry = { stat, values: rankArray(r.values, maxRank) ?? Array(maxRank).fill(0) }
       if ((RATIO_PARTS as readonly unknown[]).includes(r.part)) ratio.part = r.part as RatioEntry['part']
+      const per = num(r.per)
+      if (per !== undefined && per > 0) ratio.per = per
+      const assumed = num(r.assumed)
+      if (assumed !== undefined) ratio.assumed = assumed
       ratios.push(ratio)
     }
     if (ratios.length > 0) effect.ratios = ratios

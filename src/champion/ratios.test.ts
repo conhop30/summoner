@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RATIO_STATS, describeRatio, normalizeRatio, ratioFraction, ratioStatDef, resolveRatio } from './ratios'
+import { RATIO_STATS, assumedUnits, describeRatio, isCustomRatio, normalizeRatio, ratioFraction, ratioStatDef, resolveRatio } from './ratios'
 import { describeEffect, effectName } from './effects'
 
 describe('the ratio vocabulary', () => {
@@ -8,6 +8,9 @@ describe('the ratio vocabulary', () => {
       expect(ratioStatDef(id)!.parts).toEqual(['total', 'bonus', 'base'])
     }
     for (const id of ['ap', 'lethality', 'armor_pen', 'magic_pen', 'crit_chance', 'ability_haste', 'missing_health']) {
+      expect(ratioStatDef(id)!.parts).toEqual(['total'])
+    }
+    for (const id of ['target_max_health', 'target_current_health', 'target_missing_health']) {
       expect(ratioStatDef(id)!.parts).toEqual(['total'])
     }
   })
@@ -44,6 +47,8 @@ describe('resolving a ratio', () => {
       ['Bonus Mana Regen', { stat: 'resource_regen', part: 'bonus' }],
       ['Critical Strike Chance', { stat: 'crit_chance', part: 'total' }],
       ['Bonus AP', { stat: 'ap', part: 'total' }],
+      ["Target's Max Health", { stat: 'target_max_health', part: 'total' }],
+      ['target missing health', { stat: 'target_missing_health', part: 'total' }],
     ]
     for (const [text, expected] of cases) expect(resolveRatio({ stat: text }), text).toEqual(expected)
   })
@@ -81,8 +86,25 @@ describe('describing a ratio', () => {
     expect(describeRatio({ stat: 'ap', values: [] })).toBeNull()
   })
 
-  it('shows a stat it cannot place as typed', () => {
-    expect(describeRatio({ stat: 'Stacks', values: [0.1] })).toBe('10% Stacks')
+  it("reads a per-N scaler in the effect's own unit", () => {
+    expect(describeRatio({ stat: 'armor', part: 'bonus', per: 80, values: [1, 1, 1] }, 'percent')).toBe('1% per 80 bonus armor')
+    expect(describeRatio({ stat: 'ap', per: 100, values: [0.05, 0.1] }, 'seconds')).toBe('0.05/0.1 s per 100 AP')
+    expect(describeRatio({ stat: 'ad', per: 10, values: [2] })).toBe('2 per 10 AD')
+  })
+
+  it('reads a value the user named as an amount per unit', () => {
+    expect(describeRatio({ stat: 'Stacks', values: [20] })).toBe('20 per Stacks')
+    expect(describeRatio({ stat: 'Stacks', per: 5, values: [20] })).toBe('20 per 5 Stacks')
+    expect(isCustomRatio({ stat: 'Stacks' })).toBe(true)
+    expect(isCustomRatio({ stat: 'armor' })).toBe(false)
+    expect(isCustomRatio({ stat: 'Bonus AD' })).toBe(false)
+  })
+
+  it('assumes one unit of a custom value unless told otherwise', () => {
+    expect(assumedUnits({})).toBe(1)
+    expect(assumedUnits({ assumed: 4 })).toBe(4)
+    expect(assumedUnits({ assumed: 0 })).toBe(0)
+    expect(assumedUnits({ assumed: Number.NaN })).toBe(1)
   })
 })
 
@@ -105,6 +127,7 @@ describe('describing an effect on one line', () => {
 
   it('says so when there is nothing yet, and makes a name from a type', () => {
     expect(describeEffect({ type: 'stun' })).toBe('Stun · no numbers yet')
+    expect(describeEffect({ type: 'slow', base: [20], ratios: [{ stat: 'armor', part: 'bonus', per: 80, values: [1] }] })).toBe('Slow · 20% + 1% per 80 bonus armor')
     expect(describeEffect({ type: 'damage', base: [0, 0], ratios: [{ stat: 'ap', values: [0, 0] }] })).toBe('Damage · Physical · no numbers yet')
     expect(effectName('knock_up')).toBe('Knock up')
     expect(effectName('')).toBe('Effect')

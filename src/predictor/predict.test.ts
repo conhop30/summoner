@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import type { Ability, Champion, Effect } from '../champion/types'
+import type { Ability, Champion, Effect, RatioEntry } from '../champion/types'
 import type { ChampionCatalogEntry, ChampionCatalogStats } from '../championCatalog/types'
 import type { Item } from '../item/types'
 import { predictWinRate } from './predict'
 import { buildBodyProfile, bodyZ, BUILTIN_BODY_PROFILE, rosterBodyIndex } from './roster'
 import { totalsForBuild, goldValueOf } from './gold'
 import { combatantAt, REFERENCE_LEVEL } from './combatant'
-import { evaluateKit } from './kit'
+import { evaluateKit, TARGET_MAX_HEALTH } from './kit'
 import { emptyBonuses } from './gold'
 
 // Ahri's real Data Dragon stats, as a mage that is fully filled in.
@@ -267,7 +267,7 @@ describe('custom effects', () => {
 
 describe('structured ratios in the model', () => {
   const geared = combatantAt(MAGE_STATS, REFERENCE_LEVEL, { ...emptyBonuses(), attackDamage: 100, armor: 60, health: 500 })
-  function damageOf(ratio: { stat: string; part?: 'base' | 'bonus' | 'total' }): number {
+  function damageOf(ratio: Omit<RatioEntry, 'values'>): number {
     const k = mageKit()
     k.q = ability({ cooldown: [8, 8, 8, 8, 8], effects: [{ type: 'damage', damage_type: 'True', base: [0, 0, 0, 0, 0], ratios: [{ ...ratio, values: [1, 1, 1, 1, 1] }] }] })
     return evaluateKit(champion({}, k), geared).slots.find(s => s.slot === 'q')!.damagePerCast
@@ -289,9 +289,39 @@ describe('structured ratios in the model', () => {
     expect(damageOf({ stat: 'Magic Resist' })).toBeCloseTo(damageOf({ stat: 'magic_resist', part: 'total' }))
   })
 
-  it('counts a stat it cannot place, and the ones the items do not grant yet, for nothing', () => {
-    expect(damageOf({ stat: 'Stacks' })).toBe(0)
+  it('counts the stats the items do not grant yet for nothing', () => {
     expect(damageOf({ stat: 'lethality' })).toBe(0)
+    expect(damageOf({ stat: 'armor_pen' })).toBe(0)
+  })
+
+  it("scales per N continuously, in the effect's own unit", () => {
+    // 1 per 80 bonus armor at 60 bonus armor is 0.75, and at 120 would be 1.5: not stepped.
+    expect(damageOf({ stat: 'armor', part: 'bonus', per: 80 })).toBeCloseTo(60 / 80)
+    expect(damageOf({ stat: 'armor', part: 'bonus', per: 30 })).toBeCloseTo(2)
+    expect(damageOf({ stat: 'health', part: 'bonus', per: 100 })).toBeCloseTo(5)
+  })
+
+  it('prices a value the user named at the number they said to assume', () => {
+    expect(damageOf({ stat: 'Stacks' })).toBeCloseTo(1)
+    expect(damageOf({ stat: 'Stacks', assumed: 4 })).toBeCloseTo(4)
+    expect(damageOf({ stat: 'Stacks', assumed: 10, per: 5 })).toBeCloseTo(2)
+  })
+
+  it("reads the target's health", () => {
+    expect(damageOf({ stat: 'target_max_health' })).toBeCloseTo(TARGET_MAX_HEALTH)
+    expect(damageOf({ stat: 'target_missing_health' })).toBeLessThan(damageOf({ stat: 'target_max_health' }))
+    expect(damageOf({ stat: 'target_current_health' }) + damageOf({ stat: 'target_missing_health' })).toBeCloseTo(TARGET_MAX_HEALTH)
+  })
+
+  it('lets a control scale too: a stun that grows with ability power', () => {
+    const k = mageKit()
+    k.q = ability({ cooldown: [8, 8, 8, 8, 8], effects: [{ type: 'stun', base: [1, 1, 1, 1, 1], ratios: [{ stat: 'ap', per: 200, values: [1, 1, 1, 1, 1] }] }] })
+    const k2 = mageKit()
+    k2.q = ability({ cooldown: [8, 8, 8, 8, 8], effects: [{ type: 'stun', base: [1, 1, 1, 1, 1] }] })
+    const withAp = combatantAt(MAGE_STATS, REFERENCE_LEVEL, { ...emptyBonuses(), abilityPower: 200 })
+    const scaled = evaluateKit(champion({}, k), withAp).slots.find(s => s.slot === 'q')!.utility
+    const plain = evaluateKit(champion({}, k2), withAp).slots.find(s => s.slot === 'q')!.utility
+    expect(scaled).toBeCloseTo(plain * 2)
   })
 
   it('scales on the other stats too', () => {
