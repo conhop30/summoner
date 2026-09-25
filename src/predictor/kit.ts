@@ -1,4 +1,5 @@
 import type { AbilityBody, AbilitySlot, Champion, Effect } from '../champion/types'
+import { effectKind } from '../champion/effects'
 import type { Combatant } from './combatant'
 
 // Turns a champion's five abilities into rates of "damage-equivalent" value per second at the
@@ -21,6 +22,9 @@ const CC_WEIGHT: Record<string, number> = {
   stun: 1, knock_up: 1, charm: 1, fear: 1, silence: 0.6, knock_back: 0.4, slow: 0.5,
 }
 const DEFAULT_CC_SECONDS: Record<string, number> = { knock_back: 0.6, slow: 1.5 }
+/** A slow of this strength is what the slow price is quoted for; stronger or weaker scales from it. */
+const SLOW_REFERENCE_STRENGTH = 0.3
+const DEFAULT_SOFT_SECONDS = 1.5
 /** Flat per-cast values for effects that have no number worth reading. */
 const FLAT_UTILITY_VALUE: Record<string, number> = {
   dash: 40, speed_boost: 30, armor_modifier: 30, magic_resistance_modifier: 30,
@@ -98,26 +102,25 @@ function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant): Parts 
   const amount = base + (effect.ratios ?? []).reduce(
     (sum, r) => sum + ratioFraction(valueAt(r.values, rankIndex)) * statForRatio(r.stat, c), 0)
   const type = effect.type
+  const { family, unit } = effectKind(effect)
+  const explicit = valueAt(effect.duration, rankIndex)
 
-  if (type === 'damage') {
+  if (family === 'damage') {
     const mitigation = effect.damage_type === 'True' ? 1
       : 100 / (100 + (effect.damage_type === 'Magic' ? TARGET_MAGIC_RESIST : TARGET_ARMOR))
     parts.damage = Math.max(0, amount) * mitigation
-  } else if (type === 'heal') {
-    parts.sustain = Math.max(0, amount) * HEAL_WEIGHT
-  } else if (type === 'shield') {
-    parts.sustain = Math.max(0, amount) * SHIELD_WEIGHT
-  } else if (type in CC_WEIGHT) {
-    // The editor has no duration field, so a hard control's "Base per rank" is its length in
-    // seconds; a slow's is its strength as a percentage.
-    const explicit = valueAt(effect.duration, rankIndex)
-    if (type === 'slow') {
-      const strength = base > 1 ? Math.min(base, 100) / 100 : base > 0 ? base : 0.3
-      parts.utility = (explicit || DEFAULT_CC_SECONDS.slow) * CC_VALUE_PER_SECOND * CC_WEIGHT.slow * (strength / 0.3)
-    } else {
-      const seconds = explicit || (base > 0 && base <= 5 ? base : DEFAULT_CC_SECONDS[type] ?? 1)
-      parts.utility = seconds * CC_VALUE_PER_SECOND * CC_WEIGHT[type]
-    }
+  } else if (family === 'sustain') {
+    parts.sustain = Math.max(0, amount) * (type === 'shield' ? SHIELD_WEIGHT : HEAL_WEIGHT)
+  } else if (family === 'hard_control') {
+    // The editor has no duration field, so a hard control's base number is its length when its
+    // unit is seconds; otherwise it is priced at a default length for what it is.
+    const seconds = explicit || (unit === 'seconds' && base > 0 && base <= 5 ? base : DEFAULT_CC_SECONDS[type] ?? 1)
+    parts.utility = seconds * CC_VALUE_PER_SECOND * (CC_WEIGHT[type] ?? 1)
+  } else if (family === 'soft_control') {
+    // A soft control's base number is its strength as a percentage, or its length if the unit is seconds.
+    const strength = unit === 'percent' ? (base > 1 ? Math.min(base, 100) / 100 : base > 0 ? base : SLOW_REFERENCE_STRENGTH) : SLOW_REFERENCE_STRENGTH
+    const seconds = explicit || (unit === 'seconds' && base > 0 && base <= 5 ? base : DEFAULT_CC_SECONDS[type] ?? DEFAULT_SOFT_SECONDS)
+    parts.utility = seconds * CC_VALUE_PER_SECOND * (CC_WEIGHT[type] ?? CC_WEIGHT.slow) * (strength / SLOW_REFERENCE_STRENGTH)
   } else {
     parts.utility = FLAT_UTILITY_VALUE[type] ?? OTHER_UTILITY_VALUE
   }

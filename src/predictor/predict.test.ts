@@ -227,6 +227,44 @@ describe('kit evaluation', () => {
   })
 })
 
+describe('custom effects', () => {
+  const c = combatantAt(MAGE_STATS, REFERENCE_LEVEL, emptyBonuses())
+  function qWith(effects: Effect[]): Champion {
+    const k = mageKit()
+    k.q = ability({ cooldown: [8, 8, 8, 8, 8], effects })
+    return champion({}, k)
+  }
+  const utilityOfQ = (effects: Effect[]) => evaluateKit(qWith(effects), c).slots.find(s => s.slot === 'q')!.utility
+
+  it('prices a taunt like a stun once it is known to be hard control', () => {
+    const taunt = utilityOfQ([{ type: 'taunt', base: [1.5, 1.5, 1.5, 1.5, 1.5] }])
+    const stun = utilityOfQ([{ type: 'stun', base: [1.5, 1.5, 1.5, 1.5, 1.5] }])
+    expect(taunt).toBeGreaterThan(0)
+    expect(taunt).toBeCloseTo(stun, 10)
+  })
+
+  it('reads a custom control number as seconds only when its unit says so', () => {
+    const seconds = utilityOfQ([{ type: 'taunt', base: [3, 3, 3, 3, 3] }])
+    const percent = utilityOfQ([{ type: 'taunt', unit: 'percent', base: [3, 3, 3, 3, 3] }])
+    expect(seconds).toBeGreaterThan(percent)
+  })
+
+  it('follows the family picked, not the label', () => {
+    const asUtility = utilityOfQ([{ type: 'taunt', family: 'utility', base: [3, 3, 3, 3, 3] }])
+    const asHard = utilityOfQ([{ type: 'taunt', base: [3, 3, 3, 3, 3] }])
+    expect(asHard).toBeGreaterThan(asUtility)
+  })
+
+  it('counts a custom damage effect as damage, and a custom heal as sustain', () => {
+    const dmgKit = evaluateKit(qWith([{ type: 'scorch', family: 'damage', damage_type: 'Magic', base: [100, 100, 100, 100, 100] }]), c).slots.find(s => s.slot === 'q')!
+    expect(dmgKit.damage).toBeGreaterThan(0)
+    const healKit = evaluateKit(qWith([{ type: 'mend', base: [100, 100, 100, 100, 100] }]), c).slots.find(s => s.slot === 'q')!
+    expect(healKit.damage).toBe(0)
+    expect(healKit.sustain).toBe(0)
+    expect(evaluateKit(qWith([{ type: 'mend', family: 'sustain', base: [100, 100, 100, 100, 100] }]), c).slots.find(s => s.slot === 'q')!.sustain).toBeGreaterThan(0)
+  })
+})
+
 describe('build totals', () => {
   it('sums what the items grant and what they cost', () => {
     const t = totalsForBuild([APPLY(NLR), APPLY(HP, 2)], CATALOG)

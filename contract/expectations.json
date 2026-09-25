@@ -145,6 +145,9 @@
         80,
         80
       ],
+      "records.0.desktop.abilities.w.effects.1.type": "taunt",
+      "records.0.desktop.abilities.w.effects.1.family": "hard_control",
+      "records.0.desktop.abilities.w.effects.1.unit": "seconds",
       "records.0.desktop.abilities.r.max_rank": 3,
       "records.0.desktop.abilities.passive.max_rank": 5,
       "records.0.abilities.q.journal.tabs.0.name": "Scrapped",
@@ -376,6 +379,7 @@
         20,
         20
       ],
+      "records.0.desktop.abilities.q.effects.1.type": "sleep",
       "records.0.desktop.abilities.w.cooldown": [
         10,
         9
@@ -388,7 +392,9 @@
       "records.0.desktop.base_stats.bogus_stat",
       "records.0.desktop.abilities.q.cost",
       "records.0.desktop.abilities.q.effects.0.damage_type",
-      "records.0.desktop.abilities.q.effects.1"
+      "records.0.desktop.abilities.q.effects.2",
+      "records.0.desktop.abilities.q.effects.1.family",
+      "records.0.desktop.abilities.q.effects.1.unit"
     ]
   },
   "hostile-blocks.json": {

@@ -9,7 +9,7 @@ import type {
   AbilityBody, AbilityDetails, AbilitySlot, AbilityText, BlockDetails, BlockText, ChampionRecord, DesktopSection, Effect,
   IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RecastNumbers, RecastStruct, Scope,
 } from './types'
-import { FORMAT, SLOTS, VERSION } from './types'
+import { EFFECT_FAMILIES, EFFECT_UNITS, FORMAT, SLOTS, VERSION } from './types'
 
 export const LIMITS = {
   fileBytes: 100 * 1024 * 1024,
@@ -172,6 +172,8 @@ function sanitizeEffect(v: unknown, maxRank: number, warn: Warn, label: string):
   const type = text(v.type, LIMITS.short, warn, `${label} effect type`)
   if (!type) return undefined
   const effect: Effect = { type }
+  if ((EFFECT_FAMILIES as readonly unknown[]).includes(v.family)) effect.family = v.family as Effect['family']
+  if ((EFFECT_UNITS as readonly unknown[]).includes(v.unit)) effect.unit = v.unit as Effect['unit']
   if ((DAMAGE_TYPES as readonly unknown[]).includes(v.damage_type)) effect.damage_type = v.damage_type as Effect['damage_type']
   const base = rankArray(v.base, maxRank)
   if (base) effect.base = base

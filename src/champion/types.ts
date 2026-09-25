@@ -24,8 +24,15 @@ export interface RatioEntry {
   values: number[];
 }
 
+// What a custom effect behaves like, and what its base number measures. Built-in types have both
+// fixed; see effects.ts.
+export type EffectFamily = 'damage' | 'hard_control' | 'soft_control' | 'sustain' | 'utility';
+export type EffectUnit = 'seconds' | 'percent' | 'flat';
+
 export interface Effect {
   type: EffectType;
+  family?: EffectFamily;
+  unit?: EffectUnit;
   damage_type?: DamageType;
   base?: number[];
   ratios?: RatioEntry[];

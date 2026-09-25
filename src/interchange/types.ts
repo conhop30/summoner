@@ -27,8 +27,16 @@ export const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
 
 export interface RatioEntry { stat: string; values: number[] }
 
+// What a custom effect behaves like and what its base number measures (see the spec).
+export type EffectFamily = 'damage' | 'hard_control' | 'soft_control' | 'sustain' | 'utility'
+export type EffectUnit = 'seconds' | 'percent' | 'flat'
+export const EFFECT_FAMILIES: readonly EffectFamily[] = ['damage', 'hard_control', 'soft_control', 'sustain', 'utility']
+export const EFFECT_UNITS: readonly EffectUnit[] = ['seconds', 'percent', 'flat']
+
 export interface Effect {
   type: string
+  family?: EffectFamily
+  unit?: EffectUnit
   damage_type?: 'Physical' | 'Magic' | 'True'
   base?: number[]
   ratios?: RatioEntry[]

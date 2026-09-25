@@ -169,6 +169,15 @@
                   50,
                   80
                 ]
+              },
+              {
+                "type": "taunt",
+                "family": "hard_control",
+                "unit": "seconds",
+                "base": [
+                  1,
+                  1.5
+                ]
               }
             ]
           },

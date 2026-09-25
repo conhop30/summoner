@@ -109,7 +109,7 @@ write('full-with-stats.json', file('full', [
           ],
           extra: { recast: { max_recasts: 1, recast_window: 3 }, flavour: 'note' },
         },
-        w: { max_rank: 5, cooldown: [14, 13, 12], effects: [{ type: 'shield', base: [50, 80] }] },
+        w: { max_rank: 5, cooldown: [14, 13, 12], effects: [{ type: 'shield', base: [50, 80] }, { type: 'taunt', family: 'hard_control', unit: 'seconds', base: [1, 1.5] }] },
         r: { max_rank: 3 },
       },
     },
@@ -203,7 +203,7 @@ write('hostile-full-numbers.json', file('full', [{
     abilities: {
       q: {
         max_rank: 99, cooldown: [1e30, '12', null, 5, 6, 7, 8, 9], cost: 'free',
-        effects: [{ type: 'damage', damage_type: 'Fire', base: [10, 20] }, 'nonsense', { notes: 'no type' }],
+        effects: [{ type: 'damage', damage_type: 'Fire', base: [10, 20] }, 'nonsense', { notes: 'no type' }, { type: 'sleep', family: 'bogus', unit: 'gallons', base: [1] }],
       },
       w: { max_rank: 2, cooldown: [10, 9, 8, 7] },
       e: { max_rank: 'many' },
