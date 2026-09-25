@@ -1,3 +1,17 @@
+/* The stats and the always-visible win-rate rail. Narrow, the rail moves above the stats.
+   The Stats tab's shell is the container, since a container query can't restyle its own container. */
+.stat-block-shell { container-type: inline-size; }
+.stats-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-6);
+  align-items: start;
+}
+@container (max-width: 900px) {
+  .stats-stage { grid-template-columns: minmax(0, 1fr); }
+  .stats-stage .wr-panel { order: -1; position: static; }
+}
+
 .stats-panel {
   container-type: inline-size;
   display: flex;

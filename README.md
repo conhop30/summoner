@@ -14,6 +14,7 @@ Summoner is a champion design tool for people building original champion concept
 - A full **editor** for identity/lore, per-level base stat growth, and a five-slot ability kit (Passive + Q/W/E/R), backed by a scratch-space ability journal for notes that aren't ready to commit yet.
 - A **live item catalog** pulled directly from Riot's public Data Dragon feed, so the itemization data (gold costs, stats, stacking rules) is always accurate to the current patch, with zero API key or account required.
 - **Build theorycrafting** — up to four named, tabbed item builds per champion, with a real-time stat comparison against the champion's base stats.
+- An always-visible **win-rate projection** beside the stats: one number with a plus-or-minus band, what is driving it, and what would sharpen it. It is a projection from the numbers entered, not match data (see Engineering challenges).
 - A **showcase view** for presenting a finished concept (splash art, lore, and an icon-row/spotlight ability display) with a one-click downloadable poster image of the full kit.
 - **Settings** for theme, window behavior, an optional background-music player (pick a built-in song or add your own), and JSON export/import so a user's champion library can move between machines without any server.
 
@@ -49,6 +50,8 @@ A few problems came up during development that were non-obvious enough to be wor
 
 - **Attack speed growth is a percentage, and the app treated it as points.** Data Dragon's `attackspeedperlevel` of 2 means +2% of the base per level, but the View page added it to the base like any other stat, so a 0.658 attack speed read 34.7 at level 18 (and whole-number rounding flattened the small decimals that remained). The fix was not a one-line patch but a single `statSpec` module that records, per stat, whether it is a whole number or a decimal, how many decimals it keeps, and what unit its growth is in — every input, suggestion, lookup, level table and build comparison now goes through it, and a regression test pins the attack-speed case.
 
+- **There is no win-rate data to fit a predictor to, so the model has to say what it is.** Data Dragon publishes no win rates, and Riot's match API needs a key the project deliberately doesn't have. Worse, a spot check of Data Dragon's spell data showed every damage and effect value set to zero: the real numbers live in Riot's game client files, so the roster couldn't calibrate the kit either. What the roster does have is every champion's base stats, so the model is split by what can be checked. The stats half is calibrated: a champion's body (durability against both damage types, auto-attack damage, reach and speed, with the typical items for its class) is scored in standard deviations against the real champions of the same class, so a Tank is judged against Tanks. The kit half is a hand-tuned price list that turns each ability, at the rank it has by level 13, into damage-equivalent per second against a typical target (damage after resistances, crowd control per second, shields and heals at a discount, cooldowns after ability haste, a penalty when the mana pool can't pay for a rotation). Builds are compared at the same gold spend as a typical champion, so six items aren't rewarded for costing more than three. The output is percentage points around 50%, clamped to 43–57, with a plus-or-minus that widens for every gap (missing stats, keys with no numbers, no build, an unsynced roster), and the panel says plainly that it is a projection. Two mistakes are worth recording: counting auto-attack damage fully for a mage made a build of attack damage look better than a build of ability power, and scoring the *build-modified* body against how much real champions' base stats vary (a few percent) over-penalised any glass-cannon build, since builds vary far more. Both are pinned by tests; the second is why what a build changes is scored separately from the champion's own stats.
+
 ## Project layout
 
 ```
@@ -56,6 +59,7 @@ electron/         Main process (main.ts) + preload bridge (preload.ts) — the o
 src/db/           SQLite schema + connection (single file in the OS user-data directory)
 src/champion/     Champion domain types, CRUD, and derived logic — imported by both main and renderer
 src/item/         Item domain types, Data Dragon sync, and build/stacking logic — imported by both main and renderer
+src/predictor/    The win-rate projection: pure functions from a champion, the item catalog and the roster to a prediction
 src/settings/     Settings domain types and CRUD
 src/gallery/      Renderer UI — champion gallery
 src/editor/       Renderer UI — champion editor, ability journal, and the showcase "view" page
@@ -67,7 +71,7 @@ src/router/       createHashRouter route table
 ## Testing
 
 ```
-npm test          # pure logic under plain Node (stat rules, Data Dragon mapping, builds and stacking, item parsing/sorting, settings, splash crop maths)
+npm test          # pure logic under plain Node (stat rules, Data Dragon mapping, builds and stacking, item parsing/sorting, settings, splash crop maths, the win-rate model)
 npm run test:db   # champion/settings/roster persistence and schema upgrades against real SQLite, run under Electron's Node
 ```
 
@@ -76,6 +80,7 @@ Vitest, with tests beside the code (`*.test.ts`). `better-sqlite3` is compiled f
 ## Roadmap
 
 **Recently shipped**
+- Win-rate projection: an always-visible rail on the Stats tab. It shows the projected win rate with a ± band and a confidence label, a bar for each contributor (stats, damage, control and sustain, build), the kit as the model reads it at level 13, and hints for what to fill in. It recomputes as you edit. The stats half is calibrated on the synced roster by class (built-in patch 16.19.1 numbers until you sync); the kit half is hand-tuned. The model lives in `src/predictor/` as pure functions with 27 tests, mutation-checked (same-spend scaling, true damage, ability haste and class-relative scoring each make one fail).
 - Multi-build theorycrafting (tabbed builds, stat comparison) on both the champion editor and the standalone item browser.
 - Redesigned showcase/"View" page: icon-row + spotlight ability display, splash-art-forward layout, downloadable full-kit poster.
 - App-wide text contrast and section-header sizing pass.
@@ -110,7 +115,7 @@ Vitest, with tests beside the code (`*.test.ts`). `better-sqlite3` is compiled f
 - A couple of stray test build tabs from development were left on a sample champion record and should be cleaned up via the UI.
 
 **Planned next**
-- Win-rate predictor: an always-visible panel that projects a win rate from the champion's stats. The layout restructure freed the width for it; the design is still to come.
+- Nothing committed. Ideas: fetch each champion's real ability numbers from a source that has them (Data Dragon's are zeroed) so the kit half can be calibrated too; a win-rate comparison between a champion's saved builds.
 
 **Not yet started / open ideas**
 - Roadmap items get added here as new feature work is planned — keep this section current rather than letting it drift from what's actually built.

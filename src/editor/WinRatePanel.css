@@ -1,0 +1,171 @@
+.wr-panel {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.wr-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.wr-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+/* The tip sits at the top of a scrolling pane, so it opens downward and stays inside the rail. */
+.wr-panel .help-tip-pop {
+  bottom: auto;
+  top: calc(100% + 8px);
+  left: auto;
+  right: -6px;
+  width: 260px;
+}
+
+.wr-empty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.wr-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+.wr-number {
+  font-size: var(--font-size-3xl);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-bright);
+  font-variant-numeric: tabular-nums;
+}
+.wr-band {
+  font-size: var(--font-size-md);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.wr-confidence {
+  margin-left: auto;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--border-default);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.wr-confidence-good { color: var(--text-accent-gold); border-color: var(--tag-gold-border); }
+
+.wr-track {
+  position: relative;
+  height: 6px;
+  margin-top: var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+}
+.wr-track-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--accent-gold-dim-hover);
+  border-left: 1px solid var(--tag-gold-border);
+  border-right: 1px solid var(--tag-gold-border);
+}
+.wr-track-mid {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  background: var(--border-strong);
+}
+.wr-track-marker {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent-gold);
+}
+.wr-track-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.wr-section {
+  margin-top: var(--space-3);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.wr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.wr-driver {
+  display: grid;
+  grid-template-columns: 112px 1fr 40px;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-body);
+}
+.wr-driver-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wr-driver-bar { position: relative; height: 6px; background: var(--bg-input); }
+.wr-driver-bar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--border-strong);
+}
+.wr-driver-fill { position: absolute; top: 0; bottom: 0; }
+.wr-driver-fill.up { background: var(--accent-gold); }
+.wr-driver-fill.down { background: var(--accent-danger); opacity: 0.75; }
+.wr-driver-value { text-align: right; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+.wr-slot {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-body);
+}
+.wr-slot-key { color: var(--accent-gold); font-weight: 600; text-align: center; }
+.wr-slot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wr-slot-summary { color: var(--text-muted); font-size: var(--font-size-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wr-slot.unscored .wr-slot-name { color: var(--text-muted); }
+
+.wr-hints {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-muted);
+}

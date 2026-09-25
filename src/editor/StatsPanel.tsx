@@ -3,6 +3,7 @@ import { BASE_STATS, HIDDEN_STATS, type StatFieldDef } from './statFields'
 import Workbench, { type WorkbenchView } from './Workbench'
 import StatSuggestions from './StatSuggestions'
 import StatLookup from './StatLookup'
+import WinRatePanel from './WinRatePanel'
 import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
 import { parseStatInput, normalizeBaseStats, inputStep, statSpecFor } from '../champion/statSpec'
 import './StatsPanel.css'
@@ -59,40 +60,43 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench 
   }
 
   return (
-    <div className="stats-panel">
-      <div className="sp-group">
-        <div className="sp-group-title-row">
-          <div className="sp-group-title">Base stats</div>
-          <StatSuggestions champion={champion} catalogState={catalogState} onAccept={acceptSuggestion} />
-        </div>
-        <StatLookup catalogState={catalogState} />
-        <div className="sp-grid">
-          {BASE_STATS.map(f => (
-            <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />
-          ))}
-          <div className="sp-field">
-            <div className="sp-field-header">
-              <span className="sp-icon">◎</span>
-              <span className="sp-label">Attack Range</span>
-            </div>
-            <div className="sp-inputs">
-              <input className="sp-input" type="number" placeholder="Range"
-                value={stats.attack_range?.[0] ?? ''} onChange={e => updateAttackRange(e.target.value)} />
+    <div className="stats-stage">
+      <div className="stats-panel">
+        <div className="sp-group">
+          <div className="sp-group-title-row">
+            <div className="sp-group-title">Base stats</div>
+            <StatSuggestions champion={champion} catalogState={catalogState} onAccept={acceptSuggestion} />
+          </div>
+          <StatLookup catalogState={catalogState} />
+          <div className="sp-grid">
+            {BASE_STATS.map(f => (
+              <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />
+            ))}
+            <div className="sp-field">
+              <div className="sp-field-header">
+                <span className="sp-icon">◎</span>
+                <span className="sp-label">Attack Range</span>
+              </div>
+              <div className="sp-inputs">
+                <input className="sp-input" type="number" placeholder="Range"
+                  value={stats.attack_range?.[0] ?? ''} onChange={e => updateAttackRange(e.target.value)} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="sp-group">
-        <div className="sp-group-title">Hidden stats</div>
-        <div className="sp-grid">
-          {HIDDEN_STATS.map(f => (
-            <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />
-          ))}
+        <div className="sp-group">
+          <div className="sp-group-title">Hidden stats</div>
+          <div className="sp-grid">
+            {HIDDEN_STATS.map(f => (
+              <StatField key={f.valueKey} {...f} champion={champion} onChange={onChange} />
+            ))}
+          </div>
         </div>
-      </div>
 
-      <Workbench champion={champion} onChange={onChange} view={workbench} onView={onWorkbench} />
+        <Workbench champion={champion} onChange={onChange} view={workbench} onView={onWorkbench} />
+      </div>
+      <WinRatePanel champion={champion} roster={catalogState.catalog} />
     </div>
   )
 }
