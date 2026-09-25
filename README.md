@@ -14,7 +14,7 @@ Summoner is a champion design tool for people building original champion concept
 - A full **editor** for identity/lore, per-level base stat growth, and a five-slot ability kit (Passive + Q/W/E/R), backed by a scratch-space ability journal for notes that aren't ready to commit yet.
 - A **live item catalog** pulled directly from Riot's public Data Dragon feed, so the itemization data (gold costs, stats, stacking rules) is always accurate to the current patch, with zero API key or account required.
 - **Build theorycrafting** — up to four named, tabbed item builds per champion, with a real-time stat comparison against the champion's base stats.
-- An always-visible **win-rate projection** beside the stats: one number with a plus-or-minus band, what is driving it, and what would sharpen it. It is a projection from the numbers entered, not match data (see Engineering challenges).
+- An always-visible **win-rate projection** in a slim bar pinned above the stats: one number with a plus-or-minus band and what is driving it, with a Details drop-down for the kit breakdown and what would sharpen it. It is a projection from the numbers entered, not match data (see Engineering challenges).
 - A **showcase view** for presenting a finished concept (splash art, lore, and an icon-row/spotlight ability display) with a one-click downloadable poster image of the full kit.
 - **Settings** for theme, window behavior, an optional background-music player (pick a built-in song or add your own), and JSON export/import so a user's champion library can move between machines without any server.
 
@@ -80,7 +80,7 @@ Vitest, with tests beside the code (`*.test.ts`). `better-sqlite3` is compiled f
 ## Roadmap
 
 **Recently shipped**
-- Win-rate projection: an always-visible rail on the Stats tab. It shows the projected win rate with a ± band and a confidence label, a bar for each contributor (stats, damage, control and sustain, build), the kit as the model reads it at level 13, and hints for what to fill in. It recomputes as you edit. The stats half is calibrated on the synced roster by class (built-in patch 16.19.1 numbers until you sync); the kit half is hand-tuned. The model lives in `src/predictor/` as pure functions with 27 tests, mutation-checked (same-spend scaling, true damage, ability haste and class-relative scoring each make one fail).
+- Win-rate projection: an always-visible bar pinned to the top of the Stats tab (a side rail was tried first and squeezed the item shop, so it became a slim bar that leaves the whole width to the content below). It shows the projected win rate with a ± band, a confidence label and the four contributors; Details drops the breakdown over the page (a bar for each contributor, the kit as the model reads it at level 13, and hints for what to fill in), and closes on Escape or an outside click. It recomputes as you edit. The stats half is calibrated on the synced roster by class (built-in patch 16.19.1 numbers until you sync); the kit half is hand-tuned. The model lives in `src/predictor/` as pure functions with 27 tests, mutation-checked (same-spend scaling, true damage, ability haste and class-relative scoring each make one fail).
 - Multi-build theorycrafting (tabbed builds, stat comparison) on both the champion editor and the standalone item browser.
 - Redesigned showcase/"View" page: icon-row + spotlight ability display, splash-art-forward layout, downloadable full-kit poster.
 - App-wide text contrast and section-header sizing pass.

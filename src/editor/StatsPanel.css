@@ -1,16 +1,7 @@
-/* The stats and the always-visible win-rate rail. Narrow, the rail moves above the stats.
-   The Stats tab's shell is the container, since a container query can't restyle its own container. */
+/* The always-visible win-rate bar sits above the stats and stays pinned while they scroll.
+   The Stats tab's shell is the container, so the bar can drop its detail chips in a narrow window. */
 .stat-block-shell { container-type: inline-size; }
-.stats-stage {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: var(--space-6);
-  align-items: start;
-}
-@container (max-width: 900px) {
-  .stats-stage { grid-template-columns: minmax(0, 1fr); }
-  .stats-stage .wr-panel { order: -1; position: static; }
-}
+.stats-stage { display: flex; flex-direction: column; gap: var(--space-4); }
 
 .stats-panel {
   container-type: inline-size;

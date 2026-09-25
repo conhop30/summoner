@@ -61,6 +61,7 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench 
 
   return (
     <div className="stats-stage">
+      <WinRatePanel champion={champion} roster={catalogState.catalog} />
       <div className="stats-panel">
         <div className="sp-group">
           <div className="sp-group-title-row">
@@ -96,7 +97,6 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench 
 
         <Workbench champion={champion} onChange={onChange} view={workbench} onView={onWorkbench} />
       </div>
-      <WinRatePanel champion={champion} roster={catalogState.catalog} />
     </div>
   )
 }
