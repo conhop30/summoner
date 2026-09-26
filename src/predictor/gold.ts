@@ -27,23 +27,26 @@ export function emptyBonuses(): ItemBonuses {
   }
 }
 
-// Gold per point of each stat, from the League wiki's item gold-efficiency table: the price of the
-// basic item that grants only that stat (Long Sword 350g for 10 AD is 35g each, and so on).
+// Gold per point of each stat, from the League wiki's gold-efficiency page (a community-derived
+// proxy, not official Riot data): the price of the cheapest item that grants only that stat, so Long
+// Sword's 350g for 10 AD is 35g each. Sources:
+//   https://wiki.leagueoflegends.com/en-us/Gold_efficiency
+//   https://wiki.leagueoflegends.com/en-us/Module:Gold_value/data
 // Percentages are per 1.0 (100%), so attack speed's "25g per 1%" is 2500 here.
 export const GOLD_PER: Record<keyof ItemBonuses, number> = {
   health: 2.6667,
-  mana: 1.4,
+  mana: 1,
   armor: 20,
-  magicResist: 18,
+  magicResist: 20,
   attackDamage: 35,
-  abilityPower: 21.75,
+  abilityPower: 20,
   attackSpeed: 2500,
   critChance: 4000,
-  abilityHaste: 26.67,
+  abilityHaste: 50,
   moveSpeedFlat: 12,
-  moveSpeedPercent: 3960,
-  lifeSteal: 2670,
-  omnivamp: 2750,
+  moveSpeedPercent: 6510.5,
+  lifeSteal: 5355,
+  omnivamp: 4600,
 }
 
 export function goldValueOf(bonuses: ItemBonuses): number {
