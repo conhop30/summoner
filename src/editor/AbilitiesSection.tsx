@@ -5,6 +5,7 @@ import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, Ab
 import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, unitSuffix } from '../champion/effects'
 import DescriptionField from './DescriptionField'
 import { effectTokenNames, renamesBetween, retargetTokens } from '../champion/descriptionTokens'
+import { addStatPart, flatToStat, hasFlatPart, removeFlatPart, statToFlat } from '../champion/terms'
 import { PART_LABELS, PER_DEFAULT, RATIO_STATS, assumedUnits, ratioStatDef, resolveRatio } from '../champion/ratios'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
@@ -14,6 +15,20 @@ import './AbilitiesSection.css'
 const CUSTOM_EFFECT = '__custom__'
 // The same for a scaler that is a value the user names themselves (stacks) rather than a stat.
 const CUSTOM_RATIO = '__custom__'
+const FLAT_SOURCE = '__flat__'
+
+// The stats an amount part can scale with, shared by every part's source select.
+function StatOptions() {
+  return (
+    <>
+      {RATIO_STATS.filter(d => !d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+      <optgroup label="The target's">
+        {RATIO_STATS.filter(d => d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+      </optgroup>
+      <option value={CUSTOM_RATIO}>Custom value…</option>
+    </>
+  )
+}
 
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
 
@@ -152,12 +167,25 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     onUpdate({ effects })
   }
 
-  function addRatio(effectIndex: number) {
+  function replaceEffect(effectIndex: number, next: Effect) {
     const effects = [...(body.effects ?? [])]
-    const effect = effects[effectIndex]
-    const ratios = [...(effect.ratios ?? []), { stat: 'ap', part: 'total', values: Array(maxRank).fill(0) } as RatioEntry]
-    effects[effectIndex] = { ...effect, ratios }
+    effects[effectIndex] = next
     onUpdate({ effects })
+  }
+
+  function addRatio(effectIndex: number) {
+    replaceEffect(effectIndex, addStatPart((body.effects ?? [])[effectIndex], { stat: 'ap', part: 'total', values: Array(maxRank).fill(0) }))
+  }
+
+  // The source select on the flat row: a stat moves the flat numbers into a scaler on it.
+  function changeFlatSource(effectIndex: number, source: string) {
+    const effect = (body.effects ?? [])[effectIndex]
+    if (source === CUSTOM_RATIO) {
+      setTypingValue(`${effectIndex}:${(effect.ratios ?? []).length}`)
+      replaceEffect(effectIndex, flatToStat(effect, '', maxRank))
+    } else {
+      replaceEffect(effectIndex, flatToStat(effect, source, maxRank))
+    }
   }
 
   function updateRatio(effectIndex: number, ratioIndex: number, partial: Partial<RatioEntry>) {
@@ -372,20 +400,34 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                   )}
 
                   <div className="effect-subfield">
-                    <span className="effect-subfield-label">Base per rank{unitSuffix(kind.unit)}</span>
-                    <RankValueField
-                      values={effect.base}
-                      maxRank={maxRank}
-                      onChange={(rankIndex, raw) => updateEffectBase(i, rankIndex, raw)}
-                      onBulkChange={values => updateEffectBaseAll(i, values)}
-                    />
-                  </div>
-
-                  <div className="effect-subfield">
                     <div className="effect-subfield-header">
-                      <span className="effect-subfield-label">Ratios</span>
-                      <button className="add-effect-btn" onClick={() => addRatio(i)}>+ Add Ratio</button>
+                      <span className="effect-subfield-label">Amount</span>
+                      <button className="add-effect-btn" onClick={() => addRatio(i)}>+ Add part</button>
                     </div>
+                    {hasFlatPart(effect) && (
+                      <div className="ratio-row">
+                        <div className="ratio-row-head">
+                          <select
+                            className="effect-type-select ratio-stat-select"
+                            value={FLAT_SOURCE}
+                            onChange={e => changeFlatSource(i, e.target.value)}
+                            aria-label="Amount is"
+                          >
+                            <option value={FLAT_SOURCE}>Flat amount{unitSuffix(kind.unit)}</option>
+                            <StatOptions />
+                          </select>
+                          {(effect.ratios ?? []).length > 0 && (
+                            <button className="remove-effect-btn" onClick={() => replaceEffect(i, removeFlatPart(effect))} aria-label="Remove the flat amount">×</button>
+                          )}
+                        </div>
+                        <RankValueField
+                          values={effect.base}
+                          maxRank={maxRank}
+                          onChange={(rankIndex, raw) => updateEffectBase(i, rankIndex, raw)}
+                          onBulkChange={values => updateEffectBaseAll(i, values)}
+                        />
+                      </div>
+                    )}
                     {(effect.ratios ?? []).map((ratio, ri) => {
                       const resolved = resolveRatio(ratio)
                       const ratioKey = `${i}:${ri}`
@@ -399,7 +441,10 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                               className="effect-type-select ratio-stat-select"
                               value={custom ? CUSTOM_RATIO : resolved!.stat}
                               onChange={e => {
-                                if (e.target.value === CUSTOM_RATIO) {
+                                if (e.target.value === FLAT_SOURCE) {
+                                  setTypingValue(null)
+                                  replaceEffect(i, statToFlat(effect, ri))
+                                } else if (e.target.value === CUSTOM_RATIO) {
                                   setTypingValue(ratioKey)
                                   updateRatio(i, ri, { stat: '', part: undefined })
                                 } else {
@@ -409,11 +454,8 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                               }}
                               aria-label="Scales with"
                             >
-                              {RATIO_STATS.filter(d => !d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-                              <optgroup label="The target's">
-                                {RATIO_STATS.filter(d => d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-                              </optgroup>
-                              <option value={CUSTOM_RATIO}>Custom value…</option>
+                              <option value={FLAT_SOURCE} disabled={hasFlatPart(effect)}>Flat amount{unitSuffix(kind.unit)}</option>
+                              <StatOptions />
                             </select>
                             {parts.length > 1 && (
                               <select
