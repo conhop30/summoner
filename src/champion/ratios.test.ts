@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RATIO_STATS, assumedUnits, describeRatio, isCustomRatio, normalizeRatio, ratioFraction, ratioStatDef, resolveRatio } from './ratios'
+import { RATIO_STATS, assumedUnits, describeRatio, isCustomRatio, normalizeRatio, percentToRatio, ratioFraction, ratioStatDef, ratioToPercent, resolveRatio } from './ratios'
 import { describeEffect, effectName } from './effects'
 
 describe('the ratio vocabulary', () => {
@@ -131,5 +131,30 @@ describe('describing an effect on one line', () => {
     expect(describeEffect({ type: 'damage', base: [0, 0], ratios: [{ stat: 'ap', values: [0, 0] }] })).toBe('Damage · Physical · no numbers yet')
     expect(effectName('knock_up')).toBe('Knock up')
     expect(effectName('')).toBe('Effect')
+  })
+})
+
+describe('typing a ratio as a percentage', () => {
+  it('shows a stored ratio as the percentage it is', () => {
+    expect(ratioToPercent(0.45)).toBe(45)
+    expect(ratioToPercent(0.175)).toBe(17.5)
+    expect(ratioToPercent(1.5)).toBe(150)
+    expect(ratioToPercent(-0.3)).toBe(-30)
+  })
+
+  it('shows an old ratio that was typed as a percentage the same way', () => {
+    expect(ratioToPercent(45)).toBe(45)
+  })
+
+  it('stores what was typed as a ratio, without floating-point crumbs', () => {
+    expect(percentToRatio(45)).toBe(0.45)
+    expect(percentToRatio(17.5)).toBe(0.175)
+    expect(percentToRatio(0)).toBe(0)
+    expect(percentToRatio(-30)).toBe(-0.3)
+  })
+
+  it('round-trips, and never stores a ratio that would be read as a percentage', () => {
+    for (const p of [1, 7, 33.3, 60, 250, 500]) expect(ratioToPercent(percentToRatio(p))).toBe(p)
+    expect(ratioToPercent(percentToRatio(900))).toBe(500)
   })
 })

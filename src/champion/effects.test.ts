@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, STAT_CHANGE_DEFAULTS, defaultUnitFor, describeEffect, effectKind, guessFamily, isBuiltInEffect, statChangeOf, unitSuffix } from './effects'
+import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, STAT_CHANGE_DEFAULTS, defaultTokenName, defaultUnitFor, effectTypeLabel, describeEffect, effectKind, guessFamily, isBuiltInEffect, statChangeOf, unitSuffix } from './effects'
 import { ratioStatDef } from './ratios'
 import type { Effect } from './types'
 
@@ -79,5 +79,15 @@ describe('stat changes', () => {
 
   it('only offers stats the picker knows', () => {
     for (const id of CHANGEABLE_STATS) expect(ratioStatDef(id)).toBeTruthy()
+  })
+})
+
+describe('naming an effect', () => {
+  it('says what a stat change does in the picker, and calls it after its stat in a description', () => {
+    expect(effectTypeLabel('stat_change')).toBe('Raise or lower a stat')
+    expect(effectTypeLabel('knock_up')).toBe('Knock up')
+    expect(defaultTokenName({ type: 'stat_change', stat: 'magic_resist' })).toBe('Magic Resist')
+    expect(defaultTokenName({ type: 'stat_change' })).toBe('Armor')
+    expect(defaultTokenName({ type: 'damage' })).toBe('Damage')
   })
 })

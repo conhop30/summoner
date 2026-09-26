@@ -45,3 +45,10 @@ input, textarea, select {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-strong);
 }
+/* Number boxes that are still native (the base stats) lose their up/down stepper. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; }

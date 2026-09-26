@@ -127,6 +127,17 @@ export function ratioFraction(v: number): number {
   return Math.abs(v) > 5 ? v / 100 : v
 }
 
+/** A ratio as the person typing it reads it: 0.45 is 45 (and an old 45, already a percentage, stays 45). */
+export function ratioToPercent(v: number): number {
+  return Math.round(ratioFraction(v) * 1e6) / 1e4
+}
+
+/** The ratio to keep for a percentage someone typed: 45 is stored as 0.45. Capped at 500%, past which a stored ratio would be read as a percentage. */
+export function percentToRatio(percent: number): number {
+  const capped = Math.max(-500, Math.min(500, percent))
+  return Math.round(capped * 1e4) / 1e6
+}
+
 function trim(n: number): string {
   return String(Math.round(n * 10) / 10)
 }

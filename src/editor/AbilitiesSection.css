@@ -591,3 +591,15 @@
   color: var(--text-accent-gold);
   background: var(--accent-gold-dim);
 }
+/* A number box with its unit inside it. */
+.num-field { position: relative; display: inline-flex; }
+.num-field .rank-input { padding-right: 22px; }
+.num-suffix {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  pointer-events: none;
+}

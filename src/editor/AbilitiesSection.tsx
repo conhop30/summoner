@@ -2,11 +2,12 @@ import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal, StatChangeDirection, StatChangeTarget } from '../champion/types'
-import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, DIRECTION_OPTIONS, FAMILY_OPTIONS, STAT_CHANGE, STAT_CHANGE_DEFAULTS, TARGET_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, statChangeOf, unitSuffix } from '../champion/effects'
+import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, DIRECTION_OPTIONS, FAMILY_OPTIONS, STAT_CHANGE, STAT_CHANGE_DEFAULTS, TARGET_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectTypeLabel, isBuiltInEffect, statChangeOf, unitSuffix } from '../champion/effects'
 import DescriptionField from './DescriptionField'
+import NumberField from './NumberField'
 import { effectTokenNames, renamesBetween, retargetTokens } from '../champion/descriptionTokens'
 import { addStatPart, flatToStat, hasFlatPart, removeFlatPart, statToFlat } from '../champion/terms'
-import { PART_LABELS, PER_DEFAULT, RATIO_STATS, assumedUnits, ratioStatDef, resolveRatio } from '../champion/ratios'
+import { PART_LABELS, PER_DEFAULT, RATIO_STATS, assumedUnits, percentToRatio, ratioStatDef, ratioToPercent, resolveRatio } from '../champion/ratios'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
 import './AbilitiesSection.css'
@@ -30,6 +31,11 @@ function StatOptions() {
   )
 }
 
+// The unit shown inside an amount's boxes: none for a flat amount, since the box says what it is.
+function unitSuffixShort(unit: EffectUnit): string | undefined {
+  return unit === 'percent' ? '%' : unit === 'seconds' ? 's' : undefined
+}
+
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
 
 const BLOCK_KINDS: { value: AbilityBlockKind; label: string }[] = [
@@ -38,47 +44,54 @@ const BLOCK_KINDS: { value: AbilityBlockKind; label: string }[] = [
   { value: 'recast', label: 'Recast' },
 ]
 
-// After the first two ranks are filled in, suggest the arithmetic step between
-// them as the scaling rule for the rest — the user accepts or keeps typing manually.
-function RankValueField({ values, maxRank, onChange, onBulkChange }: {
+// One box per rank. After the first two ranks are filled in, suggest the arithmetic step between
+// them as the scaling rule for the rest — the user accepts or keeps typing manually. `percent` is for
+// a ratio (a share of a stat): the person types 45 and 0.45 is what is kept. `suffix` puts a unit
+// inside each box.
+function RankValueField({ values, maxRank, onChange, onBulkChange, percent = false, suffix }: {
   values: number[] | undefined
   maxRank: number
-  onChange: (rankIndex: number, raw: string) => void
+  onChange: (rankIndex: number, value: number) => void
   onBulkChange: (newValues: number[]) => void
+  percent?: boolean
+  suffix?: string
 }) {
   const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
-  const v0 = values?.[0]
-  const v1 = values?.[1]
-  const hasStep = maxRank > 2 && v0 !== undefined && v1 !== undefined
+  // Everything below works in what is shown in the boxes; `store` turns it back into what is kept.
+  const show = (v: number | undefined) => (v === undefined ? undefined : percent ? ratioToPercent(v) : v)
+  const store = (n: number) => (percent ? percentToRatio(n) : n)
+  const shown = rankIndices.map(i => show(values?.[i]))
+  const v0 = shown[0]
+  const v1 = shown[1]
+  // A second rank left blank (which is stored as 0) isn't a step to continue.
+  const hasStep = maxRank > 2 && v0 !== undefined && v1 !== undefined && v1 !== 0
   const step = hasStep ? Math.round((v1! - v0!) * 100) / 100 : 0
   const projected = hasStep
-    ? rankIndices.map(i => (i < 2 ? values![i] : Math.round((v0! + step * i) * 100) / 100))
+    ? rankIndices.map(i => (i < 2 ? shown[i]! : Math.round((v0! + step * i) * 100) / 100))
     : []
-  const suggestionApplicable = hasStep && rankIndices.slice(2).some(i => (values?.[i] ?? 0) !== projected[i])
+  const suggestionApplicable = hasStep && rankIndices.slice(2).some(i => (shown[i] ?? 0) !== projected[i])
 
   // A single bulk update, not N sequential onChange calls — the latter would each
   // read the same pre-update `ability` prop and clobber one another (only the last wins).
   function acceptSuggestion() {
-    onBulkChange(rankIndices.map(i => (i < 2 ? (values?.[i] ?? 0) : projected[i])))
+    onBulkChange(rankIndices.map(i => store(i < 2 ? (shown[i] ?? 0) : projected[i])))
   }
 
   return (
     <div className="rank-value-field">
       <div className="rank-inputs">
         {rankIndices.map(i => (
-          <input
+          <NumberField
             key={i}
-            className="rank-input"
-            type="number"
-            placeholder="0"
-            value={values?.[i] ?? ''}
-            onChange={e => onChange(i, e.target.value)}
+            value={shown[i]}
+            suffix={percent ? '%' : suffix}
+            onChange={n => onChange(i, store(n))}
           />
         ))}
       </div>
       {suggestionApplicable && (
         <button className="rank-suggestion-chip" onClick={acceptSuggestion}>
-          Suggest {step >= 0 ? '+' : ''}{step} per rank — Accept
+          Suggest {step >= 0 ? '+' : ''}{step}{percent ? '%' : ''} per rank — Accept
         </button>
       )}
     </div>
@@ -111,10 +124,10 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     })
   }
 
-  function updateRankArray(key: 'cooldown' | 'cost', index: number, raw: string) {
+  function updateRankArray(key: 'cooldown' | 'cost', index: number, value: number) {
     const current = body[key] ?? Array(maxRank).fill(0)
     const updated = [...current]
-    updated[index] = raw === '' ? 0 : parseFloat(raw)
+    updated[index] = value
     onUpdate({ [key]: updated })
   }
 
@@ -155,12 +168,12 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     setTypingValue(null)
   }
 
-  function updateEffectBase(effectIndex: number, rankIndex: number, raw: string) {
+  function updateEffectBase(effectIndex: number, rankIndex: number, value: number) {
     const effects = [...(body.effects ?? [])]
     const effect = effects[effectIndex]
     const current = effect.base ?? Array(maxRank).fill(0)
     const updated = [...current]
-    updated[rankIndex] = raw === '' ? 0 : parseFloat(raw)
+    updated[rankIndex] = value
     effects[effectIndex] = { ...effect, base: updated }
     onUpdate({ effects })
   }
@@ -171,10 +184,10 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     onUpdate({ effects })
   }
 
-  function updateEffectDuration(effectIndex: number, rankIndex: number, raw: string) {
+  function updateEffectDuration(effectIndex: number, rankIndex: number, value: number) {
     const effect = (body.effects ?? [])[effectIndex]
     const updated = [...(effect.duration ?? Array(maxRank).fill(0))]
-    updated[rankIndex] = raw === '' ? 0 : parseFloat(raw)
+    updated[rankIndex] = value
     updateEffect(effectIndex, { duration: updated })
   }
 
@@ -215,14 +228,14 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     updateRatio(effectIndex, ratioIndex, { stat, part: current && parts.includes(current.part) ? current.part : 'total', assumed: undefined })
   }
 
-  function updateRatioValue(effectIndex: number, ratioIndex: number, rankIndex: number, raw: string) {
+  function updateRatioValue(effectIndex: number, ratioIndex: number, rankIndex: number, value: number) {
     const effects = [...(body.effects ?? [])]
     const effect = effects[effectIndex]
     const ratios = [...(effect.ratios ?? [])]
     const ratio = ratios[ratioIndex]
     const current = ratio.values ?? Array(maxRank).fill(0)
     const updated = [...current]
-    updated[rankIndex] = raw === '' ? 0 : parseFloat(raw)
+    updated[rankIndex] = value
     ratios[ratioIndex] = { ...ratio, values: updated }
     effects[effectIndex] = { ...effect, ratios }
     onUpdate({ effects })
@@ -270,14 +283,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
         </div>
         <div className="rank-inputs">
           {rankIndices.map(i => (
-            <input
-              key={i}
-              className="rank-input"
-              type="number"
-              placeholder="0"
-              value={body.cooldown?.[i] ?? ''}
-              onChange={e => updateRankArray('cooldown', i, e.target.value)}
-            />
+            <NumberField key={i} value={body.cooldown?.[i]} onChange={n => updateRankArray('cooldown', i, n)} />
           ))}
         </div>
       </div>
@@ -295,14 +301,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
         </div>
         <div className="rank-inputs">
           {rankIndices.map(i => (
-            <input
-              key={i}
-              className="rank-input"
-              type="number"
-              placeholder="0"
-              value={body.cost?.[i] ?? ''}
-              onChange={e => updateRankArray('cost', i, e.target.value)}
-            />
+            <NumberField key={i} value={body.cost?.[i]} onChange={n => updateRankArray('cost', i, n)} />
           ))}
         </div>
       </div>
@@ -340,7 +339,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                       }}
                       aria-label="Effect type"
                     >
-                      {BUILT_IN_EFFECT_TYPES.map(t => <option key={t} value={t}>{effectName(t)}</option>)}
+                      {BUILT_IN_EFFECT_TYPES.map(t => <option key={t} value={t}>{effectTypeLabel(t)}</option>)}
                       <option value={CUSTOM_EFFECT}>Custom…</option>
                     </select>
                     {(!isBuiltInEffect(effect.type) || typingName === i) && (
@@ -476,7 +475,8 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                         <RankValueField
                           values={effect.base}
                           maxRank={maxRank}
-                          onChange={(rankIndex, raw) => updateEffectBase(i, rankIndex, raw)}
+                          suffix={unitSuffixShort(kind.unit)}
+                          onChange={(rankIndex, value) => updateEffectBase(i, rankIndex, value)}
                           onBulkChange={values => updateEffectBaseAll(i, values)}
                         />
                       </div>
@@ -536,11 +536,11 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                                 />
                                 <label className="ratio-assume" title="How many of it to assume when the win rate is estimated">
                                   assume
-                                  <input
+                                  <NumberField
                                     className="rank-input ratio-assume-input"
-                                    type="number"
                                     value={assumedUnits(ratio)}
-                                    onChange={e => updateRatio(i, ri, { assumed: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                                    placeholder="1"
+                                    onChange={n => updateRatio(i, ri, { assumed: n || undefined })}
                                   />
                                 </label>
                               </>
@@ -552,12 +552,10 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                             ) : (
                               <span className="ratio-per">
                                 per
-                                <input
+                                <NumberField
                                   className="rank-input ratio-per-input"
-                                  type="number"
-                                  min={1}
-                                  value={ratio.per || ''}
-                                  onChange={e => updateRatio(i, ri, { per: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                                  value={ratio.per}
+                                  onChange={n => updateRatio(i, ri, { per: n })}
                                 />
                                 <button className="ratio-per-off" onClick={() => updateRatio(i, ri, { per: undefined })} title="Back to a plain ratio" aria-label="Back to a plain ratio">↩</button>
                               </span>
@@ -567,7 +565,9 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                           <RankValueField
                             values={ratio.values}
                             maxRank={maxRank}
-                            onChange={(rankIndex, raw) => updateRatioValue(i, ri, rankIndex, raw)}
+                            percent={!custom && ratio.per === undefined}
+                            suffix={unitSuffixShort(kind.unit)}
+                            onChange={(rankIndex, value) => updateRatioValue(i, ri, rankIndex, value)}
                             onBulkChange={values => updateRatioValuesAll(i, ri, values)}
                           />
                         </div>
@@ -583,7 +583,8 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                       <RankValueField
                         values={effect.duration}
                         maxRank={maxRank}
-                        onChange={(rankIndex, raw) => updateEffectDuration(i, rankIndex, raw)}
+                        suffix="s"
+                        onChange={(rankIndex, value) => updateEffectDuration(i, rankIndex, value)}
                         onBulkChange={values => updateEffect(i, { duration: values })}
                       />
                     </div>
@@ -790,21 +791,11 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
                       <div className="recast-trigger-row">
                         <label className="recast-field">
                           <span>Max recasts</span>
-                          <input
-                            className="rank-input"
-                            type="number"
-                            value={block.recast?.max_recasts ?? ''}
-                            onChange={e => updateBlockRecast(bi, { max_recasts: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
-                          />
+                          <NumberField value={block.recast?.max_recasts} onChange={n => updateBlockRecast(bi, { max_recasts: n })} />
                         </label>
                         <label className="recast-field">
                           <span>Window (s)</span>
-                          <input
-                            className="rank-input"
-                            type="number"
-                            value={block.recast?.recast_window ?? ''}
-                            onChange={e => updateBlockRecast(bi, { recast_window: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
-                          />
+                          <NumberField value={block.recast?.recast_window} onChange={n => updateBlockRecast(bi, { recast_window: n })} />
                         </label>
                         <input
                           className="rank-input"

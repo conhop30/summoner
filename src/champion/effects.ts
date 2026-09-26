@@ -87,6 +87,20 @@ export function unitSuffix(unit: EffectUnit): string {
   return unit === 'seconds' ? ' (seconds)' : unit === 'percent' ? ' (%)' : ''
 }
 
+/** How the type picker names a type. Most read fine as they are; a stat change needs to say what it does. */
+export function effectTypeLabel(type: string): string {
+  return type === STAT_CHANGE ? 'Raise or lower a stat' : effectName(type)
+}
+
+/**
+ * What an effect answers to in a description until it is given a name: {Damage}, {Stun}, and for a
+ * stat change the stat it moves, {Armor}, which is how the sentence would say it.
+ */
+export function defaultTokenName(effect: Pick<Effect, 'type' | 'stat'>): string {
+  if (effect.type === STAT_CHANGE) return ratioStatDef(statChangeOf(effect).stat)!.label
+  return effectName(effect.type)
+}
+
 /** An effect type as a name: "knock_up" becomes "Knock up", a custom label keeps what was typed. */
 export function effectName(type: string): string {
   const text = type.replace(/_/g, ' ').trim()

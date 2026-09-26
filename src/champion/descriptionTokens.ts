@@ -1,5 +1,5 @@
 import type { Effect } from './types'
-import { effectKind, effectName } from './effects'
+import { defaultTokenName, effectKind } from './effects'
 import { describeRatio, rankList, unitAfter } from './ratios'
 
 // Description tokens. An ability's description can say `{Damage}` where a number belongs, and the
@@ -38,7 +38,7 @@ export function effectTokenNames(effects: Effect[] | undefined): string[] {
     if (chosen) names[i] = claim(chosen)
   })
   list.forEach((effect, i) => {
-    if (names[i] === undefined) names[i] = claim(effectName(effect.type))
+    if (names[i] === undefined) names[i] = claim(defaultTokenName(effect))
   })
   return names as string[]
 }
