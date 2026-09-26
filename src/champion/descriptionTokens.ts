@@ -1,5 +1,5 @@
 import type { Effect } from './types'
-import { defaultTokenName, effectKind } from './effects'
+import { defaultTokenName, effectKind, takesDuration } from './effects'
 import { describeRatio, rankList, unitAfter } from './ratios'
 
 // Description tokens. An ability's description can say `{Damage}` where a number belongs, and the
@@ -61,6 +61,34 @@ export function effectPhrase(effect: Effect): string {
   return parts.length === 1 ? parts[0] : `${parts[0]} (+${parts.slice(1).join(', +')})`
 }
 
+// An effect that lasts a while has a second token: its name with " duration" after it, so
+// {Armor} is the amount and {Armor duration} is how long it lasts.
+const DURATION_SUFFIX = ' duration'
+
+/** The duration of an effect as a sentence would say it: "4 s" or "3/3.5/4 s". Empty when none is filled in. */
+export function durationPhrase(effect: Effect): string {
+  const values = effect.duration ?? []
+  return values.some(v => v) ? rankList(values) + unitAfter('seconds') : ''
+}
+
+/** For a token that reads "<name> duration", the normalized name in front; otherwise null. */
+function durationBase(raw: string): string | null {
+  const key = normalize(raw)
+  return key.endsWith(DURATION_SUFFIX) ? key.slice(0, -DURATION_SUFFIX.length).trim() : null
+}
+
+/** Everything the "Insert value" list offers: each effect's amount, and the duration of those that have one. */
+export function tokenChoices(effects: Effect[] | undefined): { token: string; phrase: string }[] {
+  const list = effects ?? []
+  const names = effectTokenNames(list)
+  const choices: { token: string; phrase: string }[] = []
+  list.forEach((effect, i) => {
+    choices.push({ token: names[i], phrase: effectPhrase(effect) || '(no numbers yet)' })
+    if (takesDuration(effect)) choices.push({ token: names[i] + DURATION_SUFFIX, phrase: durationPhrase(effect) || '(no duration yet)' })
+  })
+  return choices
+}
+
 /** True if the text has anything that looks like a token. */
 export function hasTokens(text: string | undefined): boolean {
   return !!text && /\{[^{}]+\}/.test(text)
@@ -74,15 +102,18 @@ export function resolveTokens(text: string | undefined, effects: Effect[] | unde
   const names = effectTokenNames(list)
   return text.replace(TOKEN, (whole, raw: string) => {
     const index = names.findIndex(n => normalize(n) === normalize(raw))
-    if (index === -1) return whole
-    return effectPhrase(list[index]) || whole
+    if (index !== -1) return effectPhrase(list[index]) || whole
+    const base = durationBase(raw)
+    const lasting = base === null ? -1 : names.findIndex(n => normalize(n) === base)
+    return lasting === -1 ? whole : durationPhrase(list[lasting]) || whole
   })
 }
 
 /** Names used as tokens in the text that no effect answers to. */
 export function unknownTokens(text: string | undefined, effects: Effect[] | undefined): string[] {
   if (!text) return []
-  const known = new Set(effectTokenNames(effects).map(normalize))
+  const names = effectTokenNames(effects).map(normalize)
+  const known = new Set([...names, ...names.map(n => n + DURATION_SUFFIX)])
   const seen = new Set<string>()
   const unknown: string[] = []
   for (const match of text.matchAll(TOKEN)) {
@@ -104,7 +135,10 @@ export function retargetTokens(text: string | undefined, renames: [string, strin
   const byOld = new Map(renames.map(([from, to]) => [normalize(from), to]))
   return text.replace(TOKEN, (whole, raw: string) => {
     const to = byOld.get(normalize(raw))
-    return to === undefined ? whole : `{${to}}`
+    if (to !== undefined) return `{${to}}`
+    const base = durationBase(raw)
+    const baseTo = base === null ? undefined : byOld.get(base)
+    return baseTo === undefined ? whole : `{${baseTo}${DURATION_SUFFIX}}`
   })
 }
 

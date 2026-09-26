@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import type { Effect } from './types'
 import {
-  adoptTemplate, effectPhrase, effectTokenNames, hasTokens, insertAtCaret, keepTokens, renamesBetween,
-  resolveTokens, retargetTokens, unknownTokens,
+  adoptTemplate, durationPhrase, effectPhrase, effectTokenNames, hasTokens, insertAtCaret, keepTokens, renamesBetween,
+  resolveTokens, retargetTokens, tokenChoices, unknownTokens,
 } from './descriptionTokens'
 
 const damage: Effect = { type: 'damage', damage_type: 'Physical', base: [40, 65, 90], ratios: [{ stat: 'ap', values: [0.45, 0.45, 0.45] }] }
@@ -185,5 +185,37 @@ describe('tokens across files', () => {
     expect(adoptTemplate('Deals something else.', 'Deals {Damage}.', [damage])).toBe('Deals something else.')
     expect(adoptTemplate('Deals X', undefined, [damage])).toBe('Deals X')
     expect(adoptTemplate('Deals X', 'no tokens', [damage])).toBe('Deals X')
+  })
+})
+
+describe('an effect\'s duration as a token', () => {
+  const shred: Effect = { type: 'stat_change', stat: 'armor', direction: 'lower', target: 'enemy', unit: 'percent', base: [20, 25, 30], duration: [4, 4, 4] }
+
+  it('is the effect\'s name with "duration" after it', () => {
+    expect(durationPhrase(shred)).toBe('4 s')
+    expect(durationPhrase({ ...shred, duration: [3, 3.5, 4] })).toBe('3/3.5/4 s')
+    expect(durationPhrase({ ...shred, duration: undefined })).toBe('')
+    expect(resolveTokens('Reduces {Armor} for {armor duration}.', [shred])).toBe('Reduces 20/25/30% for 4 s.')
+  })
+
+  it('stays as written until the duration is filled in', () => {
+    expect(resolveTokens('For {Armor duration}.', [{ ...shred, duration: undefined }])).toBe('For {Armor duration}.')
+  })
+
+  it('does not steal a name that an effect really has', () => {
+    const named: Effect = { type: 'damage', name: 'Armor duration', base: [9, 9, 9] }
+    expect(resolveTokens('{Armor duration}', [shred, named])).toBe('9')
+  })
+
+  it('is known to the checker, and follows its effect when it is renamed', () => {
+    expect(unknownTokens('{Armor} {Armor duration} {Stun duration}', [shred])).toEqual(['Stun duration'])
+    expect(retargetTokens('for {Armor duration}, {Armor}', [['Armor', 'Shred']])).toBe('for {Shred duration}, {Shred}')
+  })
+
+  it('is offered for effects that last a while, and not for instant ones', () => {
+    const choices = tokenChoices([damage, shred]).map(c => c.token)
+    expect(choices).toEqual(['Damage', 'Armor', 'Armor duration'])
+    expect(tokenChoices([shred])[1].phrase).toBe('4 s')
+    expect(tokenChoices([{ ...shred, duration: undefined }])[1].phrase).toBe('(no duration yet)')
   })
 })

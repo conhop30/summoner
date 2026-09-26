@@ -1,7 +1,7 @@
 import type { AbilityBody, AbilitySlot, Champion, Effect, RatioEntry, RatioPart } from '../champion/types'
-import { effectKind } from '../champion/effects'
+import { STAT_CHANGE, effectKind, statChangeOf } from '../champion/effects'
 import { assumedUnits, ratioFraction, resolveRatio, type RatioStatId } from '../champion/ratios'
-import type { Combatant } from './combatant'
+import { REFERENCE_LEVEL, type Combatant } from './combatant'
 
 // Turns a champion's five abilities into rates of "damage-equivalent" value per second at the
 // reference moment. Everything an ability does is priced in the same unit: damage dealt to a
@@ -35,6 +35,28 @@ const FLAT_UTILITY_VALUE: Record<string, number> = {
   dash: 40, speed_boost: 30, armor_modifier: 30, magic_resistance_modifier: 30,
 }
 const OTHER_UTILITY_VALUE = 20
+
+// Raising or lowering a stat. How long one lasts when no duration is filled in, and how much of a
+// fight a buff has to last to be worth its whole size (a fight's damage arrives over about this long).
+const DEFAULT_STAT_SECONDS = 4
+const FIGHT_SECONDS = 4
+/** A buff on an ally is worth this much of the same buff on yourself. */
+const ALLY_BUFF_WEIGHT = 0.6
+/** Shred and penetration make every source of damage on the target hit harder; the champion's own damage is credited in full, up to this much extra. */
+const MAX_SHRED_GAIN = 0.6
+/** ...plus a small share for the teammates it helps: what the rest of the team deals to that target per second (in the same units), and how much of it the champion is credited with. */
+const ALLY_DAMAGE = 100
+const TEAM_CREDIT = 0.25
+/** Lethality is flat armor penetration that grows with level, reaching its full value at 18. */
+const LETHALITY_AT_REFERENCE = 0.6 + (0.4 * REFERENCE_LEVEL) / 18
+
+type Resist = 'armor' | 'magic_resist'
+
+/** What a resist change does to damage: the target loses this much of it (by percent, then flat), and takes (100 + R) / (100 + R') times as much. */
+export function resistMultiplier(resist: number, percent: number, flat: number): number {
+  const reduced = Math.max(0, resist * (1 - Math.min(1, Math.max(0, percent))) - Math.max(0, flat))
+  return (100 + resist) / (100 + reduced)
+}
 const HEAL_WEIGHT = 0.8
 const SHIELD_WEIGHT = 0.7
 
@@ -59,6 +81,10 @@ export interface SlotReport {
   damagePerCast: number
   /** Seconds between casts, after ability haste. */
   cooldown: number
+  /** Part of `damage` that is this key's shred or penetration making the rest of the kit hit harder. */
+  shredDamage: number
+  /** Part of `utility` that is the same thing done for teammates. Kept small on purpose. */
+  teamShare: number
 }
 
 export interface KitReport {
@@ -67,10 +93,30 @@ export interface KitReport {
   rotations: number | null
 }
 
+/** Armor or magic resist taken off the target (shred), or ignored (penetration). */
+interface Shred {
+  resist: Resist
+  percent: number
+  flat: number
+  /** Helps the champion's own damage, and/or teammates'. */
+  own: boolean
+  team: boolean
+  /** How long it lasts; Infinity when it is always on. */
+  seconds: number
+}
+
 interface Parts {
   damage: number
   utility: number
   sustain: number
+  /** The damage above by type, after resistances, so shred knows what it is multiplying. */
+  physical: number
+  magic: number
+  shreds: Shred[]
+}
+
+function noParts(): Parts {
+  return { damage: 0, utility: 0, sustain: 0, physical: 0, magic: 0, shreds: [] }
 }
 
 function valueAt(values: number[] | undefined, rankIndex: number): number {
@@ -123,18 +169,69 @@ function ratioAmount(ratio: RatioEntry, rankIndex: number, c: Combatant): number
   return per ? (value * stat) / per : ratioFraction(value) * stat
 }
 
-function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant): Parts {
-  const parts: Parts = { damage: 0, utility: 0, sustain: 0 }
+/** A percentage typed either way: 30 and 0.3 both mean 30%. */
+function percentOf(amount: number): number {
+  return amount > 1 ? Math.min(amount, 100) / 100 : Math.max(0, amount)
+}
+
+/**
+ * A stat change is priced by what it does. Shrinking the target's armor or magic resist, or
+ * penetrating it, is a multiplier on damage and is settled once the whole kit is known. Extra
+ * armor, magic resist or health is durability, priced like a shield of the effective health it adds.
+ * Slowing an enemy is a slow; speeding someone up is a speed boost. Anything else is a small flat value.
+ */
+function evaluateStatChange(effect: Effect, amount: number, rankIndex: number, c: Combatant, alwaysOn: boolean): Parts {
+  const parts = noParts()
+  const { stat, direction, target } = statChangeOf(effect)
+  const { unit } = effectKind(effect)
+  const explicit = valueAt(effect.duration, rankIndex)
+  const seconds = alwaysOn && !explicit ? Infinity : explicit || DEFAULT_STAT_SECONDS
+  const size = Math.max(0, amount)
+  if (size === 0) { parts.utility = OTHER_UTILITY_VALUE; return parts }
+
+  const resistOf: Partial<Record<string, Resist>> = { armor: 'armor', magic_resist: 'magic_resist', armor_pen: 'armor', lethality: 'armor', magic_pen: 'magic_resist' }
+  const resist = resistOf[stat]
+
+  if ((stat === 'armor' || stat === 'magic_resist') && direction === 'lower' && target === 'enemy') {
+    parts.shreds.push({ resist: resist!, percent: unit === 'percent' ? percentOf(size) : 0, flat: unit === 'percent' ? 0 : size, own: true, team: true, seconds })
+  } else if ((stat === 'armor_pen' || stat === 'magic_pen' || stat === 'lethality') && direction === 'raise' && target !== 'enemy') {
+    const isFlat = stat === 'lethality'
+    parts.shreds.push({ resist: resist!, percent: isFlat ? 0 : percentOf(size), flat: isFlat ? size * LETHALITY_AT_REFERENCE : 0, own: target === 'self', team: target === 'ally', seconds })
+  } else if ((stat === 'armor' || stat === 'magic_resist' || stat === 'health') && direction === 'raise' && target !== 'enemy') {
+    const held = stat === 'armor' ? c.armor : stat === 'magic_resist' ? c.magicResist : c.health
+    const gained = unit === 'percent' ? held * percentOf(size) : size
+    // Health is worth its size scaled by the resistances behind it. A point of resistance is worth a
+    // hundredth of the health it protects, for the half of the damage it applies to.
+    const effectiveHealth = stat === 'health' ? gained * (1 + (c.armor + c.magicResist) / 200) : (0.5 * c.health * gained) / 100
+    parts.sustain = effectiveHealth * Math.min(1, seconds / FIGHT_SECONDS) * SHIELD_WEIGHT * (target === 'ally' ? ALLY_BUFF_WEIGHT : 1)
+  } else if (stat === 'move_speed' && direction === 'lower' && target === 'enemy') {
+    const strength = unit === 'percent' ? percentOf(size) : SLOW_REFERENCE_STRENGTH
+    const lasts = explicit || DEFAULT_SOFT_SECONDS
+    parts.utility = lasts * CC_VALUE_PER_SECOND * CC_WEIGHT.slow * (strength / SLOW_REFERENCE_STRENGTH)
+  } else if (stat === 'move_speed' && direction === 'raise' && target !== 'enemy') {
+    parts.utility = FLAT_UTILITY_VALUE.speed_boost * (target === 'ally' ? ALLY_BUFF_WEIGHT : 1)
+  } else {
+    parts.utility = OTHER_UTILITY_VALUE
+  }
+  return parts
+}
+
+function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant, alwaysOn: boolean): Parts {
+  const parts = noParts()
   const base = valueAt(effect.base, rankIndex)
   const amount = base + (effect.ratios ?? []).reduce((sum, r) => sum + ratioAmount(r, rankIndex, c), 0)
   const type = effect.type
   const { family, unit } = effectKind(effect)
   const explicit = valueAt(effect.duration, rankIndex)
 
+  if (type === STAT_CHANGE) return evaluateStatChange(effect, amount, rankIndex, c, alwaysOn)
+
   if (family === 'damage') {
     const mitigation = effect.damage_type === 'True' ? 1
       : 100 / (100 + (effect.damage_type === 'Magic' ? TARGET_MAGIC_RESIST : TARGET_ARMOR))
     parts.damage = Math.max(0, amount) * mitigation
+    if (effect.damage_type === 'Magic') parts.magic = parts.damage
+    else if (effect.damage_type !== 'True') parts.physical = parts.damage
   } else if (family === 'sustain') {
     parts.sustain = Math.max(0, amount) * (type === 'shield' ? SHIELD_WEIGHT : HEAL_WEIGHT)
   } else if (family === 'hard_control') {
@@ -153,28 +250,35 @@ function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant): Parts 
   return parts
 }
 
-function evaluateBody(body: AbilityBody, rankIndex: number, c: Combatant): Parts {
-  const total: Parts = { damage: 0, utility: 0, sustain: 0 }
+function evaluateBody(body: AbilityBody, rankIndex: number, c: Combatant, alwaysOn: boolean): Parts {
+  const total = noParts()
   for (const effect of body.effects ?? []) {
-    const p = evaluateEffect(effect, rankIndex, c)
+    const p = evaluateEffect(effect, rankIndex, c, alwaysOn)
     total.damage += p.damage
     total.utility += p.utility
     total.sustain += p.sustain
+    total.physical += p.physical
+    total.magic += p.magic
+    total.shreds.push(...p.shreds)
   }
   return total
 }
 
 function isPriced(p: Parts): boolean {
-  return p.damage + p.utility + p.sustain > 0
+  return p.damage + p.utility + p.sustain > 0 || p.shreds.length > 0
 }
 
 export function evaluateKit(champion: Champion, c: Combatant): KitReport {
   const slots: SlotReport[] = []
   let rotationCost = 0
+  // Shred and penetration are settled in a second pass: they multiply damage from the whole kit,
+  // including keys that come after the one that grants them.
+  const shreds: { report: SlotReport; shred: Shred; uptime: number }[] = []
+  const rate = { armor: 0, magic_resist: 0 }
 
   for (const slot of KIT_SLOTS) {
     const ability = champion.abilities?.[slot]
-    const report: SlotReport = { slot, name: ability?.name ?? '', scored: false, damage: 0, utility: 0, sustain: 0, damagePerCast: 0, cooldown: 0 }
+    const report: SlotReport = { slot, name: ability?.name ?? '', scored: false, damage: 0, utility: 0, sustain: 0, damagePerCast: 0, cooldown: 0, shredDamage: 0, teamShare: 0 }
     if (!ability) { slots.push(report); continue }
 
     const rank = slot === 'r' ? ULT_RANK : BASIC_RANK
@@ -188,11 +292,15 @@ export function evaluateKit(champion: Champion, c: Combatant): KitReport {
     ]
 
     for (const [i, { body, weight, inheritCooldown }] of bodies.entries()) {
-      const parts = evaluateBody(body, rankIndex, c)
+      const declared = valueAt(body.cooldown, rankIndex) || (inheritCooldown ? ownCooldown : 0)
+      // A passive with no cooldown of its own is always in effect, so what it grants isn't a timed buff.
+      const parts = evaluateBody(body, rankIndex, c, slot === 'passive' && !declared)
       if (!isPriced(parts)) continue
       report.scored = true
-      const declared = valueAt(body.cooldown, rankIndex) || (inheritCooldown ? ownCooldown : 0)
       const cooldown = Math.max(1, (declared || fallbackPeriod) * 100 / (100 + c.abilityHaste))
+      rate.armor += (parts.physical * weight) / cooldown
+      rate.magic_resist += (parts.magic * weight) / cooldown
+      for (const shred of parts.shreds) shreds.push({ report, shred, uptime: Math.min(1, shred.seconds / cooldown) * weight })
       report.damage += (parts.damage * weight) / cooldown
       report.utility += (parts.utility * weight) / cooldown
       report.sustain += (parts.sustain * weight) / cooldown
@@ -206,6 +314,28 @@ export function evaluateKit(champion: Champion, c: Combatant): KitReport {
       rotationCost += valueAt(ability.cost, rankIndex)
     }
     slots.push(report)
+  }
+
+  for (const resist of ['armor', 'magic_resist'] as const) {
+    const base = resist === 'armor' ? TARGET_ARMOR : TARGET_MAGIC_RESIST
+    const active = shreds.filter(s => s.shred.resist === resist)
+    const gains = active.map(s => (resistMultiplier(base, s.shred.percent, s.shred.flat) - 1) * s.uptime)
+    const sum = gains.reduce((a, b) => a + b, 0)
+    const scale = sum > MAX_SHRED_GAIN ? MAX_SHRED_GAIN / sum : 1
+    active.forEach(({ report, shred }, i) => {
+      const gain = gains[i] * scale
+      if (shred.own) {
+        const extra = gain * rate[resist]
+        report.damage += extra
+        report.shredDamage += extra
+      }
+      if (shred.team) {
+        // Half of what teammates deal is of each kind.
+        const extra = gain * 0.5 * ALLY_DAMAGE * TEAM_CREDIT
+        report.utility += extra
+        report.teamShare += extra
+      }
+    })
   }
 
   // Resource: the pool plus what regenerates over the 20 seconds a rotation takes to come back around.

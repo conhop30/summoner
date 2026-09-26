@@ -33,10 +33,15 @@ function signed(n: number): string {
 function slotSummary(s: SlotReport): string {
   if (!s.scored) return 'counted as average'
   const parts: string[] = []
+  const tenth = (n: number) => Number(n.toFixed(1))
   if (s.damagePerCast > 0) parts.push(`${Math.round(s.damagePerCast)} dmg`)
+  else if (s.shredDamage > 0 || s.teamShare > 0) parts.push('shred')
   else if (s.utility > 0) parts.push('control')
   else if (s.sustain > 0) parts.push('sustain')
   if (s.cooldown > 0) parts.push(`${Number(s.cooldown.toFixed(1))}s`)
+  // What shred and penetration add, per second: to your own damage, and as credit for the teammates it helps.
+  if (s.shredDamage > 0) parts.push(`+${tenth(s.shredDamage)} damage`)
+  if (s.teamShare > 0) parts.push(`+${tenth(s.teamShare)} team`)
   return parts.join(' · ')
 }
 

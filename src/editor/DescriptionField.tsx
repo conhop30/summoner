@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Effect } from '../champion/types'
-import { effectPhrase, effectTokenNames, hasTokens, insertAtCaret, resolveTokens, unknownTokens } from '../champion/descriptionTokens'
+import { hasTokens, insertAtCaret, resolveTokens, tokenChoices, unknownTokens } from '../champion/descriptionTokens'
 
 interface Props {
   value: string | undefined
@@ -28,7 +28,7 @@ export default function DescriptionField({ value, effects, onChange, placeholder
     areaRef.current?.setSelectionRange(caret, caret)
   }, [text])
 
-  const names = effectTokenNames(effects)
+  const choices = tokenChoices(effects)
   const resolved = resolveTokens(text, effects)
   const unknown = unknownTokens(text, effects)
 
@@ -36,7 +36,7 @@ export default function DescriptionField({ value, effects, onChange, placeholder
     const el = areaRef.current
     const start = el?.selectionStart ?? text.length
     const end = el?.selectionEnd ?? text.length
-    const next = insertAtCaret(text, start, end, `{${names[index]}}`)
+    const next = insertAtCaret(text, start, end, `{${choices[index].token}}`)
     pendingCaret.current = next.caret
     onChange(next.text)
   }
@@ -60,8 +60,8 @@ export default function DescriptionField({ value, effects, onChange, placeholder
             title="Put a number from this ability's effects into the description"
           >
             <option value="">Insert value…</option>
-            {(effects ?? []).map((effect, i) => (
-              <option key={i} value={i}>{`{${names[i]}}  ${effectPhrase(effect) || '(no numbers yet)'}`}</option>
+            {choices.map((choice, i) => (
+              <option key={i} value={i}>{`{${choice.token}}  ${choice.phrase}`}</option>
             ))}
           </select>
           {hasTokens(text) && resolved !== text && (

@@ -209,10 +209,12 @@ export function predictWinRate({ champion, items, roster }: PredictionInput): Pr
   }
 
   const rounded = (v: number) => round(v, 1)
+  const shredDamage = kit.slots.reduce((sum, s) => sum + s.shredDamage, 0)
+  const teamShare = kit.slots.reduce((sum, s) => sum + s.teamShare, 0)
   const contributions: Contribution[] = [
     { key: 'stats', label: 'Stats', points: rounded(points.stats), note: describeZ(statsZ, `${classes[0] ?? 'champion'} bodies`) },
-    { key: 'damage', label: 'Damage', points: rounded(points.damage), note: `${Math.round(damage)} per second of damage-equivalent` },
-    { key: 'utility', label: 'Control & sustain', points: rounded(points.utility), note: `${Math.round(utility + sustain)} per second` },
+    { key: 'damage', label: 'Damage', points: rounded(points.damage), note: `${Math.round(damage)} per second of damage-equivalent${shredDamage >= 0.05 ? `, ${round(shredDamage, 1)} of it from shred and penetration` : ''}` },
+    { key: 'utility', label: 'Control & sustain', points: rounded(points.utility), note: `${Math.round(utility + sustain)} per second${teamShare >= 0.05 ? `, ${round(teamShare, 1)} of it credit for teammates` : ''}` },
     { key: 'build', label: 'Build', points: rounded(points.build), note: hasBuild ? `${Math.round((efficiency ?? 0) * 100)}% gold efficiency` : 'typical items assumed' },
   ]
 

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
 import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal, StatChangeDirection, StatChangeTarget } from '../champion/types'
-import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, DIRECTION_OPTIONS, FAMILY_OPTIONS, STAT_CHANGE, STAT_CHANGE_DEFAULTS, TARGET_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectTypeLabel, isBuiltInEffect, statChangeOf, unitSuffix } from '../champion/effects'
+import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, DIRECTION_OPTIONS, FAMILY_OPTIONS, STAT_CHANGE, STAT_CHANGE_DEFAULTS, TARGET_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectTypeLabel, isBuiltInEffect, statChangeOf, takesDuration, unitSuffix } from '../champion/effects'
 import DescriptionField from './DescriptionField'
 import NumberField from './NumberField'
 import { effectTokenNames, renamesBetween, retargetTokens } from '../champion/descriptionTokens'
@@ -575,7 +575,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                     })}
                   </div>
 
-                  {effect.type === STAT_CHANGE && (
+                  {takesDuration(effect) && (
                     <div className="effect-subfield">
                       <div className="effect-subfield-header">
                         <span className="effect-subfield-label">Lasts (seconds)</span>

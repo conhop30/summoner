@@ -107,6 +107,16 @@ export function effectName(type: string): string {
   return text ? text[0].toUpperCase() + text.slice(1) : 'Effect'
 }
 
+/** Effect types whose effect lasts a while, so the editor offers a duration for them. Instant ones (damage, heals, dashes) and controls (whose amount is their length) don't. */
+const TIMED_TYPES = ['stat_change', 'slow', 'shield', 'speed_boost', 'armor_modifier', 'magic_resistance_modifier']
+
+/** True when a duration makes sense for the effect, or one is already filled in. */
+export function takesDuration(effect: Pick<Effect, 'type' | 'family' | 'unit' | 'duration'>): boolean {
+  if ((effect.duration ?? []).some(v => v)) return true
+  if (TIMED_TYPES.includes(effect.type)) return true
+  return !isBuiltInEffect(effect.type) && effect.type.trim() !== '' && effectKind(effect).family !== 'hard_control'
+}
+
 // ─── Stat changes ──────────────────────────────────────────────────────────────
 
 /** The stats a stat change can move, in the order the picker lists them. Penetration is here so shred can be written down. */
@@ -167,6 +177,6 @@ export function describeEffect(effect: Effect): string {
     const text = describeRatio(ratio, kind.unit)
     if (text) amounts.push(text)
   }
-  const lasts = isStatChange && (effect.duration ?? []).some(v => v) ? ` · for ${rankList(effect.duration!)} s` : ''
+  const lasts = (effect.duration ?? []).some(v => v) ? ` · for ${rankList(effect.duration!)} s` : ''
   return `${head.join(' · ')} · ${amounts.length ? amounts.join(' + ') : 'no numbers yet'}${lasts}`
 }
