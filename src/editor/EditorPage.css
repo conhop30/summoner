@@ -206,6 +206,15 @@
   background: var(--accent-gold);
 }
 
+.editor-right-banner {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  padding: var(--space-4) var(--space-6) 0;
+  /* The banner drops its per-part figures in a narrow window; it measures this box. */
+  container-type: inline-size;
+}
+
 .editor-right-content {
   flex: 1;
   min-height: 0;

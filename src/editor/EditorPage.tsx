@@ -9,6 +9,8 @@ import NameTitle from './NameTitle'
 import type { WorkbenchView } from './Workbench'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import StatsPanel from './StatsPanel'
+import WinRatePanel from './WinRatePanel'
+import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
 import AbilitiesSection from './AbilitiesSection'
 import ConfirmDialog from '../shared/ConfirmDialog'
 import './EditorPage.css'
@@ -111,6 +113,9 @@ export default function EditorPage({ mode }: Props) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingSave = useRef<Champion | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  // One synced roster for the whole editor: the win-rate banner above the tabs, and the Stats tab's
+  // suggestions and lookup, so syncing in one place updates all of them.
+  const catalogState = useChampionCatalog()
 
   useEffect(() => {
     if (mode === 'edit' && id) {
@@ -272,6 +277,10 @@ export default function EditorPage({ mode }: Props) {
               )}
             </button>
           </div>
+          {/* The win-rate projection sits between the tabs and what they show, so it is there on both. */}
+          <div className="editor-right-banner">
+            <WinRatePanel champion={champion} roster={catalogState.catalog} />
+          </div>
           <div className="editor-right-content">
             {/* The Abilities tab shows its own compact stat block beside the ability keys. */}
             {rightTab === 'stats' && (
@@ -282,7 +291,7 @@ export default function EditorPage({ mode }: Props) {
                   animate={{ opacity: 1 }}
                   transition={CONTENT_TRANSITION}
                 >
-                  <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} />
+                  <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} catalogState={catalogState} />
                 </motion.div>
               </div>
             )}
