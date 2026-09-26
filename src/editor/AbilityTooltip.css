@@ -1,0 +1,56 @@
+/* An ability the way the game draws it: a dark panel, the name, the meta line, the description. */
+.ability-tip {
+  --tone-physical: #e39a5a;
+  --tone-magic: #78a8f5;
+  --tone-true: #f4f1ea;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-base);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid var(--accent-gold);
+  max-width: 560px;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-body);
+}
+:root[data-theme='light'] .ability-tip {
+  --tone-physical: #b8631f;
+  --tone-magic: #2f5fc0;
+  --tone-true: #2a2a33;
+}
+
+.ability-tip-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.ability-tip-name { font-size: var(--font-size-md); font-weight: 500; letter-spacing: var(--tracking-tight); color: var(--text-primary); }
+.ability-tip-key { font-size: var(--font-size-xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted); }
+
+.ability-tip-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--font-size-xs); color: var(--text-secondary); }
+.ability-tip-meta b { margin-right: 2px; font-weight: 500; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted); }
+
+.ability-tip-body { white-space: pre-wrap; }
+.ability-tip-empty { color: var(--text-muted); font-style: italic; }
+
+.tone-physical { color: var(--tone-physical); }
+.tone-magic { color: var(--tone-magic); }
+.tone-true { color: var(--tone-true); }
+
+.ability-tip-details {
+  list-style: none;
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2) 0 0;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ability-tip-details li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-3); }
+.ability-tip-label { min-width: 132px; font-size: var(--font-size-xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted); }
+.ability-tip-label.tone-physical { color: var(--tone-physical); }
+.ability-tip-label.tone-magic { color: var(--tone-magic); }
+.ability-tip-label.tone-true { color: var(--tone-true); }
+.ability-tip-value { color: var(--text-body); }
+.ability-tip-value em { font-style: normal; color: var(--text-secondary); }
+.ability-tip-notes { flex-basis: 100%; padding-left: 144px; font-size: var(--font-size-xs); color: var(--text-muted); }
+
+.ability-tip-hint { font-size: var(--font-size-xs); color: var(--text-placeholder); }

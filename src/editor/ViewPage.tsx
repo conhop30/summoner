@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import type { Champion, AbilitySlot } from '../champion/types'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import { resolveTokens } from '../champion/descriptionTokens'
+import AbilityTooltip from './AbilityTooltip'
+import { useShiftHover } from '../shared/useShiftHover'
 import { formatStat, formatGrowth, statAtLevel } from '../champion/statSpec'
 import type { BaseStats } from '../champion/types'
 import './ViewPage.css'
@@ -272,6 +274,8 @@ export default function ViewPage() {
   const [downloading, setDownloading] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<AbilitySlot | null>(null)
   const [hoveredSlot, setHoveredSlot] = useState<AbilitySlot | null>(null)
+  // Holding Shift over the abilities opens the detail behind the tooltip, as in the game.
+  const shiftHover = useShiftHover()
   const themePlaying = useChampionTheme(s => !!id && s.playing?.championId === id && !s.paused)
   const playTheme = useChampionTheme(s => s.play)
   const stopTheme = useChampionTheme(s => s.stop)
@@ -385,7 +389,7 @@ export default function ViewPage() {
           <div className="view-section">
             <div className="view-section-title">Abilities</div>
             {filledSlots.length > 0 ? (
-              <div className="view-abilities-showcase">
+              <div className="view-abilities-showcase" {...shiftHover.hoverProps}>
                 <div className="ability-icon-row">
                   {filledSlots.map(slot => (
                     <div key={slot} className="ability-icon-item">
@@ -406,20 +410,17 @@ export default function ViewPage() {
                   ))}
                 </div>
                 {displayAbility && (
-                  <div className="ability-spotlight">
-                    <div className="ability-spotlight-type">{SLOT_TYPE_LABEL[displaySlot!]}</div>
-                    <div className="ability-spotlight-name">{displayAbility.name}</div>
-                    {displayAbility.description && (
-                      <div className="ability-spotlight-desc">{resolveTokens(displayAbility.description, displayAbility.effects)}</div>
-                    )}
-                    {(displayAbility.effects ?? []).length > 0 && (
-                      <div className="ability-spotlight-effects">
-                        {displayAbility.effects!.map((e, i) => (
-                          <span key={i} className="view-effect-tag">{e.type}{e.damage_type ? ` · ${e.damage_type}` : ''}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <AbilityTooltip
+                    className="view-ability-tip"
+                    name={displayAbility.name}
+                    label={SLOT_TYPE_LABEL[displaySlot!]}
+                    description={displayAbility.description}
+                    effects={displayAbility.effects}
+                    cooldown={displayAbility.cooldown}
+                    cost={displayAbility.cost}
+                    costType={displayAbility.cost_type}
+                    detailed={shiftHover.detailed}
+                  />
                 )}
               </div>
             ) : (

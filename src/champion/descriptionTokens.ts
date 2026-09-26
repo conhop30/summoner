@@ -1,5 +1,6 @@
 import type { Effect } from './types'
 import { defaultTokenName, effectKind, takesDuration } from './effects'
+import { outcomeOf, type Outcome, type Tone } from './outcomes'
 import { describeRatio, rankList, unitAfter } from './ratios'
 
 // Description tokens. An ability's description can say `{Damage}` where a number belongs, and the
@@ -94,19 +95,88 @@ export function hasTokens(text: string | undefined): boolean {
   return !!text && /\{[^{}]+\}/.test(text)
 }
 
-/** The description with every token replaced by its number. A token that names no effect, or an effect with no numbers yet, stays as written. */
-export function resolveTokens(text: string | undefined, effects: Effect[] | undefined): string {
-  if (!text) return ''
-  if (!hasTokens(text)) return text
+/** A run of description text. `tone` is set on words that name a kind of damage, so they can be coloured. */
+export interface Segment {
+  text: string
+  tone?: Tone
+}
+
+/**
+ * If the text after a token already says the noun of the effect ("magic damage", or just "damage"),
+ * how much of it that is: the leading space, the words, and the tone they name. A damage effect
+ * accepts any damage wording, so "{Damage} magic damage" is left alone even when the effect is
+ * physical: what was written wins, and it is coloured for what it says.
+ */
+function nounAfter(rest: string, outcome: Outcome): { lead: string; words: string; tone?: Tone } | null {
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const damage = outcome.kind === 'damage'
+  const pattern = damage ? '(?:(physical|magic|true) )?damage' : escape(outcome.noun!)
+  const found = new RegExp(`^(\\s*)(${pattern})(?![a-z])`, 'i').exec(rest)
+  if (!found) return null
+  const written = damage ? (found[3]?.toLowerCase() as Tone | undefined) : undefined
+  return { lead: found[1], words: found[2], tone: written ?? outcome.tone }
+}
+
+/**
+ * The description as runs of text, with every token replaced by its number. After the amount of an
+ * effect that has a noun (a damage effect: "magic damage") the noun is written in, unless the text
+ * already says it, and either way it carries a tone. A token that names no effect, or an effect with
+ * no numbers yet, stays as written.
+ */
+export function resolveSegments(text: string | undefined, effects: Effect[] | undefined): Segment[] {
+  if (!text) return []
+  if (!hasTokens(text)) return [{ text }]
   const list = effects ?? []
   const names = effectTokenNames(list)
-  return text.replace(TOKEN, (whole, raw: string) => {
+  const out: Segment[] = []
+  const push = (segment: Segment) => {
+    if (!segment.text) return
+    const previous = out[out.length - 1]
+    if (previous && previous.tone === segment.tone) previous.text += segment.text
+    else out.push({ ...segment })
+  }
+
+  let cursor = 0
+  for (const match of text.matchAll(TOKEN)) {
+    const start = match.index!
+    if (start < cursor) continue
+    const raw = match[1]
+    let phrase = ''
+    let amountOf: Effect | undefined
     const index = names.findIndex(n => normalize(n) === normalize(raw))
-    if (index !== -1) return effectPhrase(list[index]) || whole
-    const base = durationBase(raw)
-    const lasting = base === null ? -1 : names.findIndex(n => normalize(n) === base)
-    return lasting === -1 ? whole : durationPhrase(list[lasting]) || whole
-  })
+    if (index !== -1) {
+      phrase = effectPhrase(list[index])
+      amountOf = list[index]
+    } else {
+      const base = durationBase(raw)
+      const lasting = base === null ? -1 : names.findIndex(n => normalize(n) === base)
+      if (lasting !== -1) phrase = durationPhrase(list[lasting])
+    }
+    if (!phrase) continue
+
+    push({ text: text.slice(cursor, start) })
+    push({ text: phrase })
+    cursor = start + match[0].length
+    const outcome = amountOf ? outcomeOf(amountOf) : undefined
+    if (outcome?.noun) {
+      const said = nounAfter(text.slice(cursor), outcome)
+      if (said) {
+        push({ text: said.lead })
+        push({ text: said.words, tone: said.tone })
+        cursor += said.lead.length + said.words.length
+      } else {
+        push({ text: ' ' })
+        push({ text: outcome.noun, tone: outcome.tone })
+      }
+    }
+  }
+  push({ text: text.slice(cursor) })
+  return out
+}
+
+/** The description with every token replaced by its number, and the noun after an amount written in where it was left out. */
+export function resolveTokens(text: string | undefined, effects: Effect[] | undefined): string {
+  return resolveSegments(text, effects).map(s => s.text).join('')
 }
 
 /** Names used as tokens in the text that no effect answers to. */

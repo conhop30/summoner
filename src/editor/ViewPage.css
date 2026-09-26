@@ -250,61 +250,12 @@
 }
 .ability-icon-label.active { color: var(--text-accent-gold); font-weight: 500; }
 
-.ability-spotlight {
-  position: relative;
-  padding-left: var(--space-5);
-  min-height: 80px;
-}
-.ability-spotlight::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 3px; bottom: 3px;
-  width: 3px;
-  background: var(--accent-gold);
-}
-
-.ability-spotlight-type {
-  font-size: var(--font-size-sm);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: var(--space-1);
-}
-
-.ability-spotlight-name {
-  font-size: var(--font-size-lg);
-  font-weight: 500;
-  letter-spacing: var(--tracking-tight);
-  color: var(--text-primary);
-  margin-bottom: var(--space-2);
-}
-
-.ability-spotlight-desc {
-  font-size: var(--font-size-base);
-  line-height: 1.8;
-  color: var(--text-body);
-}
-
-.ability-spotlight-effects {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin-top: var(--space-3);
-}
+.view-ability-tip { max-width: 640px; }
 
 .ability-spotlight-empty {
   color: var(--text-muted);
   font-style: italic;
   font-size: var(--font-size-base);
-}
-
-.view-effect-tag {
-  font-size: var(--font-size-xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  padding: 2px var(--space-2);
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
 }
 
 /* ── Completion ── */

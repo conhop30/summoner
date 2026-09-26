@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { Effect } from './types'
 import {
   adoptTemplate, durationPhrase, effectPhrase, effectTokenNames, hasTokens, insertAtCaret, keepTokens, renamesBetween,
-  resolveTokens, retargetTokens, tokenChoices, unknownTokens,
+  resolveSegments, resolveTokens, retargetTokens, tokenChoices, unknownTokens,
 } from './descriptionTokens'
 
 const damage: Effect = { type: 'damage', damage_type: 'Physical', base: [40, 65, 90], ratios: [{ stat: 'ap', values: [0.45, 0.45, 0.45] }] }
@@ -67,15 +67,15 @@ describe('resolving a description', () => {
 
   it('tells two damages apart by their names', () => {
     const effects = [{ ...damage, name: 'Slash' }, { type: 'damage', base: [10, 20, 30], name: 'Bleed' } as Effect]
-    expect(resolveTokens('{Slash}, then {Bleed} over time', effects)).toBe('40/65/90 (+45% AP), then 10/20/30 over time')
+    expect(resolveTokens('{Slash}, then {Bleed} over time', effects)).toBe('40/65/90 (+45% AP) physical damage, then 10/20/30 physical damage over time')
   })
 
   it('tells two unnamed damages apart by their numbers', () => {
-    expect(resolveTokens('{Damage} and {Damage 2}', [damage, { type: 'damage', base: [5, 5, 5] }])).toBe('40/65/90 (+45% AP) and 5')
+    expect(resolveTokens('{Damage} and {Damage 2}', [damage, { type: 'damage', base: [5, 5, 5] }])).toBe('40/65/90 (+45% AP) physical damage and 5 physical damage')
   })
 
   it('matches names without regard to case or spacing', () => {
-    expect(resolveTokens('{ damage } {STUN}', [damage, stun])).toBe('40/65/90 (+45% AP) 1.5 s')
+    expect(resolveTokens('{ damage } {STUN}', [damage, stun])).toBe('40/65/90 (+45% AP) physical damage 1.5 s')
   })
 
   it('leaves a token that names nothing, or names an effect with no numbers yet, as written', () => {
@@ -142,7 +142,7 @@ describe('keeping tokens when an effect is renamed', () => {
     expect(text).toBe('Hits for {Damage}, bleeds for {Bleed}.')
     apply([{ ...effects[0], name: 'Slash' }, effects[1]])
     expect(text).toBe('Hits for {Slash}, bleeds for {Bleed}.')
-    expect(resolveTokens(text, effects)).toBe('Hits for 40/65/90 (+45% AP), bleeds for 5.')
+    expect(resolveTokens(text, effects)).toBe('Hits for 40/65/90 (+45% AP) physical damage, bleeds for 5 physical damage.')
     apply([effects[1]], 0)
     expect(text).toBe('Hits for {Slash}, bleeds for {Bleed}.')
     expect(unknownTokens(text, effects)).toEqual(['Slash'])
@@ -167,7 +167,7 @@ describe('inserting a token', () => {
 describe('tokens across files', () => {
   it('keeps the tokens when the file brings back exactly what they resolve to', () => {
     const current = 'Deals {Damage}.'
-    expect(keepTokens('Deals 40/65/90 (+45% AP).', current, [damage])).toBe(current)
+    expect(keepTokens('Deals 40/65/90 (+45% AP) physical damage.', current, [damage])).toBe(current)
   })
 
   it('takes the file\'s text when it was edited', () => {
@@ -181,7 +181,7 @@ describe('tokens across files', () => {
   })
 
   it('adopts a template only if it produces exactly the text the file says', () => {
-    expect(adoptTemplate('Deals 40/65/90 (+45% AP).', 'Deals {Damage}.', [damage])).toBe('Deals {Damage}.')
+    expect(adoptTemplate('Deals 40/65/90 (+45% AP) physical damage.', 'Deals {Damage}.', [damage])).toBe('Deals {Damage}.')
     expect(adoptTemplate('Deals something else.', 'Deals {Damage}.', [damage])).toBe('Deals something else.')
     expect(adoptTemplate('Deals X', undefined, [damage])).toBe('Deals X')
     expect(adoptTemplate('Deals X', 'no tokens', [damage])).toBe('Deals X')
@@ -204,7 +204,7 @@ describe('an effect\'s duration as a token', () => {
 
   it('does not steal a name that an effect really has', () => {
     const named: Effect = { type: 'damage', name: 'Armor duration', base: [9, 9, 9] }
-    expect(resolveTokens('{Armor duration}', [shred, named])).toBe('9')
+    expect(resolveTokens('{Armor duration}', [shred, named])).toBe('9 physical damage')
   })
 
   it('is known to the checker, and follows its effect when it is renamed', () => {
@@ -217,5 +217,49 @@ describe('an effect\'s duration as a token', () => {
     expect(choices).toEqual(['Damage', 'Armor', 'Armor duration'])
     expect(tokenChoices([shred])[1].phrase).toBe('4 s')
     expect(tokenChoices([{ ...shred, duration: undefined }])[1].phrase).toBe('(no duration yet)')
+  })
+})
+
+describe('the kind of damage after an amount', () => {
+  const magic: Effect = { type: 'damage', damage_type: 'Magic', base: [40, 65, 90] }
+  const truth: Effect = { type: 'damage', damage_type: 'True', base: [10, 10, 10] }
+
+  it('is written in after a damage effect\'s amount when the description leaves it out', () => {
+    expect(resolveTokens('Deals {Damage}.', [magic])).toBe('Deals 40/65/90 magic damage.')
+    expect(resolveTokens('Deals {Damage}.', [truth])).toBe('Deals 10 true damage.')
+    expect(resolveTokens('Deals {Damage}.', [{ type: 'damage', base: [5] }])).toBe('Deals 5 physical damage.')
+  })
+
+  it('is not written twice when the description already says it', () => {
+    expect(resolveTokens('Deals {Damage} magic damage.', [magic])).toBe('Deals 40/65/90 magic damage.')
+    expect(resolveTokens('Deals {Damage} damage.', [magic])).toBe('Deals 40/65/90 damage.')
+    expect(resolveTokens('Deals {Damage} MAGIC DAMAGE.', [magic])).toBe('Deals 40/65/90 MAGIC DAMAGE.')
+  })
+
+  it('lets what was written win when it names a different kind', () => {
+    expect(resolveTokens('Deals {Damage} true damage.', [magic])).toBe('Deals 40/65/90 true damage.')
+  })
+
+  it('is not added to anything but a damage amount', () => {
+    expect(resolveTokens('Stuns for {Stun}.', [stun])).toBe('Stuns for 1.5 s.')
+    expect(resolveTokens('Lasts {Armor duration}.', [{ type: 'stat_change', stat: 'armor', base: [1], duration: [4] }])).toBe('Lasts 4 s.')
+    expect(resolveTokens('{Nope}', [magic])).toBe('{Nope}')
+  })
+
+  it('comes as runs of text, with the words that name a kind of damage marked for colouring', () => {
+    expect(resolveSegments('Deals {Damage}, then {Damage 2}.', [magic, truth])).toEqual([
+      { text: 'Deals 40/65/90 ' },
+      { text: 'magic damage', tone: 'magic' },
+      { text: ', then 10 ' },
+      { text: 'true damage', tone: 'true' },
+      { text: '.' },
+    ])
+    expect(resolveSegments('Deals {Damage} true damage.', [magic])).toEqual([
+      { text: 'Deals 40/65/90 ' },
+      { text: 'true damage', tone: 'true' },
+      { text: '.' },
+    ])
+    expect(resolveSegments('Plain', [magic])).toEqual([{ text: 'Plain' }])
+    expect(resolveSegments('', [magic])).toEqual([])
   })
 })

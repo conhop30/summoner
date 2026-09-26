@@ -303,7 +303,7 @@ describe('description tokens in files', () => {
   it('sends the phone the numbers, not the tokens, for abilities and blocks', () => {
     const concept = toRecord(tokened(), 'concept')
     expect(concept.abilities.q.description).toBe(RESOLVED)
-    expect(concept.abilities.q.blocks![0].description).toBe('Also deals 5.')
+    expect(concept.abilities.q.blocks![0].description).toBe('Also deals 5 physical damage.')
     expect(JSON.stringify(concept)).not.toContain('{Damage}')
     expect(JSON.stringify(concept)).not.toContain('{Hit}')
   })

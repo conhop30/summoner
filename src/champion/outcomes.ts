@@ -9,10 +9,16 @@ import { STAT_CHANGE, isBuiltInEffect, statChangeOf, canLast } from './effects'
 
 export type OutcomeKind = 'damage' | 'buff' | 'debuff' | 'state' | 'custom'
 
+/** What a piece of ability text is about, so it can be coloured the way the game colours it. */
+export type Tone = 'physical' | 'magic' | 'true'
+
 export interface Outcome {
   id: string
   kind: OutcomeKind
   label: string
+  /** The words that follow this outcome's amount in a sentence ("magic damage"), written in after it when a description leaves them out. */
+  noun?: string
+  tone?: Tone
   /** The effect fields this outcome sets. */
   fields: Partial<Effect>
   /** True for an effect that is this outcome. */
@@ -34,7 +40,7 @@ const byType = (id: string, kind: OutcomeKind, label: string, type: string, also
 })
 
 const damage = (id: string, label: string, damageType: DamageType): Outcome => ({
-  id, kind: 'damage', label,
+  id, kind: 'damage', label, noun: label.toLowerCase(), tone: damageType.toLowerCase() as Tone,
   fields: { type: 'damage', damage_type: damageType },
   matches: e => e.type === 'damage' && (e.damage_type ?? 'Physical') === damageType,
 })

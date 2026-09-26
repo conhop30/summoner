@@ -112,7 +112,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
           </div>
 
           <div className="ability-desc-row">
-            <DescriptionField value={body.description} effects={body.effects} onChange={description => onUpdate({ description })} />
+            <DescriptionField value={body.description} effects={body.effects} onChange={description => onUpdate({ description })} meta={{ name: body.name, cooldown: body.cooldown, cost: body.cost, costType: body.cost_type }} />
           </div>
         </>
       )}
@@ -303,7 +303,12 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
           </div>
 
           <div className="ability-desc-row">
-            <DescriptionField value={ability.description} effects={ability.effects} onChange={description => updateAbility({ description })} />
+            <DescriptionField
+              value={ability.description}
+              effects={ability.effects}
+              onChange={description => updateAbility({ description })}
+              meta={{ name: ability.name, label: SLOT_LABELS[activeSlot], cooldown: ability.cooldown, cost: ability.cost, costType: ability.cost_type }}
+            />
           </div>
 
           {activeMode === 'simple' && (
