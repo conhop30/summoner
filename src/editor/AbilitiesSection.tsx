@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
-import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal } from '../champion/types'
-import { BUILT_IN_EFFECT_TYPES, FAMILY_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, unitSuffix } from '../champion/effects'
+import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal, StatChangeDirection, StatChangeTarget } from '../champion/types'
+import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, DIRECTION_OPTIONS, FAMILY_OPTIONS, STAT_CHANGE, STAT_CHANGE_DEFAULTS, TARGET_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectName, isBuiltInEffect, statChangeOf, unitSuffix } from '../champion/effects'
 import DescriptionField from './DescriptionField'
 import { effectTokenNames, renamesBetween, retargetTokens } from '../champion/descriptionTokens'
 import { addStatPart, flatToStat, hasFlatPart, removeFlatPart, statToFlat } from '../champion/terms'
@@ -138,9 +138,13 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
   }
 
   // Picking a built-in type clears any family and unit left over from a custom label, since a
-  // built-in has its own.
+  // built-in has its own. A stat change starts as "raise armor, on self", and any other type
+  // drops the stat-change settings it may have had.
   function changeEffectType(index: number, type: string) {
-    updateEffect(index, isBuiltInEffect(type) ? { type, family: undefined, unit: undefined } : { type })
+    const noStatChange = { stat: undefined, direction: undefined, target: undefined }
+    if (type === STAT_CHANGE) updateEffect(index, { type, family: undefined, ...STAT_CHANGE_DEFAULTS })
+    else if (isBuiltInEffect(type)) updateEffect(index, { type, family: undefined, unit: undefined, ...noStatChange })
+    else updateEffect(index, { type, ...noStatChange })
   }
 
   function removeEffect(index: number) {
@@ -165,6 +169,13 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
     const effects = [...(body.effects ?? [])]
     effects[effectIndex] = { ...effects[effectIndex], base: values }
     onUpdate({ effects })
+  }
+
+  function updateEffectDuration(effectIndex: number, rankIndex: number, raw: string) {
+    const effect = (body.effects ?? [])[effectIndex]
+    const updated = [...(effect.duration ?? Array(maxRank).fill(0))]
+    updated[rankIndex] = raw === '' ? 0 : parseFloat(raw)
+    updateEffect(effectIndex, { duration: updated })
   }
 
   function replaceEffect(effectIndex: number, next: Effect) {
@@ -399,6 +410,48 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                     </div>
                   )}
 
+                  {effect.type === STAT_CHANGE && (() => {
+                    const change = statChangeOf(effect)
+                    return (
+                      <div className="effect-custom-row stat-change-row">
+                        <select
+                          className="effect-type-select"
+                          value={change.direction}
+                          onChange={e => updateEffect(i, { direction: e.target.value as StatChangeDirection })}
+                          aria-label="Raise or lower"
+                        >
+                          {DIRECTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                        <select
+                          className="effect-type-select"
+                          value={change.stat}
+                          onChange={e => updateEffect(i, { stat: e.target.value })}
+                          aria-label="Which stat"
+                        >
+                          {CHANGEABLE_STATS.map(id => <option key={id} value={id}>{ratioStatDef(id)!.label}</option>)}
+                        </select>
+                        <span className="stat-change-word">on</span>
+                        <select
+                          className="effect-type-select"
+                          value={change.target}
+                          onChange={e => updateEffect(i, { target: e.target.value as StatChangeTarget })}
+                          aria-label="Who it affects"
+                        >
+                          {TARGET_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                        <span className="stat-change-word">by</span>
+                        <select
+                          className="effect-type-select"
+                          value={kind.unit}
+                          onChange={e => updateEffect(i, { unit: e.target.value as EffectUnit })}
+                          aria-label="Flat or percent"
+                        >
+                          {UNIT_OPTIONS.filter(o => o.value !== 'seconds').map(o => <option key={o.value} value={o.value}>{o.value === 'flat' ? 'flat' : '%'}</option>)}
+                        </select>
+                      </div>
+                    )
+                  })()}
+
                   <div className="effect-subfield">
                     <div className="effect-subfield-header">
                       <span className="effect-subfield-label">Amount</span>
@@ -521,6 +574,20 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
                       )
                     })}
                   </div>
+
+                  {effect.type === STAT_CHANGE && (
+                    <div className="effect-subfield">
+                      <div className="effect-subfield-header">
+                        <span className="effect-subfield-label">Lasts (seconds)</span>
+                      </div>
+                      <RankValueField
+                        values={effect.duration}
+                        maxRank={maxRank}
+                        onChange={(rankIndex, raw) => updateEffectDuration(i, rankIndex, raw)}
+                        onBulkChange={values => updateEffect(i, { duration: values })}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -552,6 +619,7 @@ function normalizeBodyRanks<T extends AbilityBody>(body: T, next: number): T {
     effects: body.effects?.map(effect => ({
       ...effect,
       base: effect.base ? normalizeRankArray(effect.base, next) : effect.base,
+      duration: effect.duration ? normalizeRankArray(effect.duration, next) : effect.duration,
       ratios: effect.ratios?.map(r => ({ ...r, values: normalizeRankArray(r.values, next) })),
     })),
   }

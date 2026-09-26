@@ -1,5 +1,5 @@
-import type { Effect, EffectFamily, EffectUnit } from './types'
-import { describeRatio, rankList, unitAfter } from './ratios'
+import type { Effect, EffectFamily, EffectUnit, StatChangeDirection, StatChangeTarget } from './types'
+import { describeRatio, rankList, ratioStatDef, unitAfter, type RatioStatId } from './ratios'
 
 // What an effect IS, separately from what it is called. Built-in effect types (damage, stun, slow...)
 // each carry a fixed family and unit. A custom effect ("taunt", "sleep", anything typed) has only a
@@ -27,7 +27,11 @@ const BUILT_IN: Record<string, EffectKind> = {
   armor_modifier: { family: 'utility', unit: 'flat' },
   magic_resistance_modifier: { family: 'utility', unit: 'flat' },
   dash: { family: 'utility', unit: 'flat' },
+  // Its unit is the effect's own choice, flat or percent; see effectKind.
+  stat_change: { family: 'utility', unit: 'flat' },
 }
+
+export const STAT_CHANGE = 'stat_change'
 
 /** The effect types the editor offers as suggestions, in the order they are listed. */
 export const BUILT_IN_EFFECT_TYPES: string[] = Object.keys(BUILT_IN)
@@ -71,6 +75,7 @@ export function defaultUnitFor(family: EffectFamily): EffectUnit {
 
 /** Family and unit of an effect: fixed for a built-in type, chosen (or guessed from the label) for a custom one. */
 export function effectKind(effect: Pick<Effect, 'type' | 'family' | 'unit'>): EffectKind {
+  if (effect.type === STAT_CHANGE) return { family: 'utility', unit: effect.unit === 'percent' ? 'percent' : 'flat' }
   const builtIn = BUILT_IN[effect.type]
   if (builtIn && isBuiltInEffect(effect.type)) return builtIn
   const family = effect.family ?? guessFamily(effect.type ?? '')
@@ -88,13 +93,55 @@ export function effectName(type: string): string {
   return text ? text[0].toUpperCase() + text.slice(1) : 'Effect'
 }
 
+// ─── Stat changes ──────────────────────────────────────────────────────────────
+
+/** The stats a stat change can move, in the order the picker lists them. Penetration is here so shred can be written down. */
+export const CHANGEABLE_STATS: RatioStatId[] = [
+  'armor', 'magic_resist', 'health', 'attack_speed', 'move_speed', 'ad', 'ap',
+  'crit_chance', 'ability_haste', 'lethality', 'armor_pen', 'magic_pen', 'health_regen', 'resource_regen',
+]
+
+export const DIRECTION_OPTIONS: { value: StatChangeDirection; label: string }[] = [
+  { value: 'raise', label: 'Raise' },
+  { value: 'lower', label: 'Lower' },
+]
+
+export const TARGET_OPTIONS: { value: StatChangeTarget; label: string; short: string }[] = [
+  { value: 'self', label: 'Self', short: 'self' },
+  { value: 'ally', label: 'An ally', short: 'an ally' },
+  { value: 'enemy', label: 'An enemy', short: 'an enemy' },
+]
+
+/** What a new stat change starts as: the most common one, which the user then adjusts. */
+export const STAT_CHANGE_DEFAULTS: Required<Pick<Effect, 'stat' | 'direction' | 'target' | 'unit'>> = {
+  stat: 'armor', direction: 'raise', target: 'self', unit: 'flat',
+}
+
+/** A stat change's settings with the blanks filled in, so a half-made one still reads sensibly. */
+export function statChangeOf(effect: Pick<Effect, 'stat' | 'direction' | 'target'>) {
+  return {
+    stat: effect.stat && ratioStatDef(effect.stat) ? effect.stat : STAT_CHANGE_DEFAULTS.stat,
+    direction: effect.direction ?? STAT_CHANGE_DEFAULTS.direction,
+    target: effect.target ?? STAT_CHANGE_DEFAULTS.target,
+  }
+}
+
+/** "Raise armor on self": the sentence at the head of a stat change. */
+export function describeStatChange(effect: Pick<Effect, 'stat' | 'direction' | 'target'>): string {
+  const { stat, direction, target } = statChangeOf(effect)
+  const verb = DIRECTION_OPTIONS.find(o => o.value === direction)!.label
+  const who = TARGET_OPTIONS.find(o => o.value === target)!.short
+  return `${verb} ${ratioStatDef(stat)!.short} on ${who}`
+}
+
 /**
  * One line that says what an effect does, for the collapsed card: "Damage · Magic · 40/65/90 + 45% AP".
  * It reads the same however many scalers there are, so a busy effect stays one tidy line.
  */
 export function describeEffect(effect: Effect): string {
   const kind = effectKind(effect)
-  const head = [effectName(effect.type)]
+  const isStatChange = effect.type === STAT_CHANGE
+  const head = [isStatChange ? describeStatChange(effect) : effectName(effect.type)]
   if (kind.family === 'damage') head.push(effect.damage_type ?? 'Physical')
 
   const amounts: string[] = []
@@ -106,5 +153,6 @@ export function describeEffect(effect: Effect): string {
     const text = describeRatio(ratio, kind.unit)
     if (text) amounts.push(text)
   }
-  return `${head.join(' · ')} · ${amounts.length ? amounts.join(' + ') : 'no numbers yet'}`
+  const lasts = isStatChange && (effect.duration ?? []).some(v => v) ? ` · for ${rankList(effect.duration!)} s` : ''
+  return `${head.join(' · ')} · ${amounts.length ? amounts.join(' + ') : 'no numbers yet'}${lasts}`
 }

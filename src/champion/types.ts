@@ -15,6 +15,7 @@ export type EffectType =
   | 'armor_modifier'
   | 'magic_resistance_modifier'
   | 'dash'
+  | 'stat_change'
   | string; // escape hatch for custom types
 
 export type DamageType = 'Physical' | 'Magic' | 'True';
@@ -40,6 +41,10 @@ export interface RatioEntry {
 export type EffectFamily = 'damage' | 'hard_control' | 'soft_control' | 'sustain' | 'utility';
 export type EffectUnit = 'seconds' | 'percent' | 'flat';
 
+// A 'stat_change' effect raises or lowers one stat of someone: "-30% armor on the enemy for 4 s".
+export type StatChangeDirection = 'raise' | 'lower';
+export type StatChangeTarget = 'self' | 'ally' | 'enemy';
+
 export interface Effect {
   type: EffectType;
   // What a description calls this effect: {Name}. Unset, it is the type's name ("Damage"); see
@@ -51,6 +56,11 @@ export interface Effect {
   base?: number[];
   ratios?: RatioEntry[];
   duration?: number[];
+  // Only a 'stat_change' effect has these. The amount is the effect's usual base and ratios, in
+  // `unit` (flat, or percent). A change with none of them set reads as "raise armor, on self".
+  stat?: string;
+  direction?: StatChangeDirection;
+  target?: StatChangeTarget;
   notes?: string;
 }
 

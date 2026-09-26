@@ -508,6 +508,15 @@
   color: var(--text-muted);
 }
 
+/* A stat change reads as a sentence: raise [armor] on [an enemy] by [%]. */
+.stat-change-row { align-items: center; gap: var(--space-2); }
+.stat-change-word {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .effect-type-select {
   background: var(--bg-elevated);
   border: 1px solid var(--border-default);

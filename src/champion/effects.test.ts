@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { BUILT_IN_EFFECT_TYPES, defaultUnitFor, effectKind, guessFamily, isBuiltInEffect, unitSuffix } from './effects'
+import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, STAT_CHANGE_DEFAULTS, defaultUnitFor, describeEffect, effectKind, guessFamily, isBuiltInEffect, statChangeOf, unitSuffix } from './effects'
+import { ratioStatDef } from './ratios'
+import type { Effect } from './types'
 
 describe('built-in effects', () => {
   it('lists every type the editor suggests, each with a fixed kind', () => {
@@ -53,5 +55,29 @@ describe('custom effects', () => {
     expect(unitSuffix('seconds')).toBe(' (seconds)')
     expect(unitSuffix('percent')).toBe(' (%)')
     expect(unitSuffix('flat')).toBe('')
+  })
+})
+
+describe('stat changes', () => {
+  it('is a built-in whose unit is the effect\'s own choice between flat and percent', () => {
+    expect(isBuiltInEffect('stat_change')).toBe(true)
+    expect(effectKind({ type: 'stat_change' })).toEqual({ family: 'utility', unit: 'flat' })
+    expect(effectKind({ type: 'stat_change', unit: 'percent' })).toEqual({ family: 'utility', unit: 'percent' })
+    expect(effectKind({ type: 'stat_change', unit: 'seconds' })).toEqual({ family: 'utility', unit: 'flat' })
+  })
+
+  it('fills in the blanks of a half-made one', () => {
+    expect(statChangeOf({})).toEqual({ stat: 'armor', direction: 'raise', target: 'self' })
+    expect(statChangeOf({ stat: 'not a stat' }).stat).toBe('armor')
+  })
+
+  it('reads as one line, with the duration last', () => {
+    const shred: Effect = { type: 'stat_change', stat: 'armor', direction: 'lower', target: 'enemy', unit: 'percent', base: [20, 25, 30], duration: [4, 4, 4] }
+    expect(describeEffect(shred)).toBe('Lower armor on an enemy · 20/25/30% · for 4 s')
+    expect(describeEffect({ type: 'stat_change', ...STAT_CHANGE_DEFAULTS })).toBe('Raise armor on self · no numbers yet')
+  })
+
+  it('only offers stats the picker knows', () => {
+    for (const id of CHANGEABLE_STATS) expect(ratioStatDef(id)).toBeTruthy()
   })
 })
