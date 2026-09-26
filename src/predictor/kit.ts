@@ -24,7 +24,7 @@ const ULT_RANK = 2
 const CC_VALUE_PER_SECOND = 100
 /** How much of a full second each kind of control is worth. */
 const CC_WEIGHT: Record<string, number> = {
-  stun: 1, knock_up: 1, charm: 1, fear: 1, silence: 0.6, knock_back: 0.4, slow: 0.5,
+  stun: 1, knock_up: 1, charm: 1, fear: 1, silence: 0.6, knock_back: 0.4, slow: 0.5, taunt: 0.9, root: 0.7,
 }
 const DEFAULT_CC_SECONDS: Record<string, number> = { knock_back: 0.6, slow: 1.5 }
 /** A slow of this strength is what the slow price is quoted for; stronger or weaker scales from it. */
@@ -35,6 +35,11 @@ const FLAT_UTILITY_VALUE: Record<string, number> = {
   dash: 40, speed_boost: 30, armor_modifier: 30, magic_resistance_modifier: 30,
 }
 const OTHER_UTILITY_VALUE = 20
+/** States: a second of not being hurt is worth this share of the champion's health (before the shield discount); a second of not being stopped, this much. */
+const UNHURT_HEALTH_PER_SECOND = 0.1
+const UNSTOPPABLE_PER_SECOND = 40
+const DEFAULT_STATE_SECONDS = 1.5
+const MAX_STATE_SECONDS = 5
 
 // Raising or lowering a stat. How long one lasts when no duration is filled in, and how much of a
 // fight a buff has to last to be worth its whole size (a fight's damage arrives over about this long).
@@ -197,6 +202,11 @@ function ratioAmount(ratio: RatioEntry, rankIndex: number, c: Combatant): number
   return per ? (value * stat) / per : ratioFraction(value) * stat
 }
 
+/** How long a state lasts: the amount, in seconds, or a default while it is blank, and never more than a fight. */
+function stateSeconds(amount: number): number {
+  return amount > 0 ? Math.min(amount, MAX_STATE_SECONDS) : DEFAULT_STATE_SECONDS
+}
+
 /** A percentage typed either way: 30 and 0.3 both mean 30%. */
 function percentOf(amount: number): number {
   return amount > 1 ? Math.min(amount, 100) / 100 : Math.max(0, amount)
@@ -272,6 +282,10 @@ function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant, alwaysO
     const strength = unit === 'percent' ? (amount > 1 ? Math.min(amount, 100) / 100 : amount > 0 ? amount : SLOW_REFERENCE_STRENGTH) : SLOW_REFERENCE_STRENGTH
     const seconds = explicit || (unit === 'seconds' && amount > 0 && amount <= 5 ? amount : DEFAULT_CC_SECONDS[type] ?? DEFAULT_SOFT_SECONDS)
     parts.utility = seconds * CC_VALUE_PER_SECOND * (CC_WEIGHT[type] ?? CC_WEIGHT.slow) * (strength / SLOW_REFERENCE_STRENGTH)
+  } else if (type === 'untargetable' || type === 'invulnerable') {
+    parts.sustain = stateSeconds(amount) * c.health * UNHURT_HEALTH_PER_SECOND * SHIELD_WEIGHT
+  } else if (type === 'unstoppable' || type === 'cc_immune') {
+    parts.utility = stateSeconds(amount) * UNSTOPPABLE_PER_SECOND
   } else {
     parts.utility = FLAT_UTILITY_VALUE[type] ?? OTHER_UTILITY_VALUE
   }

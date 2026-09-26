@@ -38,9 +38,9 @@ describe('custom effects', () => {
   })
 
   it('uses the guess until a family is picked, and the pick always wins', () => {
-    expect(effectKind({ type: 'taunt' })).toEqual({ family: 'hard_control', unit: 'seconds' })
-    expect(effectKind({ type: 'taunt', family: 'utility' })).toEqual({ family: 'utility', unit: 'flat' })
-    expect(effectKind({ type: 'taunt', unit: 'percent' })).toEqual({ family: 'hard_control', unit: 'percent' })
+    expect(effectKind({ type: 'sleep' })).toEqual({ family: 'hard_control', unit: 'seconds' })
+    expect(effectKind({ type: 'sleep', family: 'utility' })).toEqual({ family: 'utility', unit: 'flat' })
+    expect(effectKind({ type: 'sleep', unit: 'percent' })).toEqual({ family: 'hard_control', unit: 'percent' })
   })
 
   it('picks the natural unit for each family', () => {

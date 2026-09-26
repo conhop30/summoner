@@ -101,6 +101,25 @@ export default function SettingsPage() {
         </section>
 
         <section className="settings-section">
+          <div className="settings-section-title">Abilities</div>
+          <div className="settings-section-desc">
+            Each effect asks only what it does and how much. Its extras (what it scales with, its name, notes, who it affects) can sit in a
+            collapsed More under the effect, or have a tab of their own.
+          </div>
+          <div className="settings-btn-row">
+            {([['inline', 'Under each effect'], ['tab', 'On an Advanced tab']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                className={`settings-option-btn${settings.effect_details === key ? ' active' : ''}`}
+                onClick={() => update({ effect_details: key })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="settings-section">
           <div className="settings-section-title">Music</div>
           <label className="settings-toggle-row music-master-toggle">
             <input

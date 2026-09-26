@@ -29,6 +29,13 @@ const BUILT_IN: Record<string, EffectKind> = {
   dash: { family: 'utility', unit: 'flat' },
   // Its unit is the effect's own choice, flat or percent; see effectKind.
   stat_change: { family: 'utility', unit: 'flat' },
+  taunt: { family: 'hard_control', unit: 'seconds' },
+  root: { family: 'hard_control', unit: 'seconds' },
+  // States: for as many seconds as the amount says, the champion can't be hurt, or can't be stopped.
+  untargetable: { family: 'utility', unit: 'seconds' },
+  invulnerable: { family: 'utility', unit: 'seconds' },
+  unstoppable: { family: 'utility', unit: 'seconds' },
+  cc_immune: { family: 'utility', unit: 'seconds' },
 }
 
 export const STAT_CHANGE = 'stat_change'
@@ -103,6 +110,7 @@ export function defaultTokenName(effect: Pick<Effect, 'type' | 'stat'>): string 
 
 /** An effect type as a name: "knock_up" becomes "Knock up", a custom label keeps what was typed. */
 export function effectName(type: string): string {
+  if (type === 'cc_immune') return 'CC immune'
   const text = type.replace(/_/g, ' ').trim()
   return text ? text[0].toUpperCase() + text.slice(1) : 'Effect'
 }
@@ -110,11 +118,15 @@ export function effectName(type: string): string {
 /** Effect types whose effect lasts a while, so the editor offers a duration for them. Instant ones (damage, heals, dashes) and controls (whose amount is their length) don't. */
 const TIMED_TYPES = ['stat_change', 'slow', 'shield', 'speed_boost', 'armor_modifier', 'magic_resistance_modifier']
 
-/** True when a duration makes sense for the effect, or one is already filled in. */
-export function takesDuration(effect: Pick<Effect, 'type' | 'family' | 'unit' | 'duration'>): boolean {
-  if ((effect.duration ?? []).some(v => v)) return true
+/** True when an effect of this kind is one that lasts a while. */
+export function canLast(effect: Pick<Effect, 'type' | 'family' | 'unit'>): boolean {
   if (TIMED_TYPES.includes(effect.type)) return true
   return !isBuiltInEffect(effect.type) && effect.type.trim() !== '' && effectKind(effect).family !== 'hard_control'
+}
+
+/** True when the editor should offer a duration: the effect can last, or one is already filled in. */
+export function takesDuration(effect: Pick<Effect, 'type' | 'family' | 'unit' | 'duration'>): boolean {
+  return (effect.duration ?? []).some(v => v) || canLast(effect)
 }
 
 // ─── Stat changes ──────────────────────────────────────────────────────────────
@@ -177,6 +189,6 @@ export function describeEffect(effect: Effect): string {
     const text = describeRatio(ratio, kind.unit)
     if (text) amounts.push(text)
   }
-  const lasts = (effect.duration ?? []).some(v => v) ? ` · for ${rankList(effect.duration!)} s` : ''
+  const lasts = canLast(effect) && (effect.duration ?? []).some(v => v) ? ` · for ${rankList(effect.duration!)} s` : ''
   return `${head.join(' · ')} · ${amounts.length ? amounts.join(' + ') : 'no numbers yet'}${lasts}`
 }

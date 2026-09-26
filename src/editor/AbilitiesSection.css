@@ -545,25 +545,9 @@
 
 /* ── Advanced ── */
 
-.ability-advanced {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.advanced-hint {
-  font-size: var(--font-size-base);
-  letter-spacing: var(--tracking-normal);
-  color: var(--text-muted);
-  text-align: center;
-  line-height: 2;
-}
-
-.advanced-hint-sub {
-  font-size: var(--font-size-sm);
-  color: var(--text-placeholder);
-}
+/* The Advanced tab: every effect, with the rest of what can be said about it. */
+.ability-advanced { flex: 1; display: flex; flex-direction: column; gap: var(--space-4); }
+.ability-advanced-block { display: flex; flex-direction: column; gap: var(--space-2); }
 
 /* ── Mode Bar ── */
 
@@ -602,4 +586,25 @@
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   pointer-events: none;
+}
+
+/* The rest of an effect, kept out of the way until asked for. */
+.effect-more-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: var(--space-1) 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.effect-more-btn:hover { color: var(--text-secondary); }
+.effect-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-subtle);
 }

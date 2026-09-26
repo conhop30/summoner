@@ -9,6 +9,10 @@ export interface MusicTrack {
   src: string;
 }
 
+// Where an ability effect's extra details (what it scales with, its name, notes, who it affects) are
+// edited: in a collapsed "More" under each effect, or on the ability's own Advanced tab.
+export type EffectDetailsPlacement = 'inline' | 'tab';
+
 export interface AppSettings {
   theme: ThemeMode;
   music_enabled: boolean;
@@ -22,6 +26,7 @@ export interface AppSettings {
   music_custom_tracks: MusicTrack[];
   window_frameless: boolean;
   window_fullscreen: boolean;
+  effect_details: EffectDetailsPlacement;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -33,4 +38,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   music_custom_tracks: [],
   window_frameless: true,
   window_fullscreen: false,
+  effect_details: 'inline',
 };

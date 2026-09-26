@@ -1,40 +1,16 @@
 import { useRef, useState } from 'react'
 import AbilityJournalPanel from './AbilityJournal'
 import StatBlock from './StatBlock'
-import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, DamageType, Effect, EffectFamily, EffectUnit, RatioEntry, RatioPart, RecastStruct, AbilityJournal, StatChangeDirection, StatChangeTarget } from '../champion/types'
-import { BUILT_IN_EFFECT_TYPES, CHANGEABLE_STATS, DIRECTION_OPTIONS, FAMILY_OPTIONS, STAT_CHANGE, STAT_CHANGE_DEFAULTS, TARGET_OPTIONS, UNIT_OPTIONS, describeEffect, effectKind, effectTypeLabel, isBuiltInEffect, statChangeOf, takesDuration, unitSuffix } from '../champion/effects'
+import type { Champion, Ability, AbilityBody, AbilityBlock, AbilityBlockKind, AbilitySlot, Effect, RecastStruct, AbilityJournal } from '../champion/types'
 import DescriptionField from './DescriptionField'
+import EffectCard from './EffectCard'
 import NumberField from './NumberField'
 import { effectTokenNames, renamesBetween, retargetTokens } from '../champion/descriptionTokens'
-import { addStatPart, flatToStat, hasFlatPart, removeFlatPart, statToFlat } from '../champion/terms'
-import { PART_LABELS, PER_DEFAULT, RATIO_STATS, assumedUnits, percentToRatio, ratioStatDef, ratioToPercent, resolveRatio } from '../champion/ratios'
+import { newEffect } from '../champion/outcomes'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
+import { useSettings } from '../settings/useSettings'
 import './AbilitiesSection.css'
-
-// The dropdown's entry for an effect that isn't one of the built-in types.
-const CUSTOM_EFFECT = '__custom__'
-// The same for a scaler that is a value the user names themselves (stacks) rather than a stat.
-const CUSTOM_RATIO = '__custom__'
-const FLAT_SOURCE = '__flat__'
-
-// The stats an amount part can scale with, shared by every part's source select.
-function StatOptions() {
-  return (
-    <>
-      {RATIO_STATS.filter(d => !d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-      <optgroup label="The target's">
-        {RATIO_STATS.filter(d => d.id.startsWith('target_')).map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-      </optgroup>
-      <option value={CUSTOM_RATIO}>Custom value…</option>
-    </>
-  )
-}
-
-// The unit shown inside an amount's boxes: none for a flat amount, since the box says what it is.
-function unitSuffixShort(unit: EffectUnit): string | undefined {
-  return unit === 'percent' ? '%' : unit === 'seconds' ? 's' : undefined
-}
 
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
 
@@ -44,77 +20,22 @@ const BLOCK_KINDS: { value: AbilityBlockKind; label: string }[] = [
   { value: 'recast', label: 'Recast' },
 ]
 
-// One box per rank. After the first two ranks are filled in, suggest the arithmetic step between
-// them as the scaling rule for the rest — the user accepts or keeps typing manually. `percent` is for
-// a ratio (a share of a stat): the person types 45 and 0.45 is what is kept. `suffix` puts a unit
-// inside each box.
-function RankValueField({ values, maxRank, onChange, onBulkChange, percent = false, suffix }: {
-  values: number[] | undefined
-  maxRank: number
-  onChange: (rankIndex: number, value: number) => void
-  onBulkChange: (newValues: number[]) => void
-  percent?: boolean
-  suffix?: string
-}) {
-  const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
-  // Everything below works in what is shown in the boxes; `store` turns it back into what is kept.
-  const show = (v: number | undefined) => (v === undefined ? undefined : percent ? ratioToPercent(v) : v)
-  const store = (n: number) => (percent ? percentToRatio(n) : n)
-  const shown = rankIndices.map(i => show(values?.[i]))
-  const v0 = shown[0]
-  const v1 = shown[1]
-  // A second rank left blank (which is stored as 0) isn't a step to continue.
-  const hasStep = maxRank > 2 && v0 !== undefined && v1 !== undefined && v1 !== 0
-  const step = hasStep ? Math.round((v1! - v0!) * 100) / 100 : 0
-  const projected = hasStep
-    ? rankIndices.map(i => (i < 2 ? shown[i]! : Math.round((v0! + step * i) * 100) / 100))
-    : []
-  const suggestionApplicable = hasStep && rankIndices.slice(2).some(i => (shown[i] ?? 0) !== projected[i])
-
-  // A single bulk update, not N sequential onChange calls — the latter would each
-  // read the same pre-update `ability` prop and clobber one another (only the last wins).
-  function acceptSuggestion() {
-    onBulkChange(rankIndices.map(i => store(i < 2 ? (shown[i] ?? 0) : projected[i])))
-  }
-
-  return (
-    <div className="rank-value-field">
-      <div className="rank-inputs">
-        {rankIndices.map(i => (
-          <NumberField
-            key={i}
-            value={shown[i]}
-            suffix={percent ? '%' : suffix}
-            onChange={n => onChange(i, store(n))}
-          />
-        ))}
-      </div>
-      {suggestionApplicable && (
-        <button className="rank-suggestion-chip" onClick={acceptSuggestion}>
-          Suggest {step >= 0 ? '+' : ''}{step}{percent ? '%' : ''} per rank — Accept
-        </button>
-      )}
-    </div>
-  )
-}
-
 // The primary ability and every appended block share the exact same body shape
-// (name/description/cooldown/cost/effects), so they share this editor too.
-function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true }: {
+// (name/description/cooldown/cost/effects), so they share this editor too. `part` picks what it
+// shows: 'simple' is the whole body, with each effect down to what it does and how much;
+// 'details' is only the effects, each with the rest of what can be said about it (the Advanced tab).
+function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true, part = 'simple', detailsInline = true }: {
   body: AbilityBody
   maxRank: number
   onUpdate: (partial: Partial<AbilityBody>) => void
   showNameDescription?: boolean
+  part?: 'simple' | 'details'
+  detailsInline?: boolean
 }) {
   const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
   const tokenNames = effectTokenNames(body.effects)
   // Effects are one tidy line each until opened; a freshly added one opens so it can be filled in.
   const [openEffects, setOpenEffects] = useState<Set<number>>(() => new Set())
-  // The effect whose custom name is being typed. Its name field stays until the user leaves it, even
-  // if what they have typed so far happens to match a built-in type (the start of "shield wall").
-  const [typingName, setTypingName] = useState<number | null>(null)
-  // The same for a custom value's name in a scaler, as "effect:scaler".
-  const [typingValue, setTypingValue] = useState<string | null>(null)
 
   function toggleEffect(index: number) {
     setOpenEffects(prev => {
@@ -140,122 +61,41 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
 
   function addEffect() {
     const index = (body.effects ?? []).length
-    commitEffects([...(body.effects ?? []), { type: 'damage' } as Effect])
+    commitEffects([...(body.effects ?? []), newEffect()])
     setOpenEffects(prev => new Set(prev).add(index))
   }
 
-  function updateEffect(index: number, partial: Partial<Effect>) {
+  function replaceEffect(index: number, next: Effect) {
     const effects = [...(body.effects ?? [])]
-    effects[index] = { ...effects[index], ...partial }
+    effects[index] = next
     commitEffects(effects)
-  }
-
-  // Picking a built-in type clears any family and unit left over from a custom label, since a
-  // built-in has its own. A stat change starts as "raise armor, on self", and any other type
-  // drops the stat-change settings it may have had.
-  function changeEffectType(index: number, type: string) {
-    const noStatChange = { stat: undefined, direction: undefined, target: undefined }
-    if (type === STAT_CHANGE) updateEffect(index, { type, family: undefined, ...STAT_CHANGE_DEFAULTS })
-    else if (isBuiltInEffect(type)) updateEffect(index, { type, family: undefined, unit: undefined, ...noStatChange })
-    else updateEffect(index, { type, ...noStatChange })
   }
 
   function removeEffect(index: number) {
     commitEffects((body.effects ?? []).filter((_, i) => i !== index), index)
     // Later effects move up one place, and their open/closed state goes with them.
     setOpenEffects(prev => new Set([...prev].filter(i => i !== index).map(i => (i > index ? i - 1 : i))))
-    setTypingName(null)
-    setTypingValue(null)
   }
 
-  function updateEffectBase(effectIndex: number, rankIndex: number, value: number) {
-    const effects = [...(body.effects ?? [])]
-    const effect = effects[effectIndex]
-    const current = effect.base ?? Array(maxRank).fill(0)
-    const updated = [...current]
-    updated[rankIndex] = value
-    effects[effectIndex] = { ...effect, base: updated }
-    onUpdate({ effects })
-  }
+  const effectCards = (body.effects ?? []).map((effect, i) => (
+    <EffectCard
+      key={i}
+      effect={effect}
+      tokenName={tokenNames[i]}
+      maxRank={maxRank}
+      open={openEffects.has(i)}
+      onToggle={() => toggleEffect(i)}
+      onChange={next => replaceEffect(i, next)}
+      onRemove={() => removeEffect(i)}
+      part={part}
+      detailsInline={detailsInline}
+    />
+  ))
 
-  function updateEffectBaseAll(effectIndex: number, values: number[]) {
-    const effects = [...(body.effects ?? [])]
-    effects[effectIndex] = { ...effects[effectIndex], base: values }
-    onUpdate({ effects })
-  }
-
-  function updateEffectDuration(effectIndex: number, rankIndex: number, value: number) {
-    const effect = (body.effects ?? [])[effectIndex]
-    const updated = [...(effect.duration ?? Array(maxRank).fill(0))]
-    updated[rankIndex] = value
-    updateEffect(effectIndex, { duration: updated })
-  }
-
-  function replaceEffect(effectIndex: number, next: Effect) {
-    const effects = [...(body.effects ?? [])]
-    effects[effectIndex] = next
-    onUpdate({ effects })
-  }
-
-  function addRatio(effectIndex: number) {
-    replaceEffect(effectIndex, addStatPart((body.effects ?? [])[effectIndex], { stat: 'ap', part: 'total', values: Array(maxRank).fill(0) }))
-  }
-
-  // The source select on the flat row: a stat moves the flat numbers into a scaler on it.
-  function changeFlatSource(effectIndex: number, source: string) {
-    const effect = (body.effects ?? [])[effectIndex]
-    if (source === CUSTOM_RATIO) {
-      setTypingValue(`${effectIndex}:${(effect.ratios ?? []).length}`)
-      replaceEffect(effectIndex, flatToStat(effect, '', maxRank))
-    } else {
-      replaceEffect(effectIndex, flatToStat(effect, source, maxRank))
-    }
-  }
-
-  function updateRatio(effectIndex: number, ratioIndex: number, partial: Partial<RatioEntry>) {
-    const effects = [...(body.effects ?? [])]
-    const effect = effects[effectIndex]
-    const ratios = [...(effect.ratios ?? [])]
-    ratios[ratioIndex] = { ...ratios[ratioIndex], ...partial }
-    effects[effectIndex] = { ...effect, ratios }
-    onUpdate({ effects })
-  }
-
-  // Changing the stat keeps the chosen part if the new stat has it, and falls back to the total if not.
-  function changeRatioStat(effectIndex: number, ratioIndex: number, stat: string) {
-    const current = resolveRatio((body.effects ?? [])[effectIndex].ratios![ratioIndex])
-    const parts = ratioStatDef(stat)?.parts ?? ['total']
-    updateRatio(effectIndex, ratioIndex, { stat, part: current && parts.includes(current.part) ? current.part : 'total', assumed: undefined })
-  }
-
-  function updateRatioValue(effectIndex: number, ratioIndex: number, rankIndex: number, value: number) {
-    const effects = [...(body.effects ?? [])]
-    const effect = effects[effectIndex]
-    const ratios = [...(effect.ratios ?? [])]
-    const ratio = ratios[ratioIndex]
-    const current = ratio.values ?? Array(maxRank).fill(0)
-    const updated = [...current]
-    updated[rankIndex] = value
-    ratios[ratioIndex] = { ...ratio, values: updated }
-    effects[effectIndex] = { ...effect, ratios }
-    onUpdate({ effects })
-  }
-
-  function updateRatioValuesAll(effectIndex: number, ratioIndex: number, values: number[]) {
-    const effects = [...(body.effects ?? [])]
-    const effect = effects[effectIndex]
-    const ratios = [...(effect.ratios ?? [])]
-    ratios[ratioIndex] = { ...ratios[ratioIndex], values }
-    effects[effectIndex] = { ...effect, ratios }
-    onUpdate({ effects })
-  }
-
-  function removeRatio(effectIndex: number, ratioIndex: number) {
-    const effects = [...(body.effects ?? [])]
-    const effect = effects[effectIndex]
-    const ratios = (effect.ratios ?? []).filter((_, i) => i !== ratioIndex)
-    effects[effectIndex] = { ...effect, ratios }
-    onUpdate({ effects })
+  if (part === 'details') {
+    return effectCards.length > 0
+      ? <div className="ability-field-group">{effectCards}</div>
+      : <p className="ability-blocks-hint">No effects yet. Add one on the Simple tab and it appears here, with nothing filled in.</p>
   }
 
   return (
@@ -311,289 +151,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
           <span className="ability-field-label">Effects</span>
           <button className="add-effect-btn" onClick={addEffect}>+ Add Effect</button>
         </div>
-        {(body.effects ?? []).map((effect, i) => {
-          const kind = effectKind(effect)
-          const isCustom = !isBuiltInEffect(effect.type) && effect.type.trim() !== ''
-          const isOpen = openEffects.has(i)
-          return (
-            <div key={i} className={`effect-card${isOpen ? ' open' : ''}`}>
-              <div className="effect-summary-row">
-                <button className="effect-summary" aria-expanded={isOpen} onClick={() => toggleEffect(i)}>
-                  <span className="effect-summary-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
-                  <span className="effect-summary-text">{describeEffect(effect)}</span>
-                  <span className="effect-summary-token" title="Write this in the description to put this effect's numbers there">{`{${tokenNames[i]}}`}</span>
-                </button>
-                <button className="remove-effect-btn" onClick={() => removeEffect(i)} aria-label="Remove effect">×</button>
-              </div>
-
-              {isOpen && (
-                <>
-                  <div className="effect-row">
-                    <select
-                      className="effect-type-select"
-                      value={isBuiltInEffect(effect.type) ? effect.type : CUSTOM_EFFECT}
-                      onChange={e => {
-                        const custom = e.target.value === CUSTOM_EFFECT
-                        setTypingName(custom ? i : null)
-                        changeEffectType(i, custom ? '' : e.target.value)
-                      }}
-                      aria-label="Effect type"
-                    >
-                      {BUILT_IN_EFFECT_TYPES.map(t => <option key={t} value={t}>{effectTypeLabel(t)}</option>)}
-                      <option value={CUSTOM_EFFECT}>Custom…</option>
-                    </select>
-                    {(!isBuiltInEffect(effect.type) || typingName === i) && (
-                      <input
-                        className="effect-type-select effect-type-input"
-                        placeholder="Name it, e.g. taunt"
-                        value={effect.type}
-                        autoFocus={effect.type === ''}
-                        onFocus={() => setTypingName(i)}
-                        onChange={e => changeEffectType(i, e.target.value)}
-                        onBlur={e => {
-                          setTypingName(null)
-                          if (!e.target.value.trim()) changeEffectType(i, 'damage')
-                        }}
-                      />
-                    )}
-                    {kind.family === 'damage' && (
-                      <select
-                        className="effect-type-select"
-                        value={effect.damage_type ?? 'Physical'}
-                        onChange={e => updateEffect(i, { damage_type: e.target.value as DamageType })}
-                      >
-                        {['Physical', 'Magic', 'True'].map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    )}
-                    <label className="effect-name-field" title="What the description calls this effect: write {Name} there, or use Insert value">
-                      Name
-                      <input
-                        className="rank-input effect-name-input"
-                        placeholder={tokenNames[i]}
-                        value={effect.name ?? ''}
-                        onChange={e => updateEffect(i, { name: e.target.value || undefined })}
-                        aria-label="Name in the description"
-                      />
-                    </label>
-                    <input
-                      className="rank-input"
-                      placeholder="Notes"
-                      value={effect.notes ?? ''}
-                      onChange={e => updateEffect(i, { notes: e.target.value })}
-                      style={{ flex: 1 }}
-                    />
-                  </div>
-
-                  {isCustom && (
-                    <div className="effect-custom-row">
-                      <label className="effect-custom-field">
-                        <span>Behaves like</span>
-                        <select
-                          className="effect-type-select"
-                          value={kind.family}
-                          onChange={e => updateEffect(i, { family: e.target.value as EffectFamily, unit: undefined })}
-                        >
-                          {FAMILY_OPTIONS.map(o => <option key={o.value} value={o.value} title={o.hint}>{o.label}</option>)}
-                        </select>
-                      </label>
-                      <label className="effect-custom-field">
-                        <span>Base is</span>
-                        <select
-                          className="effect-type-select"
-                          value={kind.unit}
-                          onChange={e => updateEffect(i, { unit: e.target.value as EffectUnit })}
-                        >
-                          {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                  )}
-
-                  {effect.type === STAT_CHANGE && (() => {
-                    const change = statChangeOf(effect)
-                    return (
-                      <div className="effect-custom-row stat-change-row">
-                        <select
-                          className="effect-type-select"
-                          value={change.direction}
-                          onChange={e => updateEffect(i, { direction: e.target.value as StatChangeDirection })}
-                          aria-label="Raise or lower"
-                        >
-                          {DIRECTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                        <select
-                          className="effect-type-select"
-                          value={change.stat}
-                          onChange={e => updateEffect(i, { stat: e.target.value })}
-                          aria-label="Which stat"
-                        >
-                          {CHANGEABLE_STATS.map(id => <option key={id} value={id}>{ratioStatDef(id)!.label}</option>)}
-                        </select>
-                        <span className="stat-change-word">on</span>
-                        <select
-                          className="effect-type-select"
-                          value={change.target}
-                          onChange={e => updateEffect(i, { target: e.target.value as StatChangeTarget })}
-                          aria-label="Who it affects"
-                        >
-                          {TARGET_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                        <span className="stat-change-word">by</span>
-                        <select
-                          className="effect-type-select"
-                          value={kind.unit}
-                          onChange={e => updateEffect(i, { unit: e.target.value as EffectUnit })}
-                          aria-label="Flat or percent"
-                        >
-                          {UNIT_OPTIONS.filter(o => o.value !== 'seconds').map(o => <option key={o.value} value={o.value}>{o.value === 'flat' ? 'flat' : '%'}</option>)}
-                        </select>
-                      </div>
-                    )
-                  })()}
-
-                  <div className="effect-subfield">
-                    <div className="effect-subfield-header">
-                      <span className="effect-subfield-label">Amount</span>
-                      <button className="add-effect-btn" onClick={() => addRatio(i)}>+ Add part</button>
-                    </div>
-                    {hasFlatPart(effect) && (
-                      <div className="ratio-row">
-                        <div className="ratio-row-head">
-                          <select
-                            className="effect-type-select ratio-stat-select"
-                            value={FLAT_SOURCE}
-                            onChange={e => changeFlatSource(i, e.target.value)}
-                            aria-label="Amount is"
-                          >
-                            <option value={FLAT_SOURCE}>Flat amount{unitSuffix(kind.unit)}</option>
-                            <StatOptions />
-                          </select>
-                          {(effect.ratios ?? []).length > 0 && (
-                            <button className="remove-effect-btn" onClick={() => replaceEffect(i, removeFlatPart(effect))} aria-label="Remove the flat amount">×</button>
-                          )}
-                        </div>
-                        <RankValueField
-                          values={effect.base}
-                          maxRank={maxRank}
-                          suffix={unitSuffixShort(kind.unit)}
-                          onChange={(rankIndex, value) => updateEffectBase(i, rankIndex, value)}
-                          onBulkChange={values => updateEffectBaseAll(i, values)}
-                        />
-                      </div>
-                    )}
-                    {(effect.ratios ?? []).map((ratio, ri) => {
-                      const resolved = resolveRatio(ratio)
-                      const ratioKey = `${i}:${ri}`
-                      // A name that matches a known stat mid-typing keeps its name field until the user leaves it.
-                      const custom = !resolved || typingValue === ratioKey
-                      const parts: RatioPart[] = resolved && !custom ? ratioStatDef(resolved.stat)!.parts : ['total']
-                      return (
-                        <div key={ri} className="ratio-row">
-                          <div className="ratio-row-head">
-                            <select
-                              className="effect-type-select ratio-stat-select"
-                              value={custom ? CUSTOM_RATIO : resolved!.stat}
-                              onChange={e => {
-                                if (e.target.value === FLAT_SOURCE) {
-                                  setTypingValue(null)
-                                  replaceEffect(i, statToFlat(effect, ri))
-                                } else if (e.target.value === CUSTOM_RATIO) {
-                                  setTypingValue(ratioKey)
-                                  updateRatio(i, ri, { stat: '', part: undefined })
-                                } else {
-                                  setTypingValue(null)
-                                  changeRatioStat(i, ri, e.target.value)
-                                }
-                              }}
-                              aria-label="Scales with"
-                            >
-                              <option value={FLAT_SOURCE} disabled={hasFlatPart(effect)}>Flat amount{unitSuffix(kind.unit)}</option>
-                              <StatOptions />
-                            </select>
-                            {parts.length > 1 && (
-                              <select
-                                className="effect-type-select ratio-part-select"
-                                value={resolved?.part ?? 'total'}
-                                onChange={e => updateRatio(i, ri, { part: e.target.value as RatioPart })}
-                                aria-label="Which part"
-                              >
-                                {parts.map(pt => <option key={pt} value={pt}>{PART_LABELS[pt]}</option>)}
-                              </select>
-                            )}
-                            {custom && (
-                              <>
-                                <input
-                                  className="effect-type-select ratio-name-input"
-                                  placeholder="Name it, e.g. stacks"
-                                  value={ratio.stat}
-                                  autoFocus={ratio.stat === ''}
-                                  onFocus={() => setTypingValue(ratioKey)}
-                                  onChange={e => updateRatio(i, ri, { stat: e.target.value, part: undefined })}
-                                  onBlur={e => {
-                                    setTypingValue(null)
-                                    if (!e.target.value.trim()) updateRatio(i, ri, { stat: 'ap', part: 'total', assumed: undefined })
-                                  }}
-                                />
-                                <label className="ratio-assume" title="How many of it to assume when the win rate is estimated">
-                                  assume
-                                  <NumberField
-                                    className="rank-input ratio-assume-input"
-                                    value={assumedUnits(ratio)}
-                                    placeholder="1"
-                                    onChange={n => updateRatio(i, ri, { assumed: n || undefined })}
-                                  />
-                                </label>
-                              </>
-                            )}
-                            {ratio.per === undefined ? (
-                              <button className="ratio-per-btn" onClick={() => updateRatio(i, ri, { per: PER_DEFAULT })} title="Add this amount for every N of the stat, instead of taking a share of it">
-                                per N
-                              </button>
-                            ) : (
-                              <span className="ratio-per">
-                                per
-                                <NumberField
-                                  className="rank-input ratio-per-input"
-                                  value={ratio.per}
-                                  onChange={n => updateRatio(i, ri, { per: n })}
-                                />
-                                <button className="ratio-per-off" onClick={() => updateRatio(i, ri, { per: undefined })} title="Back to a plain ratio" aria-label="Back to a plain ratio">↩</button>
-                              </span>
-                            )}
-                            <button className="remove-effect-btn" onClick={() => removeRatio(i, ri)}>×</button>
-                          </div>
-                          <RankValueField
-                            values={ratio.values}
-                            maxRank={maxRank}
-                            percent={!custom && ratio.per === undefined}
-                            suffix={unitSuffixShort(kind.unit)}
-                            onChange={(rankIndex, value) => updateRatioValue(i, ri, rankIndex, value)}
-                            onBulkChange={values => updateRatioValuesAll(i, ri, values)}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {takesDuration(effect) && (
-                    <div className="effect-subfield">
-                      <div className="effect-subfield-header">
-                        <span className="effect-subfield-label">Lasts (seconds)</span>
-                      </div>
-                      <RankValueField
-                        values={effect.duration}
-                        maxRank={maxRank}
-                        suffix="s"
-                        onChange={(rankIndex, value) => updateEffectDuration(i, rankIndex, value)}
-                        onBulkChange={values => updateEffect(i, { duration: values })}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )
-        })}
+        {effectCards}
       </div>
     </>
   )
@@ -629,6 +187,9 @@ function normalizeBodyRanks<T extends AbilityBody>(body: T, next: number): T {
 export default function AbilitiesSection({ champion, onChange, onEditStats }: Props) {
   const [activeSlot, setActiveSlot] = useState<AbilitySlot>('passive')
   const [mode, setMode] = useState<Mode>('simple')
+  // Where an effect's extra details live: under each effect, or on the Advanced tab (a setting).
+  const detailsInline = useSettings(st => st.settings.effect_details) !== 'tab'
+  const activeMode: Mode = detailsInline ? 'simple' : mode
   const iconInputRef = useRef<HTMLInputElement>(null)
 
   const ability = champion.abilities[activeSlot]
@@ -745,7 +306,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
             <DescriptionField value={ability.description} effects={ability.effects} onChange={description => updateAbility({ description })} />
           </div>
 
-          {mode === 'simple' && (
+          {activeMode === 'simple' && (
             <div className="ability-fields">
               <div className="rank-count-bar">
                 <span className="ability-field-label">Ranks</span>
@@ -756,7 +317,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
                 </div>
               </div>
 
-              <AbilityBodyEditor body={ability} maxRank={ability.max_rank} onUpdate={updateAbility} showNameDescription={false} />
+              <AbilityBodyEditor body={ability} maxRank={ability.max_rank} onUpdate={updateAbility} showNameDescription={false} detailsInline={detailsInline} />
 
               <div className="ability-blocks-section">
                 <div className="ability-field-header">
@@ -811,6 +372,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
                       body={block}
                       maxRank={ability.max_rank}
                       onUpdate={partial => updateBlock(bi, partial)}
+                      detailsInline={detailsInline}
                     />
                   </div>
                 ))}
@@ -818,30 +380,34 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
             </div>
           )}
 
-          {mode === 'advanced' && (
+          {activeMode === 'advanced' && (
             <div className="ability-advanced">
-              <div className="advanced-hint">
-                Advanced mode — equation fields for fine-tuned stat interactions.
-                <br />
-                <span className="advanced-hint-sub">Full implementation coming after Simple mode is complete.</span>
-              </div>
+              <AbilityBodyEditor body={ability} maxRank={ability.max_rank} onUpdate={updateAbility} showNameDescription={false} part="details" />
+              {(ability.blocks ?? []).map((block, bi) => (
+                <div key={bi} className="ability-advanced-block">
+                  <div className="ability-field-label">{BLOCK_KINDS.find(k => k.value === block.kind)?.label}{block.name ? ` · ${block.name}` : ''}</div>
+                  <AbilityBodyEditor body={block} maxRank={ability.max_rank} onUpdate={partial => updateBlock(bi, partial)} showNameDescription={false} part="details" />
+                </div>
+              ))}
             </div>
           )}
 
-          <div className="abilities-mode-bar">
-            <button
-              className={`mode-btn${mode === 'simple' ? ' active' : ''}`}
-              onClick={() => setMode('simple')}
-            >
-              Simple {mode === 'simple' && '(selected)'}
-            </button>
-            <button
-              className={`mode-btn${mode === 'advanced' ? ' active' : ''}`}
-              onClick={() => setMode('advanced')}
-            >
-              Advanced
-            </button>
-          </div>
+          {!detailsInline && (
+            <div className="abilities-mode-bar">
+              <button
+                className={`mode-btn${mode === 'simple' ? ' active' : ''}`}
+                onClick={() => setMode('simple')}
+              >
+                Simple {mode === 'simple' && '(selected)'}
+              </button>
+              <button
+                className={`mode-btn${mode === 'advanced' ? ' active' : ''}`}
+                onClick={() => setMode('advanced')}
+              >
+                Advanced
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Keyed by slot so each ability opens on its own first note. */}

@@ -172,3 +172,29 @@ describe('buffs and slows written as a stat change', () => {
     expect(w.utility).toBeGreaterThan(0)
   })
 })
+
+describe('states and the newer controls', () => {
+  const only = (effect: Effect) => slot(evaluateKit(kit({ w: ability({ cooldown: rank(10), effects: [effect] }) }), c), 'w')
+
+  it('prices not being hurt as durability, growing with its length up to a fight', () => {
+    for (const type of ['untargetable', 'invulnerable']) {
+      const short = only({ type, base: rank(1) }).sustain
+      expect(short).toBeGreaterThan(0)
+      expect(only({ type, base: rank(2) }).sustain).toBeCloseTo(short * 2, 6)
+      expect(only({ type, base: rank(60) }).sustain).toBeCloseTo(only({ type, base: rank(5) }).sustain, 6)
+    }
+  })
+
+  it('prices not being stopped as utility, and a default length while it is blank', () => {
+    for (const type of ['unstoppable', 'cc_immune']) {
+      expect(only({ type, base: rank(2) }).utility).toBeCloseTo(only({ type, base: rank(1) }).utility * 2, 6)
+      expect(only({ type }).utility).toBeCloseTo(only({ type, base: rank(1.5) }).utility, 6)
+    }
+  })
+
+  it('prices a taunt and a root a little under a stun of the same length', () => {
+    const stun = only({ type: 'stun', base: rank(1.5) }).utility
+    expect(only({ type: 'taunt', base: rank(1.5) }).utility).toBeCloseTo(stun * 0.9, 6)
+    expect(only({ type: 'root', base: rank(1.5) }).utility).toBeCloseTo(stun * 0.7, 6)
+  })
+})

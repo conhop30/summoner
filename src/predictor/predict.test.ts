@@ -236,22 +236,22 @@ describe('custom effects', () => {
   }
   const utilityOfQ = (effects: Effect[]) => evaluateKit(qWith(effects), c).slots.find(s => s.slot === 'q')!.utility
 
-  it('prices a taunt like a stun once it is known to be hard control', () => {
-    const taunt = utilityOfQ([{ type: 'taunt', base: [1.5, 1.5, 1.5, 1.5, 1.5] }])
+  it('prices a sleep like a stun once it is known to be hard control', () => {
+    const sleep = utilityOfQ([{ type: 'sleep', base: [1.5, 1.5, 1.5, 1.5, 1.5] }])
     const stun = utilityOfQ([{ type: 'stun', base: [1.5, 1.5, 1.5, 1.5, 1.5] }])
-    expect(taunt).toBeGreaterThan(0)
-    expect(taunt).toBeCloseTo(stun, 10)
+    expect(sleep).toBeGreaterThan(0)
+    expect(sleep).toBeCloseTo(stun, 10)
   })
 
   it('reads a custom control number as seconds only when its unit says so', () => {
-    const seconds = utilityOfQ([{ type: 'taunt', base: [3, 3, 3, 3, 3] }])
-    const percent = utilityOfQ([{ type: 'taunt', unit: 'percent', base: [3, 3, 3, 3, 3] }])
+    const seconds = utilityOfQ([{ type: 'sleep', base: [3, 3, 3, 3, 3] }])
+    const percent = utilityOfQ([{ type: 'sleep', unit: 'percent', base: [3, 3, 3, 3, 3] }])
     expect(seconds).toBeGreaterThan(percent)
   })
 
   it('follows the family picked, not the label', () => {
-    const asUtility = utilityOfQ([{ type: 'taunt', family: 'utility', base: [3, 3, 3, 3, 3] }])
-    const asHard = utilityOfQ([{ type: 'taunt', base: [3, 3, 3, 3, 3] }])
+    const asUtility = utilityOfQ([{ type: 'sleep', family: 'utility', base: [3, 3, 3, 3, 3] }])
+    const asHard = utilityOfQ([{ type: 'sleep', base: [3, 3, 3, 3, 3] }])
     expect(asHard).toBeGreaterThan(asUtility)
   })
 
