@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { classIconUrl, laneIconUrl } from '../shared/leagueAssets'
+import { classIconUrl, laneIconUrl } from './leagueAssets'
+import './LeagueIcon.css'
 
 // A lane or class icon from the game, drawn beside the name. If the picture can't load (offline, or
 // the file has moved) it steps aside and the name stands alone.

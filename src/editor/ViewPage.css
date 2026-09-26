@@ -153,7 +153,6 @@
   color: var(--tag-gold-text);
 }
 
-.league-icon { flex-shrink: 0; object-fit: contain; }
 
 .view-hero-playstyle {
   font-size: var(--font-size-base);

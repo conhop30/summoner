@@ -297,8 +297,17 @@ describe('an effect written as what it is, in place of its numbers', () => {
     expect(resolveSegments('Deals {Damage}.', [{ type: 'damage', damage_type: 'Magic' }], tags)[1]).toMatchObject({ text: 'magic damage' })
   })
 
-  it('leaves a duration as its number, and a token that names nothing as written', () => {
-    expect(resolveSegments('For {Armor duration}. {Nope}', [shred], tags).map(x => x.text).join('')).toBe('For 3 s. {Nope}')
+  it('names a duration "duration", whether or not one is filled in, and leaves a token that names nothing as written', () => {
+    expect(resolveSegments('For {Armor duration}. {Nope}', [shred], tags)).toEqual([
+      { text: 'For ' },
+      { text: 'duration', tag: {} },
+      { text: '. {Nope}' },
+    ])
+    expect(resolveSegments('For {Armor duration}.', [{ ...shred, duration: undefined }], tags)[1]).toEqual({ text: 'duration', tag: {} })
+  })
+
+  it('still gives a duration as its number outside tag mode', () => {
+    expect(resolveTokens('For {Armor duration}.', [shred])).toBe('For 3 s.')
   })
 
   it('does not change the text sent out of the app, which keeps its numbers', () => {

@@ -1,5 +1,6 @@
 import type { Champion } from '../champion/types'
 import { useNumbers } from '../settings/useNumbers'
+import LeagueIcon from '../shared/LeagueIcon'
 import './ChampionTile.css'
 
 const PLACEHOLDER_COLORS = ['purple', 'teal', 'coral', 'blue', 'amber']
@@ -47,7 +48,8 @@ export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggl
   const { identity, metadata } = champion
   const color      = getPlaceholderColor(metadata.id)
   const initials   = getInitials(identity.name)
-  const laneLabel  = (identity.role ?? []).slice(0, 2).join(' · ')
+  const lanes      = (identity.role ?? []).slice(0, 2)
+  const classes    = (identity.class ?? []).slice(0, 2)
   const classLabel = (identity.class ?? []).slice(0, 1).join('')
   const playstyle  = (identity as any).playstyle as string[] | undefined
   const numbers = useNumbers()
@@ -100,9 +102,10 @@ export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggl
           ) : (
             classLabel && <div className="tile-playstyle">{classLabel}</div>
           )}
-          {laneLabel && (
-            <div className="tile-lane-row">
-              <span className="tile-lane-tag">{laneLabel}</span>
+          {(lanes.length > 0 || classes.length > 0) && (
+            <div className="tile-traits">
+              {classes.map(c => <span key={`class-${c}`} className="tile-trait" title={c}><LeagueIcon kind="class" name={c} size={18} /></span>)}
+              {lanes.map(l => <span key={`lane-${l}`} className="tile-trait"><LeagueIcon kind="lane" name={l} size={16} />{l}</span>)}
             </div>
           )}
           {(metadata.tags ?? []).length > 0 && (

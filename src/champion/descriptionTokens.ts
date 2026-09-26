@@ -146,6 +146,7 @@ export function resolveSegments(text: string | undefined, effects: Effect[] | un
     const raw = match[1]
     let phrase = ''
     let amountOf: Effect | undefined
+    let durationOf: Effect | undefined
     const index = names.findIndex(n => normalize(n) === normalize(raw))
     if (index !== -1) {
       phrase = effectPhrase(list[index])
@@ -153,7 +154,17 @@ export function resolveSegments(text: string | undefined, effects: Effect[] | un
     } else {
       const base = durationBase(raw)
       const lasting = base === null ? -1 : names.findIndex(n => normalize(n) === base)
-      if (lasting !== -1) phrase = durationPhrase(list[lasting])
+      if (lasting !== -1) {
+        phrase = durationPhrase(list[lasting])
+        durationOf = list[lasting]
+      }
+    }
+    // In tag mode a duration is written as "duration", whether or not one is filled in: its length is in the rows beneath.
+    if (options.tags && durationOf) {
+      push({ text: text.slice(cursor, start) })
+      push({ text: 'duration', tag: {} })
+      cursor = start + match[0].length
+      continue
     }
     // In tag mode an effect's amount is written as what it is, and needs no numbers to be.
     const asTag = !!options.tags && !!amountOf

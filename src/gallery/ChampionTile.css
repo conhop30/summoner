@@ -148,19 +148,22 @@
   text-overflow: ellipsis;
 }
 
-.tile-lane-row {
+/* Class and lane: their icons from the game, with the lane's name, and no boxes. */
+.tile-traits {
   display: flex;
-  gap: var(--space-1);
   flex-wrap: wrap;
+  align-items: center;
+  gap: 3px var(--space-3);
   margin-bottom: var(--space-1);
 }
 
-.tile-lane-tag {
+.tile-trait {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  padding: 2px 7px;
-  border: 1px solid var(--tag-gold-border);
   color: var(--tag-gold-text);
 }
 
