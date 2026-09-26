@@ -31,8 +31,9 @@
 .ability-tip-body { white-space: pre-wrap; }
 .ability-tip-empty { color: var(--text-muted); font-style: italic; }
 
-.ability-tip-tag { display: inline-flex; align-items: center; gap: 4px; vertical-align: baseline; font-weight: 500; }
-.ability-tip-tag .stat-icon { position: relative; top: 1px; }
+/* A tag is part of the sentence: the same size, weight and baseline as the words around it. */
+.ability-tip-tag { white-space: nowrap; }
+.ability-tip-tag .stat-icon { vertical-align: -2px; margin-right: 4px; }
 .ability-tip-label { display: inline-flex; align-items: center; gap: 6px; }
 .tone-physical { color: var(--tone-physical); }
 .tone-magic { color: var(--tone-magic); }

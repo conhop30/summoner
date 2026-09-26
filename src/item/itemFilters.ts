@@ -1,4 +1,5 @@
 import type { Item } from './types';
+import type { StatIconKey } from '../champion/statIcons';
 
 export const SUMMONERS_RIFT_MAP_ID = '11';
 
@@ -9,15 +10,16 @@ export type SortDir = 'asc' | 'desc';
 // for that key, so an ascending default would put every item that DOESN'T
 // have the stat (e.g. Bami's Cinder under "Attack Speed") at the very top.
 // Cost and Name are the exceptions: cheapest/A-first reads naturally.
-export const SORT_OPTIONS: { key: SortKey; label: string; icon: string; defaultDir: SortDir }[] = [
+// A stat's icon is the same one the rest of the app uses for it (statIcons.ts); Cost and Name are not stats and keep a plain mark.
+export const SORT_OPTIONS: { key: SortKey; label: string; icon?: string; statIcon?: StatIconKey; defaultDir: SortDir }[] = [
   { key: 'cost',           label: 'Cost',           icon: '¤', defaultDir: 'asc' },
   { key: 'name',           label: 'Name',           icon: 'A', defaultDir: 'asc' },
-  { key: 'health',         label: 'Health',         icon: '♥', defaultDir: 'desc' },
-  { key: 'armor',          label: 'Armor',          icon: '🛡', defaultDir: 'desc' },
-  { key: 'magic_resist',   label: 'Magic Resist',   icon: '✦', defaultDir: 'desc' },
-  { key: 'attack_damage',  label: 'Attack Damage',  icon: '⚔', defaultDir: 'desc' },
-  { key: 'ability_power',  label: 'Ability Power',  icon: '◈', defaultDir: 'desc' },
-  { key: 'attack_speed',   label: 'Attack Speed',   icon: '⚡', defaultDir: 'desc' },
+  { key: 'health',         label: 'Health',         statIcon: 'health', defaultDir: 'desc' },
+  { key: 'armor',          label: 'Armor',          statIcon: 'armor', defaultDir: 'desc' },
+  { key: 'magic_resist',   label: 'Magic Resist',   statIcon: 'mr', defaultDir: 'desc' },
+  { key: 'attack_damage',  label: 'Attack Damage',  statIcon: 'ad', defaultDir: 'desc' },
+  { key: 'ability_power',  label: 'Ability Power',  statIcon: 'ap', defaultDir: 'desc' },
+  { key: 'attack_speed',   label: 'Attack Speed',   statIcon: 'as', defaultDir: 'desc' },
 ];
 
 export function sortValue(item: Item, key: SortKey): number | string {

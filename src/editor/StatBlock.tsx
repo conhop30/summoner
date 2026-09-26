@@ -1,6 +1,7 @@
 import type { Champion } from '../champion/types'
 import { BASE_STATS } from './statFields'
 import './StatBlock.css'
+import StatIcon from './StatIcon'
 
 interface Props {
   champion: Champion
@@ -19,7 +20,7 @@ export default function StatBlock({ champion, onEdit }: Props) {
         const value = stats[f.valueKey]
         return (
           <span key={f.valueKey} className="stat-chip">
-            <span className="stat-chip-icon">{f.icon}</span>
+            <span className="stat-chip-icon"><StatIcon name={f.icon} size={14} /></span>
             <span className="stat-chip-value">{typeof value === 'number' ? value : '—'}</span>
           </span>
         )

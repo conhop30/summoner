@@ -159,11 +159,18 @@ export function resolveSegments(text: string | undefined, effects: Effect[] | un
         durationOf = list[lasting]
       }
     }
-    // In tag mode a duration is written as "duration", whether or not one is filled in: its length is in the rows beneath.
+    // In tag mode a duration is written as "duration", with its length in the rows beneath. With none
+    // filled in there is nothing to say, so the token says nothing, and the space it leaves goes with it.
     if (options.tags && durationOf) {
-      push({ text: text.slice(cursor, start) })
-      push({ text: 'duration', tag: {} })
+      let before = text.slice(cursor, start)
       cursor = start + match[0].length
+      if (phrase) {
+        push({ text: before })
+        push({ text: 'duration', tag: {} })
+      } else {
+        if (before.endsWith(' ') && /^([\s.,;:!?)]|$)/.test(text.slice(cursor))) before = before.slice(0, -1)
+        push({ text: before })
+      }
       continue
     }
     // In tag mode an effect's amount is written as what it is, and needs no numbers to be.

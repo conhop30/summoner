@@ -6,6 +6,7 @@ import StatLookup from './StatLookup'
 import type { CatalogState } from '../championCatalog/useChampionCatalog'
 import { parseStatInput, normalizeBaseStats, inputStep, statSpecFor } from '../champion/statSpec'
 import './StatsPanel.css'
+import StatIcon from './StatIcon'
 
 interface Props {
   champion: Champion
@@ -33,7 +34,7 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
   return (
     <div className="sp-field">
       <div className="sp-field-header">
-        <span className="sp-icon">{icon}</span>
+        <span className="sp-icon"><StatIcon name={icon} size={14} /></span>
         <span className="sp-label">{label}</span>
       </div>
       <div className="sp-inputs">
@@ -75,7 +76,7 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench,
           ))}
           <div className="sp-field">
             <div className="sp-field-header">
-              <span className="sp-icon">◎</span>
+              <span className="sp-icon"><StatIcon name="range" size={14} /></span>
               <span className="sp-label">Attack Range</span>
             </div>
             <div className="sp-inputs">

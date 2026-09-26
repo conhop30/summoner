@@ -22,10 +22,11 @@
 }
 
 .stat-chip-icon {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--accent-gold);
   width: 16px;
-  text-align: center;
   flex-shrink: 0;
 }
 

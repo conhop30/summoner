@@ -4,6 +4,8 @@ import type { ChampionCatalogEntry } from '../championCatalog/types'
 import type { CatalogState } from '../championCatalog/useChampionCatalog'
 import { mapDDragonStats } from '../championCatalog/suggestions'
 import { BASE_STATS } from './statFields'
+import StatIcon from './StatIcon'
+import type { StatIconKey } from '../champion/statIcons'
 import { formatStat, formatGrowth } from '../champion/statSpec'
 import './StatLookup.css'
 
@@ -13,14 +15,14 @@ interface Props {
 
 interface LookupStat {
   label: string
-  icon: string
+  icon: StatIconKey
   keys: (keyof BaseStats)[]   // the value, plus its per-level growth where it has one
 }
 
 // One row per stat as the form shows it: a stat's value and growth are picked together.
 const LOOKUP_STATS: LookupStat[] = [
   ...BASE_STATS.map(f => ({ label: f.label, icon: f.icon, keys: f.growthKey ? [f.valueKey, f.growthKey] : [f.valueKey] })),
-  { label: 'Attack Range', icon: '◎', keys: ['attack_range'] as (keyof BaseStats)[] },
+  { label: 'Attack Range', icon: 'range', keys: ['attack_range'] as (keyof BaseStats)[] },
 ]
 
 const MAX_MATCHES = 8
@@ -200,7 +202,7 @@ export default function StatLookup({ catalogState }: Props) {
                   <label key={s.label} className={`stat-lookup-row${checked.has(s.label) ? ' checked' : ''}`}>
                     <span className="stat-lookup-label">
                       <input type="checkbox" checked={checked.has(s.label)} onChange={() => toggle(s.label)} />
-                      <span className="sp-icon">{s.icon}</span>
+                      <span className="sp-icon"><StatIcon name={s.icon} size={14} /></span>
                       {s.label}
                     </span>
                     <span className="stat-lookup-theirs">{describe(looked, s.keys)}</span>

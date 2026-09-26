@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { STAT_ICON_LABELS, iconForStat } from './statIcons'
+import { STAT_ICON_LABELS, iconForBaseStat, iconForStat } from './statIcons'
 import { OUTCOMES, applyOutcome, outcomeById, tagIcon, tagLabel } from './outcomes'
 import { RATIO_STATS } from './ratios'
 
 describe('which icon a stat gets', () => {
   it('has a label for every icon, and an icon for the stats a person sees icons for', () => {
-    expect(Object.keys(STAT_ICON_LABELS).sort()).toEqual(['ad', 'ap', 'armor', 'as', 'heal', 'lethality', 'mr', 'ms', 'shield'])
+    expect(Object.keys(STAT_ICON_LABELS).sort()).toEqual(['ad', 'ap', 'armor', 'as', 'crit', 'heal', 'health', 'health_regen', 'lethality', 'mr', 'ms', 'range', 'resource', 'resource_regen', 'shield'])
     expect(iconForStat('ad')).toBe('ad')
     expect(iconForStat('magic_resist')).toBe('mr')
     expect(iconForStat('lethality')).toBe('lethality')
@@ -40,5 +40,26 @@ describe('what an effect is called in a sentence', () => {
     for (const id of ['physical', 'magic', 'heal', 'shield', 'armor', 'magic_resist', 'attack_speed', 'move_speed', 'armor_shred', 'magic_resist_shred', 'slow']) {
       expect(OUTCOMES.find(o => o.id === id)!.icon, id).toBeTruthy()
     }
+  })
+})
+
+describe('the icons on the base stats', () => {
+  it('cover every base stat, and are the same ones the descriptions use', () => {
+    for (const field of ['health', 'health_regen', 'resource', 'resource_regen', 'attack_damage', 'attack_speed', 'armor', 'magic_resistance', 'movement_speed', 'crit_damage_multiplier', 'attack_range']) {
+      expect(iconForBaseStat(field), field).toBeTruthy()
+    }
+    expect(iconForBaseStat('attack_damage')).toBe(iconForStat('ad'))
+    expect(iconForBaseStat('magic_resistance')).toBe(iconForStat('magic_resist'))
+    expect(iconForBaseStat('movement_speed')).toBe(iconForStat('move_speed'))
+    expect(iconForBaseStat('health')).toBe(iconForStat('health'))
+  })
+
+  it('give a different picture to a stat and its regeneration', () => {
+    expect(iconForBaseStat('health')).not.toBe(iconForBaseStat('health_regen'))
+    expect(iconForBaseStat('resource')).not.toBe(iconForBaseStat('resource_regen'))
+  })
+
+  it('give nothing for a field that is not a stat', () => {
+    expect(iconForBaseStat('title')).toBeUndefined()
   })
 })

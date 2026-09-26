@@ -5,6 +5,7 @@ import {
   compareItems, hasStatFor, timeAgo, type SortKey, type SortDir, type Category,
 } from '../item/itemFilters'
 import ItemDetail from './ItemDetail'
+import StatIcon from '../editor/StatIcon'
 import './ItemBrowser.css'
 
 interface Props {
@@ -159,7 +160,7 @@ export default function ItemBrowser({
                 onClick={() => selectSort(o.key)}
                 title={`Sort by ${o.label}${sortKey === o.key ? (sortDir === 'asc' ? ' (ascending)' : ' (descending)') : ''}`}
               >
-                <span className="items-sort-rail-icon">{o.icon}</span>
+                <span className="items-sort-rail-icon">{o.statIcon ? <StatIcon name={o.statIcon} size={15} /> : o.icon}</span>
                 {sortKey === o.key && (
                   <span className="items-sort-rail-dir">{sortDir === 'asc' ? '↑' : '↓'}</span>
                 )}

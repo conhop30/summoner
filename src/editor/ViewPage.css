@@ -332,10 +332,11 @@
 }
 
 .view-stat-icon {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--accent-gold);
   width: 16px;
-  text-align: center;
   flex-shrink: 0;
 }
 

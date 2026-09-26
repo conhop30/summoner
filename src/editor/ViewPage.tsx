@@ -5,6 +5,8 @@ import { useChampionTheme } from '../audio/useChampionTheme'
 import { resolveTokens } from '../champion/descriptionTokens'
 import AbilityTooltip from './AbilityTooltip'
 import LeagueIcon from '../shared/LeagueIcon'
+import StatIcon from './StatIcon'
+import type { StatIconKey } from '../champion/statIcons'
 import { useNumbers } from '../settings/useNumbers'
 import { formatStat, formatGrowth, statAtLevel } from '../champion/statSpec'
 import type { BaseStats } from '../champion/types'
@@ -14,20 +16,20 @@ const SLOTS: AbilitySlot[] = ['passive', 'q', 'w', 'e', 'r']
 const SLOT_LABELS: Record<AbilitySlot, string> = { passive: 'P', q: 'Q', w: 'W', e: 'E', r: 'R' }
 
 const STAT_FIELDS = [
-  { key: 'health',          growthKey: 'health_growth',          label: 'Health',       icon: '♥' },
-  { key: 'health_regen',    growthKey: 'health_regen_growth',    label: 'HP Regen',     icon: '✚' },
-  { key: 'resource',        growthKey: 'resource_growth',        label: 'Resource',     icon: '◈' },
-  { key: 'attack_damage',   growthKey: 'attack_damage_growth',   label: 'Attack Dmg',   icon: '⚔' },
-  { key: 'attack_speed',    growthKey: 'attack_speed_growth',    label: 'Attack Speed', icon: '⚡' },
-  { key: 'armor',           growthKey: 'armor_growth',           label: 'Armor',        icon: '🛡' },
-  { key: 'magic_resistance',growthKey: 'magic_resistance_growth',label: 'Magic Resist', icon: '✦' },
-  { key: 'movement_speed',  growthKey: 'movement_speed_growth',  label: 'Move Speed',   icon: '➢' },
+  { key: 'health',          growthKey: 'health_growth',          label: 'Health',       icon: 'health' },
+  { key: 'health_regen',    growthKey: 'health_regen_growth',    label: 'HP Regen',     icon: 'health_regen' },
+  { key: 'resource',        growthKey: 'resource_growth',        label: 'Resource',     icon: 'resource' },
+  { key: 'attack_damage',   growthKey: 'attack_damage_growth',   label: 'Attack Dmg',   icon: 'ad' },
+  { key: 'attack_speed',    growthKey: 'attack_speed_growth',    label: 'Attack Speed', icon: 'as' },
+  { key: 'armor',           growthKey: 'armor_growth',           label: 'Armor',        icon: 'armor' },
+  { key: 'magic_resistance',growthKey: 'magic_resistance_growth',label: 'Magic Resist', icon: 'mr' },
+  { key: 'movement_speed',  growthKey: 'movement_speed_growth',  label: 'Move Speed',   icon: 'ms' },
 ] as const
 
 interface StatRowProps {
   statKey: keyof BaseStats
   label: string
-  icon: string
+  icon: StatIconKey
   base?: number
   growth?: number
 }
@@ -38,7 +40,7 @@ function StatRow({ statKey, label, icon, base, growth }: StatRowProps) {
   return (
     <div className="view-stat-row">
       <div className="view-stat-main" onClick={() => growth && setExpanded(e => !e)}>
-        <span className="view-stat-icon">{icon}</span>
+        <span className="view-stat-icon"><StatIcon name={icon} size={14} /></span>
         <span className="view-stat-label">{label}</span>
         <span className="view-stat-val">{formatStat(statKey, base)}</span>
         {growth && (
@@ -473,7 +475,7 @@ export default function ViewPage() {
               {(base_stats.attack_range?.length ?? 0) > 0 && (
                 <div className="view-stat-row">
                   <div className="view-stat-main">
-                    <span className="view-stat-icon">◎</span>
+                    <span className="view-stat-icon"><StatIcon name="range" size={14} /></span>
                     <span className="view-stat-label">Attack Range</span>
                     <span className="view-stat-val">{base_stats.attack_range?.join(' / ')}</span>
                   </div>
