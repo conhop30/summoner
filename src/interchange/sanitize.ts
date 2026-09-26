@@ -9,7 +9,7 @@ import type {
   AbilityBody, AbilityDetails, AbilitySlot, AbilityText, BlockDetails, BlockText, ChampionRecord, DesktopSection, Effect,
   IdentityRecord, ImageRef, JournalTab, ParseResult, ParsedFile, RatioEntry, RecastNumbers, RecastStruct, Scope,
 } from './types'
-import { EFFECT_FAMILIES, EFFECT_UNITS, FORMAT, RATIO_PARTS, SLOTS, VERSION } from './types'
+import { EFFECT_FAMILIES, EFFECT_UNITS, FORMAT, RATIO_PARTS, SLOTS, STAT_CHANGE_DIRECTIONS, STAT_CHANGE_TARGETS, VERSION } from './types'
 
 export const LIMITS = {
   fileBytes: 100 * 1024 * 1024,
@@ -181,6 +181,10 @@ function sanitizeEffect(v: unknown, maxRank: number, warn: Warn, label: string):
   if (base) effect.base = base
   const duration = rankArray(v.duration, maxRank)
   if (duration) effect.duration = duration
+  const stat = text(v.stat, LIMITS.short, warn, `${label} effect stat`)
+  if (stat) effect.stat = stat
+  if ((STAT_CHANGE_DIRECTIONS as readonly unknown[]).includes(v.direction)) effect.direction = v.direction as Effect['direction']
+  if ((STAT_CHANGE_TARGETS as readonly unknown[]).includes(v.target)) effect.target = v.target as Effect['target']
   const notes = text(v.notes, LIMITS.notes, warn, `${label} effect notes`)
   if (notes) effect.notes = notes
   if (Array.isArray(v.ratios)) {

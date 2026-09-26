@@ -80,6 +80,9 @@
                 "type": "sleep",
                 "family": "bogus",
                 "unit": "gallons",
+                "stat": 42,
+                "direction": "sideways",
+                "target": "everyone",
                 "base": [
                   1
                 ],

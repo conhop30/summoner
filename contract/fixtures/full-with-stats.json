@@ -214,6 +214,21 @@
                   1,
                   1.5
                 ]
+              },
+              {
+                "type": "stat_change",
+                "stat": "armor",
+                "direction": "lower",
+                "target": "enemy",
+                "unit": "percent",
+                "base": [
+                  20,
+                  25,
+                  30
+                ],
+                "duration": [
+                  4
+                ]
               }
             ]
           },

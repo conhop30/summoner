@@ -39,6 +39,12 @@ export type EffectUnit = 'seconds' | 'percent' | 'flat'
 export const EFFECT_FAMILIES: readonly EffectFamily[] = ['damage', 'hard_control', 'soft_control', 'sustain', 'utility']
 export const EFFECT_UNITS: readonly EffectUnit[] = ['seconds', 'percent', 'flat']
 
+// A 'stat_change' effect raises or lowers one stat of someone: "-30% armor on an enemy for 4 s".
+export type StatChangeDirection = 'raise' | 'lower'
+export type StatChangeTarget = 'self' | 'ally' | 'enemy'
+export const STAT_CHANGE_DIRECTIONS: readonly StatChangeDirection[] = ['raise', 'lower']
+export const STAT_CHANGE_TARGETS: readonly StatChangeTarget[] = ['self', 'ally', 'enemy']
+
 export interface Effect {
   type: string
   // What a description calls this effect ({Name}); unset, the type's name.
@@ -49,6 +55,10 @@ export interface Effect {
   base?: number[]
   ratios?: RatioEntry[]
   duration?: number[]
+  // Only a 'stat_change' effect has these: which stat (an id as in a ratio's `stat`), which way, and who.
+  stat?: string
+  direction?: StatChangeDirection
+  target?: StatChangeTarget
   notes?: string
 }
 

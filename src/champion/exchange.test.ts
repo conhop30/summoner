@@ -362,3 +362,23 @@ describe('description tokens in files', () => {
     expect(back.abilities.q.blocks![0].effects![0].name).toBe('Hit')
   })
 })
+
+describe('stat changes in files', () => {
+  const shred: Effect = { type: 'stat_change', stat: 'armor', direction: 'lower', target: 'enemy', unit: 'percent', base: [20, 25, 30, 35, 40], duration: [4, 4, 4, 4, 4] }
+
+  it('keeps every part of a stat change through a full round trip, with its duration token', () => {
+    const c = champion()
+    c.abilities.q = { ...c.abilities.q, name: 'Rend', description: 'Lowers armor by {Armor} for {Armor duration}.', effects: [shred] }
+    const full = toRecord(c, 'full')
+    const back = recordToChampion(JSON.parse(JSON.stringify(full)), null, { icons: {} })
+    expect(back.abilities.q.effects).toEqual([shred])
+    expect(back.abilities.q.description).toBe('Lowers armor by {Armor} for {Armor duration}.')
+  })
+
+  it('shows the phone the numbers, not the tokens', () => {
+    const c = champion()
+    c.abilities.q = { ...c.abilities.q, name: 'Rend', description: 'Lowers armor by {Armor} for {Armor duration}.', effects: [shred] }
+    const concept = toRecord(c, 'concept')
+    expect(concept.abilities.q?.description).toBe('Lowers armor by 20/25/30/35/40% for 4 s.')
+  })
+})
