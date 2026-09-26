@@ -52,10 +52,39 @@ const LETHALITY_AT_REFERENCE = 0.6 + (0.4 * REFERENCE_LEVEL) / 18
 
 type Resist = 'armor' | 'magic_resist'
 
-/** What a resist change does to damage: the target loses this much of it (by percent, then flat), and takes (100 + R) / (100 + R') times as much. */
-export function resistMultiplier(resist: number, percent: number, flat: number): number {
-  const reduced = Math.max(0, resist * (1 - Math.min(1, Math.max(0, percent))) - Math.max(0, flat))
-  return (100 + resist) / (100 + reduced)
+/** What is ignored of a resistance: a share of it, then a flat amount. */
+interface Penetration {
+  percent: number
+  flat: number
+}
+
+const NO_PENETRATION: Penetration = { percent: 0, flat: 0 }
+
+function afterPenetration(resist: number, pen: Penetration): number {
+  return Math.max(0, resist * (1 - Math.min(1, Math.max(0, pen.percent))) - Math.max(0, pen.flat))
+}
+
+/** What the champion's items ignore of the target's armor or magic resist. */
+function itemPenetration(resist: Resist, c: Combatant): Penetration {
+  return resist === 'armor'
+    ? { percent: c.armorPen, flat: c.lethality * LETHALITY_AT_REFERENCE }
+    : { percent: c.magicPen, flat: c.magicPenFlat }
+}
+
+/** The target's armor or magic resist as this champion's damage meets it, after its items' penetration. */
+export function targetResist(resist: Resist, c: Combatant): number {
+  return afterPenetration(resist === 'armor' ? TARGET_ARMOR : TARGET_MAGIC_RESIST, itemPenetration(resist, c))
+}
+
+/**
+ * What a resist change does to damage: the target loses this much of it (by percent, then flat), and
+ * takes (100 + R) / (100 + R') times as much. Penetration, when there is some, is applied after the
+ * change and is already in both R and R', so the gain from shred is smaller against a target that
+ * penetration has already worn down.
+ */
+export function resistMultiplier(resist: number, percent: number, flat: number, pen: Penetration = NO_PENETRATION): number {
+  const shredded = Math.max(0, resist * (1 - Math.min(1, Math.max(0, percent))) - Math.max(0, flat))
+  return (100 + afterPenetration(resist, pen)) / (100 + afterPenetration(shredded, pen))
 }
 const HEAL_WEIGHT = 0.8
 const SHIELD_WEIGHT = 0.7
@@ -143,11 +172,10 @@ function statValue(stat: RatioStatId, part: RatioPart, c: Combatant): number {
     case 'move_speed': return pick(c.baseMoveSpeed, c.moveSpeed)
     case 'crit_chance': return c.critChance * 100
     case 'ability_haste': return c.abilityHaste
-    // Items don't grant these in the data the app reads yet, so they count for nothing.
-    case 'lethality':
-    case 'armor_pen':
-    case 'magic_pen':
-      return 0
+    case 'lethality': return c.lethality
+    case 'armor_pen': return c.armorPen * 100
+    // Flat magic penetration: what an ability that scales with "magic pen" means.
+    case 'magic_pen': return c.magicPenFlat
     case 'target_max_health': return TARGET_MAX_HEALTH
     case 'target_current_health': return TARGET_MAX_HEALTH * TARGET_CURRENT_SHARE
     case 'target_missing_health': return TARGET_MAX_HEALTH * TARGET_MISSING_SHARE
@@ -228,7 +256,7 @@ function evaluateEffect(effect: Effect, rankIndex: number, c: Combatant, alwaysO
 
   if (family === 'damage') {
     const mitigation = effect.damage_type === 'True' ? 1
-      : 100 / (100 + (effect.damage_type === 'Magic' ? TARGET_MAGIC_RESIST : TARGET_ARMOR))
+      : 100 / (100 + targetResist(effect.damage_type === 'Magic' ? 'magic_resist' : 'armor', c))
     parts.damage = Math.max(0, amount) * mitigation
     if (effect.damage_type === 'Magic') parts.magic = parts.damage
     else if (effect.damage_type !== 'True') parts.physical = parts.damage
@@ -318,8 +346,9 @@ export function evaluateKit(champion: Champion, c: Combatant): KitReport {
 
   for (const resist of ['armor', 'magic_resist'] as const) {
     const base = resist === 'armor' ? TARGET_ARMOR : TARGET_MAGIC_RESIST
+    const pen = itemPenetration(resist, c)
     const active = shreds.filter(s => s.shred.resist === resist)
-    const gains = active.map(s => (resistMultiplier(base, s.shred.percent, s.shred.flat) - 1) * s.uptime)
+    const gains = active.map(s => (resistMultiplier(base, s.shred.percent, s.shred.flat, pen) - 1) * s.uptime)
     const sum = gains.reduce((a, b) => a + b, 0)
     const scale = sum > MAX_SHRED_GAIN ? MAX_SHRED_GAIN / sum : 1
     active.forEach(({ report, shred }, i) => {

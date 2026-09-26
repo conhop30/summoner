@@ -36,6 +36,11 @@ export interface Combatant {
   /** Resource pool, and its regeneration per 5 seconds. */
   resource: number
   resourceRegen: number
+  /** What the champion's items ignore of an enemy's resistances: flat lethality, flat magic penetration, and the percentage kinds as fractions. */
+  lethality: number
+  armorPen: number
+  magicPenFlat: number
+  magicPen: number
 }
 
 function num(n: number | undefined): number {
@@ -76,6 +81,11 @@ export function combatantAt(base: Partial<BaseStats>, level: number, bonus: Item
     abilityHaste: bonus.abilityHaste,
     resource: baseResource + bonus.mana,
     resourceRegen: at(base, 'resource_regen', 'resource_regen_growth', level),
+    lethality: bonus.lethality,
+    // Percentage penetration from several items multiplies rather than adds, and is bounded.
+    armorPen: Math.min(0.6, bonus.armorPen),
+    magicPenFlat: bonus.magicPenFlat,
+    magicPen: Math.min(0.6, bonus.magicPen),
   }
 }
 

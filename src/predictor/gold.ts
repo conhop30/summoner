@@ -17,13 +17,19 @@ export interface ItemBonuses {
   moveSpeedPercent: number
   lifeSteal: number
   omnivamp: number
+  /** Flat armor penetration; it grows with the champion's level, see kit.ts. */
+  lethality: number
+  /** Armor penetration and magic penetration as fractions, and the flat kind of magic penetration. */
+  armorPen: number
+  magicPenFlat: number
+  magicPen: number
 }
 
 export function emptyBonuses(): ItemBonuses {
   return {
     health: 0, mana: 0, armor: 0, magicResist: 0, attackDamage: 0, abilityPower: 0,
     attackSpeed: 0, critChance: 0, abilityHaste: 0, moveSpeedFlat: 0, moveSpeedPercent: 0,
-    lifeSteal: 0, omnivamp: 0,
+    lifeSteal: 0, omnivamp: 0, lethality: 0, armorPen: 0, magicPenFlat: 0, magicPen: 0,
   }
 }
 
@@ -47,6 +53,11 @@ export const GOLD_PER: Record<keyof ItemBonuses, number> = {
   moveSpeedPercent: 6510.5,
   lifeSteal: 5355,
   omnivamp: 4600,
+  // From the same page: Serrated Dirk, Last Whisper, Sorcerer's Shoes and Blighting Jewel.
+  lethality: 30,
+  armorPen: 4166.67,
+  magicPenFlat: 46.67,
+  magicPen: 4615,
 }
 
 export function goldValueOf(bonuses: ItemBonuses): number {
@@ -99,6 +110,16 @@ export function totalsForBuild(build: BuildEntry[], catalog: Item[]): BuildTotal
         case 'Ability Haste': bonuses.abilityHaste += v; break
         case 'Life Steal': bonuses.lifeSteal += v; break
         case 'Omnivamp': bonuses.omnivamp += v; break
+        case 'Lethality': bonuses.lethality += v; break
+        // A flat "Armor Penetration" is what lethality became, so it is counted as that.
+        case 'Armor Penetration':
+          if (stat.isPercent) bonuses.armorPen += v
+          else bonuses.lethality += v
+          break
+        case 'Magic Penetration':
+          if (stat.isPercent) bonuses.magicPen += v
+          else bonuses.magicPenFlat += v
+          break
         case 'Move Speed':
           if (stat.isPercent) bonuses.moveSpeedPercent += v
           else bonuses.moveSpeedFlat += v
