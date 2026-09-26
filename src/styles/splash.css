@@ -1,0 +1,50 @@
+/* The launch screen shown by index.html until the app has its first data (src/shared/startup.ts removes
+   it). It is linked from the page's <head>, so it paints before any script has run: the window is dark
+   (or light, to match the saved theme) from the first frame instead of flashing white, and a ring turns
+   until the app is ready. Its colours are written out because the design tokens haven't loaded yet. */
+:root { --splash-bg: #010a13; --splash-gold: #c89b3c; --splash-gold-soft: #c8aa6e; --splash-track: rgba(200, 170, 110, 0.16); }
+:root[data-theme="light"] { --splash-bg: #f0ead8; --splash-gold: #a07830; --splash-gold-soft: #785a28; --splash-track: rgba(112, 96, 80, 0.2); }
+html { background: var(--splash-bg); }
+
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--splash-bg);
+  transition: opacity 240ms ease;
+}
+#splash.done { opacity: 0; pointer-events: none; }
+
+.splash-mark { position: relative; width: 104px; height: 104px; }
+.splash-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.splash-ring circle { fill: none; stroke-width: 2; }
+.splash-track { stroke: var(--splash-track); }
+.splash-arc {
+  stroke: var(--splash-gold);
+  stroke-linecap: round;
+  stroke-dasharray: 78 211;
+  transform-origin: 50% 50%;
+  animation: splash-turn 1.5s linear infinite;
+}
+.splash-logo { position: absolute; inset: 22px; width: 60px; height: 60px; object-fit: contain; }
+.splash-name {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  color: var(--splash-gold-soft);
+}
+
+@keyframes splash-turn { to { transform: rotate(360deg); } }
+/* Anyone who asks for less motion gets a still ring rather than a turning one. */
+@media (prefers-reduced-motion: reduce) {
+  .splash-arc { animation: none; stroke-dasharray: none; opacity: 0.55; }
+  #splash { transition-duration: 1ms; }
+}

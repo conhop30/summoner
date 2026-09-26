@@ -9,6 +9,7 @@ import type { LocalNewerChoice } from '../champion/exchange'
 declare global {
   interface Window {
     summoner: {
+      initialTheme: 'dark' | 'light' | 'system'
       updater: {
         getVersion: () => Promise<string>
         getState: () => Promise<UpdateState>

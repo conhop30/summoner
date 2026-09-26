@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { AppSettings, ThemeMode } from './types'
 import { DEFAULT_SETTINGS } from './types'
+import { startupReady } from '../shared/startup'
 
 interface SettingsStore {
   settings: AppSettings
@@ -28,6 +29,7 @@ export const useSettings = create<SettingsStore>((set, get) => {
   window.summoner.settings.getAll().then(settings => {
     applyTheme(settings.theme)
     set({ settings, loaded: true })
+    startupReady('settings')
   })
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {

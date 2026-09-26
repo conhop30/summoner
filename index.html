@@ -5,8 +5,30 @@
     <link rel="icon" type="image/png" href="/summoner-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Summoner</title>
+
+    <!-- The launch screen: plain HTML and CSS (styles/splash.css), so it paints before any script has run. -->
+    <script>
+      // The saved theme, from the main process, so this screen and the app agree. "system" is settled
+      // here with the same check the app makes once it has loaded (prefers-color-scheme).
+      try {
+        var theme = window.summoner && window.summoner.initialTheme
+        if (theme === 'system') theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light')
+      } catch (e) { /* the app sets the theme itself once its settings load */ }
+    </script>
+    <link rel="stylesheet" href="/src/styles/splash.css" />
   </head>
   <body>
+    <div id="splash" role="status" aria-label="Loading Summoner">
+      <div class="splash-mark">
+        <svg class="splash-ring" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="splash-track" cx="50" cy="50" r="46" />
+          <circle class="splash-arc" cx="50" cy="50" r="46" />
+        </svg>
+        <img class="splash-logo" src="/src/assets/summoner-logo.png" alt="" />
+      </div>
+      <div class="splash-name">Summoner</div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

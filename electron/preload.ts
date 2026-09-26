@@ -6,8 +6,12 @@ import type { AppSettings, MusicTrack } from '../src/settings/types'
 import type { UpdateState } from '../src/updater/types'
 import type { ImportPlanResult, ImportApplyResult } from '../src/champion/importTypes'
 import type { LocalNewerChoice } from '../src/champion/exchange'
+import { themeFromArguments } from '../src/settings/launchTheme'
 
 contextBridge.exposeInMainWorld('summoner', {
+  // The saved theme setting, so index.html can paint its loading screen in it.
+  initialTheme: themeFromArguments(process.argv),
+
   updater: {
     getVersion: (): Promise<string> => ipcRenderer.invoke('updater:getVersion'),
     getState: (): Promise<UpdateState> => ipcRenderer.invoke('updater:getState'),

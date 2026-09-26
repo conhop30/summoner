@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, net, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol, net, dialog, nativeTheme } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -36,6 +36,7 @@ import { syncItems, getAllItems, getItem, getSyncStatus } from '../src/item/crud
 import { syncChampionCatalog, getAllChampionCatalog, getChampionCatalogSyncStatus } from '../src/championCatalog/crud'
 import { getSettings, updateSettings } from '../src/settings/crud'
 import { registerDataHandlers } from './dataTransfer'
+import { launchBackground, resolveLaunchTheme, themeArgument } from '../src/settings/launchTheme'
 
 let win: BrowserWindow | null
 let currentFrameless = false
@@ -44,6 +45,9 @@ function createWindow() {
   const db = getDb()
   const settings = getSettings(db)
   currentFrameless = settings.window_frameless
+  // Open in the theme's own colours (not Electron's default white) and tell the page the saved
+  // theme, so its loading screen matches from the first frame.
+  const launchTheme = resolveLaunchTheme(settings.theme, nativeTheme.shouldUseDarkColors)
 
   win = new BrowserWindow({
     width: 1200,
@@ -53,8 +57,10 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'summoner-logo.png'),
     frame: !settings.window_frameless,
     fullscreen: settings.window_fullscreen,
+    backgroundColor: launchBackground(launchTheme),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      additionalArguments: [themeArgument(settings.theme)],
     },
   })
 
