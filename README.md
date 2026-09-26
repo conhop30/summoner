@@ -4,7 +4,7 @@ A desktop application for designing original League of Legends-style champion co
 
 ## Download
 
-Windows 10/11 installer: [Summoner-Windows-0.3.0-Setup.exe](https://github.com/conhop30/summoner/releases/latest) (see the [project page](https://conhop30.github.io/projects/summoner/) for screenshots). The installer isn't code-signed, so SmartScreen may ask you to choose "More info", then "Run anyway".
+Windows 10/11 installer: [Summoner-Windows-0.4.0-Setup.exe](https://github.com/conhop30/summoner/releases/latest) (see the [project page](https://conhop30.github.io/projects/summoner/) for screenshots). The installer isn't code-signed, so SmartScreen may ask you to choose "More info", then "Run anyway".
 
 ## Overview
 
