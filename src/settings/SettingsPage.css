@@ -198,3 +198,5 @@
 .music-track-remove:hover { color: var(--text-accent-gold); }
 
 .music-master-toggle { font-weight: 500; margin-bottom: var(--space-1); }
+
+.settings-toggle-hint { margin-left: var(--space-2); font-size: var(--font-size-xs); color: var(--text-muted); }

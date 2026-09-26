@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSettings } from './useSettings'
+import { NUMBERS_PRESETS, applyNumbers, presetOf, type NumbersSettings } from './numbers'
 import { useMusicTracks } from './useMusicTracks'
 import { useUpdater } from '../updater/useUpdater'
 import type { ThemeMode } from './types'
@@ -18,6 +19,8 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { settings, update, apply } = useSettings()
+  const numbers: NumbersSettings = { numbers_abilities: settings.numbers_abilities, numbers_stats: settings.numbers_stats, numbers_win_rate: settings.numbers_win_rate }
+  const numbersPreset = presetOf(numbers)
   const { tracks, current, builtInIds } = useMusicTracks()
   const [dataStatus, setDataStatus] = useState<string | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
@@ -98,6 +101,41 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section-title">Numbers</div>
+          <div className="settings-section-desc">
+            How much of the numbers to show. Hiding them never deletes anything: what you typed stays saved, and comes back when you turn them on.
+          </div>
+          <div className="settings-btn-row">
+            {([['story', 'Story only'], ['full', 'Everything']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                className={`settings-option-btn${numbersPreset === key ? ' active' : ''}`}
+                onClick={() => update(applyNumbers(numbers, NUMBERS_PRESETS[key]))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {([
+            ['numbers_abilities', 'Ability numbers', 'Cooldown, cost and effects'],
+            ['numbers_stats', 'Stats and items', 'Base stats and item builds'],
+            ['numbers_win_rate', 'Win rate', 'The projection bar. It reads the other two, so it turns them on with it'],
+          ] as const).map(([key, label, hint]) => (
+            <label key={key} className="settings-toggle-row">
+              <input
+                type="checkbox"
+                checked={settings[key]}
+                onChange={e => update(applyNumbers(numbers, { [key]: e.target.checked }))}
+              />
+              <span>{label} <span className="settings-toggle-hint">{hint}</span></span>
+            </label>
+          ))}
+          <button className="settings-secondary-btn" onClick={() => update({ welcome_done: false })}>
+            Ask me the welcome question again
+          </button>
         </section>
 
         <section className="settings-section">

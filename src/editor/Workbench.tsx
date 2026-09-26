@@ -18,15 +18,20 @@ interface Props {
   onChange: (c: Champion) => void
   view: WorkbenchView
   onView: (v: WorkbenchView) => void
+  /** False leaves out the item build, which is a numbers feature. */
+  showItems?: boolean
 }
 
 // The area under the base stats: one panel at a time — the champion's story, their identity
 // chips, or their item build — chosen from a centered switcher.
-export default function Workbench({ champion, onChange, view, onView }: Props) {
+export default function Workbench({ champion, onChange, view: requested, onView, showItems = true }: Props) {
+  const views = VIEWS.filter(v => v.key !== 'items' || showItems)
+  // Items may have been open when they were switched off.
+  const view = views.some(v => v.key === requested) ? requested : 'story'
   return (
     <section className="workbench">
       <div className="workbench-switcher" role="tablist" aria-label="Champion details">
-        {VIEWS.map(v => (
+        {views.map(v => (
           <button
             key={v.key}
             role="tab"

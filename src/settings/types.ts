@@ -27,6 +27,12 @@ export interface AppSettings {
   window_frameless: boolean;
   window_fullscreen: boolean;
   effect_details: EffectDetailsPlacement;
+  // How much of the numbers to show; see numbers.ts. Hidden numbers stay stored.
+  numbers_abilities: boolean;
+  numbers_stats: boolean;
+  numbers_win_rate: boolean;
+  // Set once the person has answered the question asked on first launch.
+  welcome_done: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -39,4 +45,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   window_frameless: true,
   window_fullscreen: false,
   effect_details: 'inline',
+  numbers_abilities: true,
+  numbers_stats: true,
+  numbers_win_rate: true,
+  welcome_done: false,
 };

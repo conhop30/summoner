@@ -11,13 +11,15 @@ interface Props {
   placeholder?: string
   /** What the preview shows around the description, so it reads as the ability does in the game. */
   meta?: { name?: string; label?: string; cooldown?: number[]; cost?: number[]; costType?: string }
+  /** False when ability numbers are hidden: no effects to insert from, and none of their numbers in the preview. */
+  numbers?: boolean
 }
 
 // An ability's or block's description. Where a number belongs the text can say {Damage}, and the
 // number is filled in from the effect of that name. The dropdown puts a token in at the caret so
 // nothing has to be remembered or typed exactly, and a line underneath shows how the text reads
 // once the numbers are in.
-export default function DescriptionField({ value, effects, onChange, placeholder, meta }: Props) {
+export default function DescriptionField({ value, effects, onChange, placeholder, meta, numbers = true }: Props) {
   const text = value ?? ''
   const areaRef = useRef<HTMLTextAreaElement>(null)
   // Where the caret goes once the inserted text has been rendered.
@@ -52,7 +54,7 @@ export default function DescriptionField({ value, effects, onChange, placeholder
         value={text}
         onChange={e => onChange(e.target.value)}
       />
-      {(text.trim() !== '' || (effects?.length ?? 0) > 0) && (
+      {(text.trim() !== '' || (numbers && (effects?.length ?? 0) > 0)) && (
         <AbilityTooltip
           className="ability-desc-preview"
           name={meta?.name}
@@ -62,9 +64,10 @@ export default function DescriptionField({ value, effects, onChange, placeholder
           cooldown={meta?.cooldown}
           cost={meta?.cost}
           costType={meta?.costType}
+          numbers={numbers}
         />
       )}
-      {(effects?.length ?? 0) > 0 && (
+      {numbers && (effects?.length ?? 0) > 0 && (
         <div className="ability-desc-tools">
           <select
             className="effect-type-select ability-desc-insert"

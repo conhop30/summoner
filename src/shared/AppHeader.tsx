@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import summonerLogo from '../assets/summoner-logo.png'
 import { router } from '../router'
+import { useNumbers } from '../settings/useNumbers'
 import './AppHeader.css'
 
 // Persistent brand + navigation bar above every page. Mounted outside the route tree, so it
@@ -13,6 +14,7 @@ import './AppHeader.css'
 // changed since without a restart.) In fullscreen those buttons are hidden and the in-app
 // navigation, including the fullscreen toggle, is what's left.
 export default function AppHeader() {
+  const numbers = useNumbers()
   const [frameless, setFrameless] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [path, setPath] = useState(router.state.location.pathname)
@@ -42,13 +44,13 @@ export default function AppHeader() {
       </button>
 
       <nav className="app-header-nav" aria-label="Main">
-        <button
+        {numbers.stats && <button
           className={`app-header-link${onItems ? ' active' : ''}`}
           aria-current={onItems ? 'page' : undefined}
           onClick={() => router.navigate('/items')}
         >
           Items
-        </button>
+        </button>}
         <button
           className={`app-header-icon-btn${onSettings ? ' active' : ''}`}
           aria-current={onSettings ? 'page' : undefined}

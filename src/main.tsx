@@ -7,6 +7,7 @@ import MusicPlayer from './settings/MusicPlayer'
 import ThemePlayer from './audio/ThemePlayer'
 import AppHeader from './shared/AppHeader'
 import UpdateBanner from './updater/UpdateBanner'
+import WelcomeQuestion from './settings/WelcomeQuestion'
 import './styles/tokens.css'
 import './index.css'
 
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ThemePlayer />
       <RouterProvider router={router} />
       <UpdateBanner />
+      <WelcomeQuestion />
     </LazyMotion>
   </React.StrictMode>
 )

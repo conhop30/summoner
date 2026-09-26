@@ -10,6 +10,7 @@ import { newEffect } from '../champion/outcomes'
 import { normalizeRankArray } from '../champion/disclosure'
 import { generateId } from '../champion/utils'
 import { useSettings } from '../settings/useSettings'
+import { useNumbers } from '../settings/useNumbers'
 import './AbilitiesSection.css'
 
 const COST_TYPES = ['Mana', 'Energy', 'Health', 'Fury', 'None']
@@ -24,13 +25,15 @@ const BLOCK_KINDS: { value: AbilityBlockKind; label: string }[] = [
 // (name/description/cooldown/cost/effects), so they share this editor too. `part` picks what it
 // shows: 'simple' is the whole body, with each effect down to what it does and how much;
 // 'details' is only the effects, each with the rest of what can be said about it (the Advanced tab).
-function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true, part = 'simple', detailsInline = true }: {
+function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true, part = 'simple', detailsInline = true, showNumbers = true }: {
   body: AbilityBody
   maxRank: number
   onUpdate: (partial: Partial<AbilityBody>) => void
   showNameDescription?: boolean
   part?: 'simple' | 'details'
   detailsInline?: boolean
+  /** False hides the cooldown, cost and effects, leaving the name and description. */
+  showNumbers?: boolean
 }) {
   const rankIndices = Array.from({ length: maxRank }, (_, i) => i)
   const tokenNames = effectTokenNames(body.effects)
@@ -112,11 +115,12 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
           </div>
 
           <div className="ability-desc-row">
-            <DescriptionField value={body.description} effects={body.effects} onChange={description => onUpdate({ description })} meta={{ name: body.name, cooldown: body.cooldown, cost: body.cost, costType: body.cost_type }} />
+            <DescriptionField value={body.description} effects={body.effects} onChange={description => onUpdate({ description })} meta={{ name: body.name, cooldown: body.cooldown, cost: body.cost, costType: body.cost_type }} numbers={showNumbers} />
           </div>
         </>
       )}
 
+      {showNumbers && (<>
       <div className="ability-field-group">
         <div className="ability-field-header">
           <span className="ability-field-label">Cooldown</span>
@@ -153,6 +157,7 @@ function AbilityBodyEditor({ body, maxRank, onUpdate, showNameDescription = true
         </div>
         {effectCards}
       </div>
+      </>)}
     </>
   )
 }
@@ -188,8 +193,11 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
   const [activeSlot, setActiveSlot] = useState<AbilitySlot>('passive')
   const [mode, setMode] = useState<Mode>('simple')
   // Where an effect's extra details live: under each effect, or on the Advanced tab (a setting).
+  const numbers = useNumbers()
   const detailsInline = useSettings(st => st.settings.effect_details) !== 'tab'
-  const activeMode: Mode = detailsInline ? 'simple' : mode
+  // With ability numbers hidden there is nothing for an Advanced tab to hold.
+  const showModeBar = !detailsInline && numbers.abilities
+  const activeMode: Mode = showModeBar ? mode : 'simple'
   const iconInputRef = useRef<HTMLInputElement>(null)
 
   const ability = champion.abilities[activeSlot]
@@ -270,7 +278,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
               </button>
             ))}
           </div>
-          <StatBlock champion={champion} onEdit={onEditStats} />
+          {numbers.stats && <StatBlock champion={champion} onEdit={onEditStats} />}
         </div>
 
         <div className="abilities-editor">
@@ -308,21 +316,22 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
               effects={ability.effects}
               onChange={description => updateAbility({ description })}
               meta={{ name: ability.name, label: SLOT_LABELS[activeSlot], cooldown: ability.cooldown, cost: ability.cost, costType: ability.cost_type }}
+              numbers={numbers.abilities}
             />
           </div>
 
           {activeMode === 'simple' && (
             <div className="ability-fields">
-              <div className="rank-count-bar">
+              {numbers.abilities && <div className="rank-count-bar">
                 <span className="ability-field-label">Ranks</span>
                 <div className="rank-controls">
                   <button className="rank-btn" onClick={() => updateRankCount(-1)}>−</button>
                   <span className="rank-count">{ability.max_rank} ranks</span>
                   <button className="rank-btn" onClick={() => updateRankCount(1)}>+</button>
                 </div>
-              </div>
+              </div>}
 
-              <AbilityBodyEditor body={ability} maxRank={ability.max_rank} onUpdate={updateAbility} showNameDescription={false} detailsInline={detailsInline} />
+              <AbilityBodyEditor body={ability} maxRank={ability.max_rank} onUpdate={updateAbility} showNameDescription={false} detailsInline={detailsInline} showNumbers={numbers.abilities} />
 
               <div className="ability-blocks-section">
                 <div className="ability-field-header">
@@ -355,6 +364,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
 
                     {block.kind === 'recast' && (
                       <div className="recast-trigger-row">
+                        {numbers.abilities && (<>
                         <label className="recast-field">
                           <span>Max recasts</span>
                           <NumberField value={block.recast?.max_recasts} onChange={n => updateBlockRecast(bi, { max_recasts: n })} />
@@ -363,6 +373,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
                           <span>Window (s)</span>
                           <NumberField value={block.recast?.recast_window} onChange={n => updateBlockRecast(bi, { recast_window: n })} />
                         </label>
+                        </>)}
                         <input
                           className="rank-input"
                           placeholder="Unlock condition (e.g. after Q1 hits an enemy)"
@@ -378,6 +389,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
                       maxRank={ability.max_rank}
                       onUpdate={partial => updateBlock(bi, partial)}
                       detailsInline={detailsInline}
+                      showNumbers={numbers.abilities}
                     />
                   </div>
                 ))}
@@ -397,7 +409,7 @@ export default function AbilitiesSection({ champion, onChange, onEditStats }: Pr
             </div>
           )}
 
-          {!detailsInline && (
+          {showModeBar && (
             <div className="abilities-mode-bar">
               <button
                 className={`mode-btn${mode === 'simple' ? ' active' : ''}`}

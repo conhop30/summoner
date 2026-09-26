@@ -1,4 +1,5 @@
 import type { Champion } from '../champion/types'
+import { useNumbers } from '../settings/useNumbers'
 import './ChampionTile.css'
 
 const PLACEHOLDER_COLORS = ['purple', 'teal', 'coral', 'blue', 'amber']
@@ -11,14 +12,16 @@ function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function getCompletionPct(champion: Champion): number {
+// Averaged over the parts that are shown: stats don't count while they are hidden.
+function getCompletionPct(champion: Champion, showStats: boolean): number {
   const { identity, base_stats, abilities } = champion
   const storyPct = ((identity.name ? 1 : 0) + (identity.lore ? 1 : 0) + ((identity.role ?? []).length > 0 ? 1 : 0)) / 3
   const statKeys = ['health', 'attack_damage', 'armor', 'magic_resistance', 'movement_speed']
   const statsPct = statKeys.filter(k => base_stats[k as keyof typeof base_stats] != null).length / statKeys.length
   const slotKeys = ['passive', 'q', 'w', 'e', 'r'] as const
   const abilitiesPct = slotKeys.filter(s => abilities[s]?.name).length / slotKeys.length
-  return Math.round(((storyPct + statsPct + abilitiesPct) / 3) * 100)
+  const parts = showStats ? [storyPct, statsPct, abilitiesPct] : [storyPct, abilitiesPct]
+  return Math.round((parts.reduce((sum, p) => sum + p, 0) / parts.length) * 100)
 }
 
 function MistStrands() {
@@ -47,7 +50,8 @@ export default function ChampionTile({ champion, onView, onEdit, onFavoriteToggl
   const laneLabel  = (identity.role ?? []).slice(0, 2).join(' · ')
   const classLabel = (identity.class ?? []).slice(0, 1).join('')
   const playstyle  = (identity as any).playstyle as string[] | undefined
-  const pct    = getCompletionPct(champion)
+  const numbers = useNumbers()
+  const pct    = getCompletionPct(champion, numbers.stats)
   const r      = 11
   const circ   = 2 * Math.PI * r
   const offset = circ * (1 - pct / 100)

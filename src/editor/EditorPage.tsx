@@ -10,6 +10,7 @@ import type { WorkbenchView } from './Workbench'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import StatsPanel from './StatsPanel'
 import WinRatePanel from './WinRatePanel'
+import { useNumbers } from '../settings/useNumbers'
 import { useChampionCatalog } from '../championCatalog/useChampionCatalog'
 import AbilitiesSection from './AbilitiesSection'
 import ConfirmDialog from '../shared/ConfirmDialog'
@@ -63,17 +64,19 @@ function SpineWheel({ pct, color }: { pct: number; color: string }) {
   )
 }
 
-function BigWheel({ storyPct, statsPct, abilitiesPct }: { storyPct: number; statsPct: number; abilitiesPct: number }) {
+// One segment for each part that is shown: two when the stats are hidden, three otherwise.
+function BigWheel({ storyPct, statsPct, abilitiesPct, showStats }: { storyPct: number; statsPct: number; abilitiesPct: number; showStats: boolean }) {
   const r = 23
   const circ = 2 * Math.PI * r
-  const seg = circ / 3
-  const gap = 4
-  const arcs = [
-    { id: 'story',     offset: 0,            pct: storyPct },
-    { id: 'stats',     offset: -(seg),        pct: statsPct },
-    { id: 'abilities', offset: -(seg * 2),    pct: abilitiesPct },
+  const parts = [
+    { id: 'story', pct: storyPct },
+    ...(showStats ? [{ id: 'stats', pct: statsPct }] : []),
+    { id: 'abilities', pct: abilitiesPct },
   ]
-  const totalPct = Math.round((storyPct + statsPct + abilitiesPct) / 3)
+  const seg = circ / parts.length
+  const gap = 4
+  const arcs = parts.map((p, i) => ({ ...p, offset: -(seg * i) }))
+  const totalPct = Math.round(parts.reduce((sum, p) => sum + p.pct, 0) / parts.length)
 
   return (
     <div className="big-wheel-wrap">
@@ -116,6 +119,7 @@ export default function EditorPage({ mode }: Props) {
   // One synced roster for the whole editor: the win-rate banner above the tabs, and the Stats tab's
   // suggestions and lookup, so syncing in one place updates all of them.
   const catalogState = useChampionCatalog()
+  const numbers = useNumbers()
 
   useEffect(() => {
     if (mode === 'edit' && id) {
@@ -206,14 +210,14 @@ export default function EditorPage({ mode }: Props) {
       <div className="editor-spine">
         <button className="spine-back" onClick={() => navigate('/')}>←</button>
 
-        <BigWheel storyPct={storyPct} statsPct={statsPct} abilitiesPct={abilitiesPct} />
+        <BigWheel storyPct={storyPct} statsPct={statsPct} abilitiesPct={abilitiesPct} showStats={numbers.stats} />
 
         <nav className="spine-nav">
           {([
             { key: 'story', label: 'Story', icon: '✦', pct: storyPct },
             { key: 'stats', label: 'Stats', icon: '◈', pct: statsPct },
             { key: 'abilities', label: 'Skills', icon: '⚡', pct: abilitiesPct },
-          ] as const).map(item => (
+          ] as const).filter(item => item.key !== 'stats' || numbers.stats).map(item => (
             <button
               key={item.key}
               className={`spine-nav-btn${item.pct === 100 ? ' done' : ''}`}
@@ -262,7 +266,7 @@ export default function EditorPage({ mode }: Props) {
               className={`editor-right-tab${rightTab === 'stats' ? ' active' : ''}`}
               onClick={() => setRightTab('stats')}
             >
-              Stats
+              {numbers.stats ? 'Stats' : 'Story'}
               {rightTab === 'stats' && (
                 <m.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
               )}
@@ -278,9 +282,11 @@ export default function EditorPage({ mode }: Props) {
             </button>
           </div>
           {/* The win-rate projection sits between the tabs and what they show, so it is there on both. */}
-          <div className="editor-right-banner">
-            <WinRatePanel champion={champion} roster={catalogState.catalog} />
-          </div>
+          {numbers.winRate && (
+            <div className="editor-right-banner">
+              <WinRatePanel champion={champion} roster={catalogState.catalog} />
+            </div>
+          )}
           <div className="editor-right-content">
             {/* The Abilities tab shows its own compact stat block beside the ability keys. */}
             {rightTab === 'stats' && (
@@ -291,7 +297,7 @@ export default function EditorPage({ mode }: Props) {
                   animate={{ opacity: 1 }}
                   transition={CONTENT_TRANSITION}
                 >
-                  <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} catalogState={catalogState} />
+                  <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} catalogState={catalogState} showStats={numbers.stats} />
                 </m.div>
               </div>
             )}

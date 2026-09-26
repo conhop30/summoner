@@ -19,21 +19,23 @@ interface Props {
   className?: string
   hoverProps?: { onMouseEnter: () => void; onMouseLeave: () => void }
   detailed?: boolean
+  /** False leaves out everything numeric that isn't in the description: the cooldown and cost, and the detail rows. */
+  numbers?: boolean
 }
 
 // An ability as the game shows it: its name, what it costs and how often it can be used, and the
 // description with the kind of damage in its own colour. Holding Shift while pointing at it opens
 // the detail the game keeps behind the same key: every effect on its own row, named for what it does,
 // with its numbers. Without a `detailed` from the caller it watches Shift over itself.
-export default function AbilityTooltip({ name, label, description, effects, cooldown, cost, costType, empty, className, hoverProps, detailed }: Props) {
+export default function AbilityTooltip({ name, label, description, effects, cooldown, cost, costType, empty, className, hoverProps, detailed, numbers = true }: Props) {
   const own = useShiftHover()
   const showDetail = detailed ?? own.detailed
   const props = hoverProps ?? own.hoverProps
 
   const segments = resolveSegments(description, effects)
-  const rows = detailRows(effects)
-  const cd = cooldownText({ cooldown })
-  const price = costText({ cost, cost_type: costType })
+  const rows = numbers ? detailRows(effects) : []
+  const cd = numbers ? cooldownText({ cooldown }) : ''
+  const price = numbers ? costText({ cost, cost_type: costType }) : ''
 
   return (
     <div className={`ability-tip${className ? ` ${className}` : ''}`} {...props}>

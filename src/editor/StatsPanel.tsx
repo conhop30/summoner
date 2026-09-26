@@ -14,6 +14,8 @@ interface Props {
   onWorkbench: (v: WorkbenchView) => void
   /** The synced champion roster, loaded once by the editor page and shared with the win-rate banner. */
   catalogState: CatalogState
+  /** False hides the base stats and item builds, leaving the story and identity. */
+  showStats?: boolean
 }
 
 interface StatFieldProps extends StatFieldDef {
@@ -47,7 +49,7 @@ function StatField({ label, icon, valueKey, growthKey, champion, onChange }: Sta
   )
 }
 
-export default function StatsPanel({ champion, onChange, workbench, onWorkbench, catalogState }: Props) {
+export default function StatsPanel({ champion, onChange, workbench, onWorkbench, catalogState, showStats = true }: Props) {
   const stats = champion.base_stats
 
   function updateAttackRange(raw: string) {
@@ -60,6 +62,7 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench,
 
   return (
     <div className="stats-panel">
+      {showStats && (<>
       <div className="sp-group">
         <div className="sp-group-title-row">
           <div className="sp-group-title">Base stats</div>
@@ -92,7 +95,8 @@ export default function StatsPanel({ champion, onChange, workbench, onWorkbench,
         </div>
       </div>
 
-      <Workbench champion={champion} onChange={onChange} view={workbench} onView={onWorkbench} />
+      </>)}
+      <Workbench champion={champion} onChange={onChange} view={workbench} onView={onWorkbench} showItems={showStats} />
     </div>
   )
 }

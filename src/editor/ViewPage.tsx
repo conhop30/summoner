@@ -4,6 +4,7 @@ import type { Champion, AbilitySlot } from '../champion/types'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import { resolveTokens } from '../champion/descriptionTokens'
 import AbilityTooltip from './AbilityTooltip'
+import { useNumbers } from '../settings/useNumbers'
 import { useShiftHover } from '../shared/useShiftHover'
 import { formatStat, formatGrowth, statAtLevel } from '../champion/statSpec'
 import type { BaseStats } from '../champion/types'
@@ -276,6 +277,7 @@ export default function ViewPage() {
   const [hoveredSlot, setHoveredSlot] = useState<AbilitySlot | null>(null)
   // Holding Shift over the abilities opens the detail behind the tooltip, as in the game.
   const shiftHover = useShiftHover()
+  const numbers = useNumbers()
   const themePlaying = useChampionTheme(s => !!id && s.playing?.championId === id && !s.paused)
   const playTheme = useChampionTheme(s => s.play)
   const stopTheme = useChampionTheme(s => s.stop)
@@ -420,6 +422,7 @@ export default function ViewPage() {
                     cost={displayAbility.cost}
                     costType={displayAbility.cost_type}
                     detailed={shiftHover.detailed}
+                    numbers={numbers.abilities}
                   />
                 )}
               </div>
@@ -437,7 +440,7 @@ export default function ViewPage() {
                 { label: 'Story', pct: storyPct },
                 { label: 'Stats', pct: Math.round(statsPct) },
                 { label: 'Skills', pct: Math.round(abilitiesPct) },
-              ].map(({ label, pct }) => (
+              ].filter(c => c.label !== 'Stats' || numbers.stats).map(({ label, pct }) => (
                 <div key={label} className="view-circle-wrap">
                   <div className="view-circle">
                     <svg viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }}>
@@ -457,7 +460,7 @@ export default function ViewPage() {
             </div>
           </div>
 
-          <div className="view-section">
+          {numbers.stats && <div className="view-section">
             <div className="view-section-title">Base stats</div>
             <div className="view-stats">
               {STAT_FIELDS.map(f => (
@@ -480,7 +483,7 @@ export default function ViewPage() {
                 </div>
               )}
             </div>
-          </div>
+          </div>}
 
           <div className="view-section">
             <div className="view-section-title">Details</div>
