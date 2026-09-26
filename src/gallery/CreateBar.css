@@ -1,0 +1,37 @@
+.create-bar-row {
+  padding: var(--space-4) var(--space-6) 0;
+  flex-shrink: 0;
+}
+
+/* The create tile's look, stretched across the gallery: dashed outline, gold on hover. */
+.create-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: 1px dashed var(--border-default);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.create-bar:hover,
+.create-bar:focus-visible {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+  outline: none;
+}
+
+.create-bar-plus {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.create-bar-text {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}

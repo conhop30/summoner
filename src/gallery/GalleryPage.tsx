@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
+import { startupReady } from '../shared/startup'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { Champion } from '../champion/types'
 import ChampionTile from './ChampionTile'
 import CreateTile from './CreateTile'
+import CreateBar from './CreateBar'
 import ConfirmDialog from '../shared/ConfirmDialog'
 import './GalleryPage.css'
 
@@ -19,7 +21,10 @@ export default function GalleryPage() {
   const navigate = useNavigate()
 
   const load = useCallback(() => {
-    window.summoner.champion.getAll().then(setChampions)
+    window.summoner.champion.getAll().then(list => {
+      setChampions(list)
+      startupReady('gallery')
+    })
   }, [])
 
 const location = useLocation()
@@ -101,6 +106,8 @@ const handleFavoriteToggle = useCallback(async (champion: Champion) => {
           </button>
         ))}
       </div>
+
+      <CreateBar onClick={() => navigate('/create')} />
 
       <div className="gallery-grid">
         {filtered.map(c => (
