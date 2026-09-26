@@ -31,6 +31,9 @@
 .ability-tip-body { white-space: pre-wrap; }
 .ability-tip-empty { color: var(--text-muted); font-style: italic; }
 
+.ability-tip-tag { display: inline-flex; align-items: center; gap: 4px; vertical-align: baseline; font-weight: 500; }
+.ability-tip-tag .stat-icon { position: relative; top: 1px; }
+.ability-tip-label { display: inline-flex; align-items: center; gap: 6px; }
 .tone-physical { color: var(--tone-physical); }
 .tone-magic { color: var(--tone-magic); }
 .tone-true { color: var(--tone-true); }
@@ -53,4 +56,3 @@
 .ability-tip-value em { font-style: normal; color: var(--text-secondary); }
 .ability-tip-notes { flex-basis: 100%; padding-left: 144px; font-size: var(--font-size-xs); color: var(--text-muted); }
 
-.ability-tip-hint { font-size: var(--font-size-xs); color: var(--text-placeholder); }

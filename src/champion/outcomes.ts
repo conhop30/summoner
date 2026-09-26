@@ -1,5 +1,7 @@
 import type { DamageType, Effect } from './types'
-import { STAT_CHANGE, isBuiltInEffect, statChangeOf, canLast } from './effects'
+import { STAT_CHANGE, effectName, isBuiltInEffect, statChangeOf, canLast } from './effects'
+import { ratioStatDef } from './ratios'
+import { iconForStat, type StatIconKey } from './statIcons'
 
 // What an effect does, in the words a person would use, as a short curated list. Each outcome is a
 // preset for the fields an effect already has (its type, damage type, stat, direction, who it
@@ -19,6 +21,8 @@ export interface Outcome {
   /** The words that follow this outcome's amount in a sentence ("magic damage"), written in after it when a description leaves them out. */
   noun?: string
   tone?: Tone
+  /** The small icon that goes beside it. */
+  icon?: StatIconKey
   /** The effect fields this outcome sets. */
   fields: Partial<Effect>
   /** True for an effect that is this outcome. */
@@ -113,6 +117,14 @@ export const OUTCOMES: Outcome[] = [
   },
 ]
 
+// Which icon each outcome wears. An outcome that is a change to some other stat takes the icon of that
+// stat instead; see tagIcon.
+const ICONS: Record<string, StatIconKey> = {
+  physical: 'ad', magic: 'ap', heal: 'heal', shield: 'shield', armor: 'armor', magic_resist: 'mr',
+  attack_speed: 'as', move_speed: 'ms', armor_shred: 'armor', magic_resist_shred: 'mr', slow: 'ms',
+}
+for (const outcome of OUTCOMES) outcome.icon = ICONS[outcome.id]
+
 export function outcomesFor(kind: OutcomeKind): Outcome[] {
   return OUTCOMES.filter(o => o.kind === kind)
 }
@@ -139,6 +151,25 @@ export function applyOutcome(effect: Effect, outcome: Outcome): Effect {
   const next = { ...effect, ...CLEARED, ...outcome.fields } as Effect
   if (!canLast(next)) next.duration = undefined
   return next
+}
+
+/**
+ * What an effect is called in the middle of a sentence, in lower case: "magic damage", "armor shred",
+ * "healing", or for a change to some other stat the name of that stat.
+ */
+export function tagLabel(effect: Effect): string {
+  const outcome = outcomeOf(effect)
+  if (outcome.noun) return outcome.noun
+  if (outcome.id === 'custom') return effectName(effect.type).toLowerCase()
+  if (outcome.id === 'stat_up' || outcome.id === 'stat_down') return (ratioStatDef(statChangeOf(effect).stat)?.label ?? 'stat').toLowerCase()
+  return outcome.label.toLowerCase()
+}
+
+/** The icon for an effect: its outcome's, or for a change to some other stat, that stat's. */
+export function tagIcon(effect: Effect): StatIconKey | undefined {
+  const outcome = outcomeOf(effect)
+  if (outcome.icon) return outcome.icon
+  return outcome.id === 'stat_up' || outcome.id === 'stat_down' ? iconForStat(statChangeOf(effect).stat) : undefined
 }
 
 /** An effect that has just been added: the first thing the list offers. */

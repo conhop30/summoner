@@ -1,6 +1,7 @@
 import type { Effect } from './types'
 import { defaultTokenName, effectKind, takesDuration } from './effects'
-import { outcomeOf, type Outcome, type Tone } from './outcomes'
+import { outcomeOf, tagIcon, tagLabel, type Outcome, type Tone } from './outcomes'
+import type { StatIconKey } from './statIcons'
 import { describeRatio, rankList, unitAfter } from './ratios'
 
 // Description tokens. An ability's description can say `{Damage}` where a number belongs, and the
@@ -99,6 +100,8 @@ export function hasTokens(text: string | undefined): boolean {
 export interface Segment {
   text: string
   tone?: Tone
+  /** Set on the name of an effect written in place of its numbers: "magic damage", with its icon. */
+  tag?: { icon?: StatIconKey }
 }
 
 /**
@@ -107,10 +110,10 @@ export interface Segment {
  * accepts any damage wording, so "{Damage} magic damage" is left alone even when the effect is
  * physical: what was written wins, and it is coloured for what it says.
  */
-function nounAfter(rest: string, outcome: Outcome): { lead: string; words: string; tone?: Tone } | null {
+function nounAfter(rest: string, outcome: Outcome, label?: string): { lead: string; words: string; tone?: Tone } | null {
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const damage = outcome.kind === 'damage'
-  const pattern = damage ? '(?:(physical|magic|true) )?damage' : escape(outcome.noun!)
+  const pattern = damage ? '(?:(physical|magic|true) )?damage' : escape(label ?? outcome.noun!)
   const found = new RegExp(`^(\\s*)(${pattern})(?![a-z])`, 'i').exec(rest)
   if (!found) return null
   const written = damage ? (found[3]?.toLowerCase() as Tone | undefined) : undefined
@@ -123,7 +126,7 @@ function nounAfter(rest: string, outcome: Outcome): { lead: string; words: strin
  * already says it, and either way it carries a tone. A token that names no effect, or an effect with
  * no numbers yet, stays as written.
  */
-export function resolveSegments(text: string | undefined, effects: Effect[] | undefined): Segment[] {
+export function resolveSegments(text: string | undefined, effects: Effect[] | undefined, options: { tags?: boolean } = {}): Segment[] {
   if (!text) return []
   if (!hasTokens(text)) return [{ text }]
   const list = effects ?? []
@@ -132,7 +135,7 @@ export function resolveSegments(text: string | undefined, effects: Effect[] | un
   const push = (segment: Segment) => {
     if (!segment.text) return
     const previous = out[out.length - 1]
-    if (previous && previous.tone === segment.tone) previous.text += segment.text
+    if (previous && previous.tone === segment.tone && !previous.tag && !segment.tag) previous.text += segment.text
     else out.push({ ...segment })
   }
 
@@ -152,9 +155,26 @@ export function resolveSegments(text: string | undefined, effects: Effect[] | un
       const lasting = base === null ? -1 : names.findIndex(n => normalize(n) === base)
       if (lasting !== -1) phrase = durationPhrase(list[lasting])
     }
-    if (!phrase) continue
+    // In tag mode an effect's amount is written as what it is, and needs no numbers to be.
+    const asTag = !!options.tags && !!amountOf
+    if (!phrase && !asTag) continue
 
     push({ text: text.slice(cursor, start) })
+    if (asTag && amountOf) {
+      cursor = start + match[0].length
+      const label = tagLabel(amountOf)
+      const outcome = outcomeOf(amountOf)
+      // What was written after the token already names it, so it stands in for the tag: nothing is said twice.
+      const said = nounAfter(text.slice(cursor), outcome, label)
+      if (said) {
+        // The space before the words was already there, in front of the token.
+        push({ text: said.words, tone: said.tone, tag: { icon: tagIcon(amountOf) } })
+        cursor += said.lead.length + said.words.length
+      } else {
+        push({ text: label, tone: outcome.tone, tag: { icon: tagIcon(amountOf) } })
+      }
+      continue
+    }
     push({ text: phrase })
     cursor = start + match[0].length
     const outcome = amountOf ? outcomeOf(amountOf) : undefined

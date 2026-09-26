@@ -4,8 +4,8 @@ import type { Champion, AbilitySlot } from '../champion/types'
 import { useChampionTheme } from '../audio/useChampionTheme'
 import { resolveTokens } from '../champion/descriptionTokens'
 import AbilityTooltip from './AbilityTooltip'
+import LeagueIcon from './LeagueIcon'
 import { useNumbers } from '../settings/useNumbers'
-import { useShiftHover } from '../shared/useShiftHover'
 import { formatStat, formatGrowth, statAtLevel } from '../champion/statSpec'
 import type { BaseStats } from '../champion/types'
 import './ViewPage.css'
@@ -275,8 +275,6 @@ export default function ViewPage() {
   const [downloading, setDownloading] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<AbilitySlot | null>(null)
   const [hoveredSlot, setHoveredSlot] = useState<AbilitySlot | null>(null)
-  // Holding Shift over the abilities opens the detail behind the tooltip, as in the game.
-  const shiftHover = useShiftHover()
   const numbers = useNumbers()
   const themePlaying = useChampionTheme(s => !!id && s.playing?.championId === id && !s.paused)
   const playTheme = useChampionTheme(s => s.play)
@@ -368,10 +366,10 @@ export default function ViewPage() {
         <div className="view-hero-content">
           <div className="view-hero-name">{identity.name}</div>
           {identity.title && <div className="view-hero-title">{identity.title}</div>}
-          <div className="view-hero-tags">
-            {[...(identity.class ?? []), ...(identity.role ?? []), ...(identity.attack_type ?? [])].map(t => (
-              <span key={t} className="view-hero-tag">{t}</span>
-            ))}
+          <div className="view-hero-traits">
+            {(identity.class ?? []).map(t => <span key={`class-${t}`} className="view-hero-trait"><LeagueIcon kind="class" name={t} />{t}</span>)}
+            {(identity.role ?? []).map(t => <span key={`lane-${t}`} className="view-hero-trait"><LeagueIcon kind="lane" name={t} />{t}</span>)}
+            {(identity.attack_type ?? []).map(t => <span key={`attack-${t}`} className="view-hero-trait">{t}</span>)}
           </div>
           {playstyle && playstyle.length > 0 && (
             <div className="view-hero-playstyle">{playstyle.join(' · ')}</div>
@@ -391,7 +389,7 @@ export default function ViewPage() {
           <div className="view-section">
             <div className="view-section-title">Abilities</div>
             {filledSlots.length > 0 ? (
-              <div className="view-abilities-showcase" {...shiftHover.hoverProps}>
+              <div className="view-abilities-showcase">
                 <div className="ability-icon-row">
                   {filledSlots.map(slot => (
                     <div key={slot} className="ability-icon-item">
@@ -421,7 +419,6 @@ export default function ViewPage() {
                     cooldown={displayAbility.cooldown}
                     cost={displayAbility.cost}
                     costType={displayAbility.cost_type}
-                    detailed={shiftHover.detailed}
                     numbers={numbers.abilities}
                   />
                 )}

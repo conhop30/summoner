@@ -263,3 +263,45 @@ describe('the kind of damage after an amount', () => {
     expect(resolveSegments('', [magic])).toEqual([])
   })
 })
+
+describe('an effect written as what it is, in place of its numbers', () => {
+  const magic: Effect = { type: 'damage', damage_type: 'Magic', base: [40, 65, 90], ratios: [{ stat: 'ap', values: [0.45, 0.45, 0.45] }] }
+  const shred: Effect = { type: 'stat_change', stat: 'armor', direction: 'lower', target: 'enemy', unit: 'percent', base: [20, 25, 30], duration: [3, 3, 3] }
+  const tags = { tags: true }
+
+  it('puts the name of the effect where its numbers were', () => {
+    expect(resolveSegments('Deals {Damage} to the first enemy.', [magic], tags)).toEqual([
+      { text: 'Deals ' },
+      { text: 'magic damage', tone: 'magic', tag: { icon: 'ap' } },
+      { text: ' to the first enemy.' },
+    ])
+  })
+
+  it('does not say it twice when the description already does', () => {
+    const text = (s: string) => resolveSegments(s, [magic], tags).map(x => x.text).join('')
+    expect(text('Deals {Damage} magic damage.')).toBe('Deals magic damage.')
+    expect(text('Deals {Damage} damage.')).toBe('Deals damage.')
+  })
+
+  it('names other kinds of effect the same way, with their icons', () => {
+    expect(resolveSegments('Applies {Armor}.', [shred], tags)).toEqual([
+      { text: 'Applies ' },
+      { text: 'armor shred', tag: { icon: 'armor' } },
+      { text: '.' },
+    ])
+    expect(resolveSegments('Stuns with {Stun}.', [{ type: 'stun', base: [1.5] }], tags)[1]).toEqual({ text: 'stun', tag: {} })
+    expect(resolveSegments('Heals for {Heal}.', [{ type: 'heal', base: [50] }], tags)[1]).toEqual({ text: 'healing', tag: { icon: 'heal' } })
+  })
+
+  it('names an effect that has no numbers yet, since it needs none', () => {
+    expect(resolveSegments('Deals {Damage}.', [{ type: 'damage', damage_type: 'Magic' }], tags)[1]).toMatchObject({ text: 'magic damage' })
+  })
+
+  it('leaves a duration as its number, and a token that names nothing as written', () => {
+    expect(resolveSegments('For {Armor duration}. {Nope}', [shred], tags).map(x => x.text).join('')).toBe('For 3 s. {Nope}')
+  })
+
+  it('does not change the text sent out of the app, which keeps its numbers', () => {
+    expect(resolveTokens('Deals {Damage} to the first enemy.', [magic])).toBe('Deals 40/65/90 (+45% AP) magic damage to the first enemy.')
+  })
+})

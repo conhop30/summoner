@@ -1,7 +1,7 @@
 import type { AbilityBody, Effect } from '../champion/types'
 import { resolveSegments } from '../champion/descriptionTokens'
 import { cooldownText, costText, detailRows } from '../champion/tooltip'
-import { useShiftHover } from '../shared/useShiftHover'
+import StatIcon from './StatIcon'
 import './AbilityTooltip.css'
 
 interface Props {
@@ -15,30 +15,23 @@ interface Props {
   costType?: string
   /** Shown in place of the description when it is empty. */
   empty?: string
-  /** Extra classes, and the props that let a wider area (the icon row above it) count as hovering. */
   className?: string
-  hoverProps?: { onMouseEnter: () => void; onMouseLeave: () => void }
-  detailed?: boolean
-  /** False leaves out everything numeric that isn't in the description: the cooldown and cost, and the detail rows. */
+  /** False leaves out the numbers: the cooldown and cost, and the rows of detail beneath the description. */
   numbers?: boolean
 }
 
-// An ability as the game shows it: its name, what it costs and how often it can be used, and the
-// description with the kind of damage in its own colour. Holding Shift while pointing at it opens
-// the detail the game keeps behind the same key: every effect on its own row, named for what it does,
-// with its numbers. Without a `detailed` from the caller it watches Shift over itself.
-export default function AbilityTooltip({ name, label, description, effects, cooldown, cost, costType, empty, className, hoverProps, detailed, numbers = true }: Props) {
-  const own = useShiftHover()
-  const showDetail = detailed ?? own.detailed
-  const props = hoverProps ?? own.hoverProps
-
-  const segments = resolveSegments(description, effects)
+// An ability as the game draws it: its name, what it costs and how often it can be used, and the
+// description. In the description an effect's numbers are replaced by what it is ("magic damage",
+// coloured for the kind, with its icon), so the sentence reads cleanly; the numbers themselves,
+// and everything an effect scales with, are in the rows beneath it.
+export default function AbilityTooltip({ name, label, description, effects, cooldown, cost, costType, empty, className, numbers = true }: Props) {
+  const segments = resolveSegments(description, effects, { tags: true })
   const rows = numbers ? detailRows(effects) : []
   const cd = numbers ? cooldownText({ cooldown }) : ''
   const price = numbers ? costText({ cost, cost_type: costType }) : ''
 
   return (
-    <div className={`ability-tip${className ? ` ${className}` : ''}`} {...props}>
+    <div className={`ability-tip${className ? ` ${className}` : ''}`}>
       {(name || label) && (
         <div className="ability-tip-head">
           <span className="ability-tip-name">{name || '—'}</span>
@@ -53,23 +46,24 @@ export default function AbilityTooltip({ name, label, description, effects, cool
       )}
       {segments.length > 0 ? (
         <div className="ability-tip-body">
-          {segments.map((s, i) => (s.tone ? <span key={i} className={`tone-${s.tone}`}>{s.text}</span> : s.text))}
+          {segments.map((s, i) => s.tag
+            ? <span key={i} className={`ability-tip-tag${s.tone ? ` tone-${s.tone}` : ''}`}>{s.tag.icon && <StatIcon name={s.tag.icon} size={13} />}{s.text}</span>
+            : s.tone ? <span key={i} className={`tone-${s.tone}`}>{s.text}</span> : s.text)}
         </div>
       ) : (
         empty && <div className="ability-tip-empty">{empty}</div>
       )}
-      {showDetail && rows.length > 0 && (
+      {rows.length > 0 && (
         <ul className="ability-tip-details">
           {rows.map((r, i) => (
             <li key={i}>
-              <span className={`ability-tip-label${r.tone ? ` tone-${r.tone}` : ''}`}>{r.label}</span>
+              <span className={`ability-tip-label${r.tone ? ` tone-${r.tone}` : ''}`}>{r.icon && <StatIcon name={r.icon} size={13} />}{r.label}</span>
               <span className="ability-tip-value">{r.value || '—'}{r.lasts && <em> {r.lasts}</em>}</span>
               {r.notes && <span className="ability-tip-notes">{r.notes}</span>}
             </li>
           ))}
         </ul>
       )}
-      {!showDetail && rows.length > 0 && <div className="ability-tip-hint">Hold Shift for details</div>}
     </div>
   )
 }

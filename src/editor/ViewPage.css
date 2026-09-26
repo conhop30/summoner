@@ -134,21 +134,26 @@
   margin-bottom: var(--space-3);
 }
 
-.view-hero-tags {
+/* Class, lane and attack type: icon and name in a row, with no boxes around them. */
+.view-hero-traits {
   display: flex;
-  gap: var(--space-1);
   flex-wrap: wrap;
-  margin-bottom: var(--space-2);
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  margin-bottom: var(--space-3);
 }
 
-.view-hero-tag {
-  font-size: var(--font-size-xs);
+.view-hero-trait {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  padding: 3px 10px;
-  border: 1px solid var(--tag-gold-border);
   color: var(--tag-gold-text);
 }
+
+.league-icon { flex-shrink: 0; object-fit: contain; }
 
 .view-hero-playstyle {
   font-size: var(--font-size-base);
@@ -204,14 +209,14 @@
 
 .view-abilities-showcase { display: flex; flex-direction: column; gap: var(--space-6); }
 
-.ability-icon-row { display: flex; gap: var(--space-4); }
+.ability-icon-row { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6); }
 
 .ability-icon-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  width: 72px;
+  width: 104px;
 }
 
 .ability-icon-btn {
@@ -240,11 +245,18 @@
 }
 
 .ability-icon-label {
-  font-size: var(--font-size-sm);
-  letter-spacing: var(--tracking-wide);
+  max-width: 100%;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-normal);
   text-transform: uppercase;
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.35;
+  /* A long name wraps inside its own column, and breaks a very long word rather than running into the next one. */
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   color: var(--text-muted);
   transition: color var(--transition-fast);
 }

@@ -1,7 +1,8 @@
 import type { AbilityBody, Effect } from './types'
 import { canLast, describeStatChange, effectName } from './effects'
 import { durationPhrase, effectPhrase } from './descriptionTokens'
-import { outcomeOf, type Tone } from './outcomes'
+import { outcomeOf, tagIcon, type Tone } from './outcomes'
+import type { StatIconKey } from './statIcons'
 import { rankList } from './ratios'
 
 // What an ability's tooltip says apart from its description: the cooldown and cost line, and, when
@@ -31,6 +32,7 @@ export interface DetailRow {
   /** What the effect is, in the words of the outcome list: "Magic damage", "Armor shred". */
   label: string
   tone?: Tone
+  icon?: StatIconKey
   /** Its numbers, written like a tooltip: "40/65/90 (+45% AP)". */
   value: string
   /** "for 4 s", when it lasts a while and says for how long. */
@@ -45,6 +47,6 @@ export function detailRows(effects: Effect[] | undefined): DetailRow[] {
       : outcome.id === 'stat_up' || outcome.id === 'stat_down' ? describeStatChange(effect)
       : outcome.label
     const lasting = canLast(effect) ? durationPhrase(effect) : ''
-    return { label, tone: outcome.tone, value: effectPhrase(effect), lasts: lasting ? `for ${lasting}` : '', notes: effect.notes?.trim() ?? '' }
+    return { label, tone: outcome.tone, icon: tagIcon(effect), value: effectPhrase(effect), lasts: lasting ? `for ${lasting}` : '', notes: effect.notes?.trim() ?? '' }
   })
 }
