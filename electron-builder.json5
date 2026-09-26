@@ -12,10 +12,18 @@
   "directories": {
     "output": "release/${version}"
   },
+  // Ships the built app and the two runtime dependencies. The renderer's libraries (React and the
+  // rest) are already bundled into dist, so they live in devDependencies and stay out of the package.
   "files": [
     "dist",
-    "dist-electron"
+    "dist-electron",
+    // better-sqlite3 arrives with its SQLite source and build inputs; only the compiled .node and
+    // its JS are used at run time.
+    "!node_modules/better-sqlite3/{deps,src}/**"
   ],
+  // The app is English only, so skip the ~50 Chromium locale packs.
+  "electronLanguages": ["en-US"],
+  "compression": "maximum",
   "mac": {
     "target": [
       "dmg"

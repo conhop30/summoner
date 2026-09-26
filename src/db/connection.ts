@@ -16,6 +16,9 @@ export function getDb(): any {
   db = new Database(dbPath)
 
   db.pragma('journal_mode = WAL')
+  // In WAL mode, NORMAL still survives an app crash and only risks the last write on power loss, and
+  // skips a disk flush on every autosave.
+  db.pragma('synchronous = NORMAL')
   db.pragma('foreign_keys = ON')
 
   initializeSchema(db)

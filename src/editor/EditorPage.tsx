@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from 'framer-motion'
 import type { Champion, AbilitySlot } from '../champion/types'
 import { defaultAbilities, defaultBaseStats } from '../champion/utils'
 import { defaultBuilds } from '../item/buildLogic'
@@ -264,7 +264,7 @@ export default function EditorPage({ mode }: Props) {
             >
               Stats
               {rightTab === 'stats' && (
-                <motion.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
+                <m.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
               )}
             </button>
             <button
@@ -273,7 +273,7 @@ export default function EditorPage({ mode }: Props) {
             >
               Abilities
               {rightTab === 'abilities' && (
-                <motion.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
+                <m.div className="tab-underline" layoutId="tab-underline" transition={LAYOUT_TRANSITION} />
               )}
             </button>
           </div>
@@ -285,20 +285,20 @@ export default function EditorPage({ mode }: Props) {
             {/* The Abilities tab shows its own compact stat block beside the ability keys. */}
             {rightTab === 'stats' && (
               <div className="stat-block-stage full">
-                <motion.div
+                <m.div
                   className="stat-block-shell"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={CONTENT_TRANSITION}
                 >
                   <StatsPanel champion={champion} onChange={handleChange} workbench={workbench} onWorkbench={setWorkbench} catalogState={catalogState} />
-                </motion.div>
+                </m.div>
               </div>
             )}
 
             <AnimatePresence mode="wait" initial={false}>
               {rightTab === 'abilities' && (
-                <motion.div
+                <m.div
                   key="abilities"
                   className="abilities-wrap"
                   initial={{ opacity: 0 }}
@@ -307,7 +307,7 @@ export default function EditorPage({ mode }: Props) {
                   transition={CONTENT_TRANSITION}
                 >
                   <AbilitiesSection champion={champion} onChange={handleChange} onEditStats={() => setRightTab('stats')} />
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>

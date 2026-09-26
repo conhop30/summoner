@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from 'framer-motion'
 import type { Champion } from '../champion/types'
 import StoryPanel from './StoryPanel'
 import IdentityPanel from './IdentityPanel'
@@ -40,7 +40,7 @@ export default function Workbench({ champion, onChange, view, onView }: Props) {
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
+        <m.div
           key={view}
           className="workbench-panel"
           role="tabpanel"
@@ -52,7 +52,7 @@ export default function Workbench({ champion, onChange, view, onView }: Props) {
           {view === 'story' && <StoryPanel champion={champion} onChange={onChange} />}
           {view === 'identity' && <IdentityPanel champion={champion} onChange={onChange} />}
           {view === 'items' && <ItemLoadoutPanel champion={champion} onChange={onChange} />}
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </section>
   )
